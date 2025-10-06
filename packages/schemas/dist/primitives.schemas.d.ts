@@ -47,55 +47,12 @@ export declare const TimeRangeSchema: z.ZodEffects<z.ZodObject<{
     start: number;
     end: number;
 }>;
-export declare function ResultSchema<T extends z.ZodType>(dataSchema: T): z.ZodDiscriminatedUnion<"success", [z.ZodObject<{
-    success: z.ZodLiteral<true>;
-    data: T;
-}, "strip", z.ZodTypeAny, z.objectUtil.addQuestionMarks<z.baseObjectOutputType<{
-    success: z.ZodLiteral<true>;
-    data: T;
-}>, any> extends infer T_1 ? { [k in keyof T_1]: T_1[k]; } : never, z.baseObjectInputType<{
-    success: z.ZodLiteral<true>;
-    data: T;
-}> extends infer T_2 ? { [k_1 in keyof T_2]: T_2[k_1]; } : never>, z.ZodObject<{
-    success: z.ZodLiteral<false>;
-    error: z.ZodObject<{
-        message: z.ZodString;
-        code: z.ZodOptional<z.ZodString>;
-        details: z.ZodOptional<z.ZodUnknown>;
-    }, "strip", z.ZodTypeAny, {
-        message: string;
-        code?: string | undefined;
-        details?: unknown;
-    }, {
-        message: string;
-        code?: string | undefined;
-        details?: unknown;
-    }>;
-}, "strip", z.ZodTypeAny, {
-    success: false;
-    error: {
-        message: string;
-        code?: string | undefined;
-        details?: unknown;
-    };
-}, {
-    success: false;
-    error: {
-        message: string;
-        code?: string | undefined;
-        details?: unknown;
-    };
-}>]>;
+export declare function ResultSchema<T extends z.ZodType>(dataSchema: T): ReturnType<typeof z.discriminatedUnion>;
 export declare function safeParse<T>(schema: z.ZodType<T>, data: unknown): {
     success: true;
     data: T;
-    error?: undefined;
 } | {
     success: false;
-    error: {
-        message: string;
-        details: z.ZodIssue[];
-    };
-    data?: undefined;
+    error: z.ZodError;
 };
 //# sourceMappingURL=primitives.schemas.d.ts.map

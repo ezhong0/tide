@@ -79,19 +79,19 @@ export declare const ParticipantSchema: z.ZodObject<{
     comment: z.ZodOptional<z.ZodString>;
     isResource: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    name: string;
     email: string;
-    role: "organizer" | "required" | "optional" | "resource";
-    responseStatus: "tentative" | "accepted" | "declined" | "pending";
+    name: string;
+    role: "required" | "organizer" | "optional" | "resource";
+    responseStatus: "pending" | "tentative" | "accepted" | "declined";
     userId?: string | undefined;
     responseTime?: number | undefined;
     comment?: string | undefined;
     isResource?: boolean | undefined;
 }, {
-    name: string;
     email: string;
-    role: "organizer" | "required" | "optional" | "resource";
-    responseStatus: "tentative" | "accepted" | "declined" | "pending";
+    name: string;
+    role: "required" | "organizer" | "optional" | "resource";
+    responseStatus: "pending" | "tentative" | "accepted" | "declined";
     userId?: string | undefined;
     responseTime?: number | undefined;
     comment?: string | undefined;
@@ -280,19 +280,19 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
         comment: z.ZodOptional<z.ZodString>;
         isResource: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
         isResource?: boolean | undefined;
     }, {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -426,10 +426,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
         meetingUrl?: string | undefined;
     } | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -487,10 +487,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
     timezone?: string | undefined;
     isAllDay?: boolean | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -550,10 +550,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
         meetingUrl?: string | undefined;
     } | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -611,10 +611,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
     timezone?: string | undefined;
     isAllDay?: boolean | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -674,10 +674,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
         meetingUrl?: string | undefined;
     } | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -735,10 +735,10 @@ export declare const CreateCalendarEventSchema: z.ZodEffects<z.ZodEffects<z.ZodO
     timezone?: string | undefined;
     isAllDay?: boolean | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -857,19 +857,19 @@ export declare const UpdateCalendarEventSchema: z.ZodObject<{
         comment: z.ZodOptional<z.ZodString>;
         isResource: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
         isResource?: boolean | undefined;
     }, {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -986,7 +986,6 @@ export declare const UpdateCalendarEventSchema: z.ZodObject<{
     type?: "meeting" | "appointment" | "task" | "reminder" | "focus" | "out-of-office" | undefined;
     status?: "tentative" | "confirmed" | "cancelled" | undefined;
     userId?: string | undefined;
-    title?: string | undefined;
     description?: string | undefined;
     location?: {
         type: "physical" | "virtual" | "hybrid";
@@ -1000,15 +999,16 @@ export declare const UpdateCalendarEventSchema: z.ZodObject<{
         floor?: string | undefined;
         meetingUrl?: string | undefined;
     } | undefined;
+    title?: string | undefined;
     startTime?: number | undefined;
     endTime?: number | undefined;
     timezone?: string | undefined;
     isAllDay?: boolean | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -1049,7 +1049,6 @@ export declare const UpdateCalendarEventSchema: z.ZodObject<{
     type?: "meeting" | "appointment" | "task" | "reminder" | "focus" | "out-of-office" | undefined;
     status?: "tentative" | "confirmed" | "cancelled" | undefined;
     userId?: string | undefined;
-    title?: string | undefined;
     description?: string | undefined;
     location?: {
         type: "physical" | "virtual" | "hybrid";
@@ -1063,15 +1062,16 @@ export declare const UpdateCalendarEventSchema: z.ZodObject<{
         floor?: string | undefined;
         meetingUrl?: string | undefined;
     } | undefined;
+    title?: string | undefined;
     startTime?: number | undefined;
     endTime?: number | undefined;
     timezone?: string | undefined;
     isAllDay?: boolean | undefined;
     attendees?: {
-        name: string;
         email: string;
-        role: "organizer" | "required" | "optional" | "resource";
-        responseStatus: "tentative" | "accepted" | "declined" | "pending";
+        name: string;
+        role: "required" | "organizer" | "optional" | "resource";
+        responseStatus: "pending" | "tentative" | "accepted" | "declined";
         userId?: string | undefined;
         responseTime?: number | undefined;
         comment?: string | undefined;
@@ -1151,11 +1151,11 @@ export declare const AvailabilityParamsSchema: z.ZodObject<{
     }>>;
 }, "strip", z.ZodTypeAny, {
     userId: string;
+    duration: number;
     timeRange: {
         start: number;
         end: number;
     };
-    duration: number;
     includeBufferTime: boolean;
     workingHoursOnly: boolean;
     excludeEvents?: string[] | undefined;
@@ -1170,11 +1170,11 @@ export declare const AvailabilityParamsSchema: z.ZodObject<{
     } | undefined;
 }, {
     userId: string;
+    duration: number;
     timeRange: {
         start: number;
         end: number;
     };
-    duration: number;
     excludeEvents?: string[] | undefined;
     includeBufferTime?: boolean | undefined;
     workingHoursOnly?: boolean | undefined;
@@ -1213,8 +1213,8 @@ export declare const MeetingConstraintsSchema: z.ZodObject<{
     duration: number;
     requiredAttendees: string[];
     roomRequired: boolean;
-    title?: string | undefined;
     description?: string | undefined;
+    title?: string | undefined;
     optionalAttendees?: string[] | undefined;
     equipmentRequired?: string[] | undefined;
     preferredTimes?: {
@@ -1225,8 +1225,8 @@ export declare const MeetingConstraintsSchema: z.ZodObject<{
 }, {
     duration: number;
     requiredAttendees: string[];
-    title?: string | undefined;
     description?: string | undefined;
+    title?: string | undefined;
     optionalAttendees?: string[] | undefined;
     roomRequired?: boolean | undefined;
     equipmentRequired?: string[] | undefined;

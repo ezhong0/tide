@@ -3,7 +3,7 @@
  */
 
 import {
-  DomainEvent, UUID, Timestamp, Email, EmailId, ThreadId, UserId
+  DomainEvent, UUID, Timestamp, EmailId, ThreadId, UserId
 } from '../base.types';
 import {
   EmailContact, EmailBody, EmailPriority, EmailCategory, Attachment, ToneAnalysis
@@ -26,10 +26,10 @@ export abstract class EmailEvent implements DomainEvent {
     this.eventId = UUID(crypto.randomUUID());
     this.timestamp = Timestamp(Date.now());
     this.metadata = {
-      correlationId: metadata?.correlationId || UUID(crypto.randomUUID()),
-      causationId: metadata?.causationId || UUID(crypto.randomUUID()),
+      correlationId: metadata?.correlationId ?? UUID(crypto.randomUUID()),
+      causationId: metadata?.causationId ?? UUID(crypto.randomUUID()),
       userId: this.userId,
-      source: metadata?.source || 'email-service',
+      source: metadata?.source ?? 'email-service',
       ...metadata
     };
   }

@@ -183,7 +183,7 @@ export const isResult = <T>(value: unknown): value is Result<T> => {
   return typeof value === 'object' &&
     value !== null &&
     'success' in value &&
-    typeof (value as any).success === 'boolean';
+    typeof (value as Record<string, unknown>).success === 'boolean';
 };
 
 // Performance monitoring types

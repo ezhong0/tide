@@ -8,7 +8,7 @@
  * - Query notifications: <50ms
  */
 
-import { Result, UUID, UserId, Timestamp } from '@tide/types';
+import { Result, UserId, Timestamp } from '@tide/types';
 
 export interface INotificationService {
   /**

@@ -8,7 +8,7 @@
  * - Monitor thread: <50ms setup
  */
 import { Result, EmailId, ThreadId, UserId } from '@tide/types';
-import { EmailDomain, EmailQuery, SendEmailParams, DraftEmailParams, DraftContext, DraftSuggestion, EmailResponse, EmailAction, EmailTemplate, EmailAnalytics, EmailSyncStatus } from '@tide/types';
+import { SendEmailParams, DraftEmailParams, DraftContext, EmailAction, EmailSyncStatus, EmailDomain, EmailQuery, EmailResponse, EmailTemplate, EmailAnalytics, DraftSuggestion } from '@tide/types';
 export interface IEmailService {
     /**
      * Send an email through the user's configured provider

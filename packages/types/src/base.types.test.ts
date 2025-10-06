@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { describe, it, expect } from '@jest/globals';
+
 import {
+  Result,
   ok,
   err,
   isOk,
@@ -66,7 +69,7 @@ describe('Result Type', () => {
 
     it('should pass through success values unchanged', () => {
       const result = ok(42);
-      const mapped = mapErr(result, e => `Wrapped: ${e}`);
+      const mapped = mapErr(result, e => `Wrapped: ${String(e)}`);
       expect(isOk(mapped)).toBe(true);
       expect(unwrap(mapped)).toBe(42);
     });
@@ -74,24 +77,24 @@ describe('Result Type', () => {
 
   describe('flatMap', () => {
     it('should chain successful operations', () => {
-      const divide = (a: number, b: number) =>
-        b === 0 ? err('Division by zero') : ok(a / b);
+      const divide = (a: number, b: number): Result<number, string> =>
+        b === 0 ? err<string>('Division by zero') : ok(a / b) as Result<number, string>;
 
-      const result = flatMap(ok(10), x => divide(x, 2));
+      const result = flatMap(ok(10) as Result<number, string>, x => divide(x, 2));
       expect(unwrap(result)).toBe(5);
     });
 
     it('should short-circuit on first error', () => {
-      const divide = (a: number, b: number) =>
-        b === 0 ? err('Division by zero') : ok(a / b);
+      const divide = (a: number, b: number): Result<number, string> =>
+        b === 0 ? err<string>('Division by zero') : ok(a / b) as Result<number, string>;
 
-      const result = flatMap(ok(10), x => divide(x, 0));
+      const result = flatMap(ok(10) as Result<number, string>, x => divide(x, 0));
       expect(isErr(result)).toBe(true);
       expect(unwrapErr(result)).toBe('Division by zero');
     });
 
     it('should propagate initial error', () => {
-      const result = flatMap(err('initial error'), (x: number) => ok(x * 2));
+      const result = flatMap(err<string>('initial error'), (x: number) => ok(x * 2) as Result<number, string>);
       expect(isErr(result)).toBe(true);
       expect(unwrapErr(result)).toBe('initial error');
     });
@@ -101,8 +104,8 @@ describe('Result Type', () => {
     it('should handle success case', () => {
       const result = ok(42);
       const output = match(result, {
-        ok: value => `Success: ${value}`,
-        err: error => `Error: ${error}`
+        ok: value => `Success: ${String(value)}`,
+        err: error => `Error: ${String(error)}`
       });
       expect(output).toBe('Success: 42');
     });
@@ -110,8 +113,8 @@ describe('Result Type', () => {
     it('should handle error case', () => {
       const result = err('failed');
       const output = match(result, {
-        ok: value => `Success: ${value}`,
-        err: error => `Error: ${error}`
+        ok: value => `Success: ${String(value)}`,
+        err: error => `Error: ${String(error)}`
       });
       expect(output).toBe('Error: failed');
     });

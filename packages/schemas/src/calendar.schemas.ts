@@ -4,13 +4,13 @@
  */
 
 import { z } from 'zod';
+
 import {
   UUIDSchema,
   EmailSchema,
   TimestampSchema,
   TimeStringSchema,
   DurationMinutesSchema,
-  CalendarProviderSchema
 } from './primitives.schemas';
 
 // Event types
@@ -97,7 +97,7 @@ export const RecurrenceRuleSchema = z.object({
   byMonth: z.array(z.number().int().min(1).max(12)).optional(),
   exceptions: z.array(TimestampSchema).optional()
 }).refine(
-  data => !(data.count && data.until),
+  data => !(data.count !== undefined && data.until !== undefined),
   'Cannot specify both count and until for recurrence'
 );
 

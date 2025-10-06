@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires, @typescript-eslint/no-unsafe-assignment */
 import { describe, it, expect } from '@jest/globals';
 
 describe('Contracts Package', () => {

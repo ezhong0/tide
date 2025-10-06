@@ -12,7 +12,7 @@ export interface RequestValidation {
     query?: z.ZodType;
     params?: z.ZodType;
 }
-export declare function validateFullRequest(validation: RequestValidation): (req: any, res: any, next: any) => Promise<any>;
+export declare function validateFullRequest(validation: RequestValidation): (req: any, res: any, next: any) => any;
 export declare function createTypedHandler<TBody extends z.ZodType, TQuery extends z.ZodType, TParams extends z.ZodType, TResponse extends z.ZodType>(config: {
     body?: TBody;
     query?: TQuery;
@@ -24,5 +24,5 @@ export declare function createTypedHandler<TBody extends z.ZodType, TQuery exten
         params: z.infer<TParams>;
         user?: any;
     }) => Promise<z.infer<TResponse>>;
-}): ((req: any, res: any, next: any) => Promise<any>)[];
+}): ((req: any, res: any, next: any) => any)[];
 //# sourceMappingURL=middleware.d.ts.map

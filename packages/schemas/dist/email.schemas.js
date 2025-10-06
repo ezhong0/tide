@@ -50,8 +50,8 @@ const SendEmailParamsBase = zod_1.z.object({
 exports.SendEmailParamsSchema = SendEmailParamsBase.refine(data => {
     // Validate total recipients doesn't exceed limit
     const totalRecipients = data.to.length +
-        (data.cc?.length || 0) +
-        (data.bcc?.length || 0);
+        (data.cc?.length ?? 0) +
+        (data.bcc?.length ?? 0);
     return totalRecipients <= 100;
 }, { message: 'Total recipients cannot exceed 100' });
 // Draft email parameters

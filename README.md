@@ -1,231 +1,240 @@
-# 🌊 Tide - AI Executive Assistant
+# 🌊 Tide - Your Conversational AI Assistant
 
-> Ultra-fast, context-aware AI assistant that handles email, calendar, and tasks through natural language.
-> Built for <300ms responses with offline-first mobile and semantic understanding.
+> ChatGPT that actually manages your work life - $30/month
 
-## 🎯 Project Vision
+## What is Tide?
 
-Tide transforms how executives and professionals interact with their digital workspace. Instead of switching between email, calendar, and task apps, users simply speak or type natural commands and Tide handles everything intelligently in the background.
+Tide is a **conversational AI assistant** that handles your email, calendar, and tasks through natural text conversation. Unlike ChatGPT, Tide can take real actions. Unlike Siri, it works everywhere professionals actually work.
 
-**Key differentiators:**
-- **<300ms response time** - Feels instant
-- **Works offline** - Mobile app with Gemini Nano
-- **Learns from you** - Improves with every interaction
-- **Bank-grade security** - SOC 2 compliant, E2E encryption
-- **No collaboration features** - Focused on individual productivity
+**Just type** (or speak - we'll convert to text):
+- "Schedule a meeting with Sarah next week"
+- "Draft a response to John's proposal"
+- "What's my day look like?"
+- "Move my 3pm to tomorrow"
+- "Find that contract from last month"
 
-## 🏗️ System Architecture
+**Tide shows you what it will do, then does it.** Full transparency. Full control.
+
+## Why Tide Exists
+
+**The Problem:**
+- Knowledge workers waste 2+ hours daily on email/calendar
+- Voice assistants don't work in offices (too disruptive)
+- ChatGPT can't actually do anything
+- Human assistants cost $5,000+/month
+
+**The Solution:**
+- Natural text conversation (works everywhere)
+- Real actions on your actual email/calendar
+- See and edit before anything happens
+- Just $30/month
+
+## Core Features
+
+### 📧 Email Management
+- Intelligent drafting with your tone
+- Smart categorization and prioritization
+- Automatic follow-up tracking
+- Meeting extraction and scheduling
+
+### 📅 Calendar Intelligence
+- Natural language scheduling
+- Conflict detection and resolution
+- Time zone management
+- Meeting preparation automation
+
+### ✅ Task Orchestration
+- Complex multi-step workflows
+- Deadline tracking and reminders
+- Priority management
+- Progress reporting
+
+### 🧠 Learning & Personalization
+- Learns your communication style
+- Remembers important contacts
+- Adapts to your preferences
+- Improves with every interaction
+
+## How It Works
+
+1. **You type** naturally, like messaging a colleague
+2. **Tide understands** and shows what it will do
+3. **You confirm** (or edit) the action
+4. **Tide executes** and updates you on progress
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   User Interface                     │
-│        Mobile App (RN) | Web App (Next.js)          │
-└─────────────┬───────────────────────┬───────────────┘
-              │                       │
-         ┌────▼──────┐          ┌────▼──────┐
-         │   Edge    │          │   Edge    │
-         │  Worker   │          │  Worker   │
-         │(Cloudflare)          │(Cloudflare)
-         └────┬──────┘          └────┬──────┘
-              │                       │
-┌─────────────▼───────────────────────▼───────────────┐
-│             API Gateway (Fastify)                   │
-│         Rate Limiting | Auth | Routing              │
-└─────────────┬───────────────────────────────────────┘
-              │
-┌─────────────▼───────────────────────────────────────┐
-│           Multi-Agent AI System                      │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
-│  │Router  │ │Email   │ │Calendar│ │Task    │      │
-│  │Agent   │ │Agent   │ │Agent   │ │Agent   │      │
-│  └────────┘ └────────┘ └────────┘ └────────┘      │
-└─────────────┬───────────────────────────────────────┘
-              │
-┌─────────────▼───────────────────────────────────────┐
-│              Service Layer                          │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ │
-│  │Context  │ │Email    │ │Calendar │ │Learning │ │
-│  │Engine   │ │Service  │ │Service  │ │Engine   │ │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ │
-└─────────────┬───────────────────────────────────────┘
-              │
-┌─────────────▼───────────────────────────────────────┐
-│           Data Layer                                │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ │
-│  │Postgres │ │Redis    │ │Event    │ │Vector   │ │
-│  │   +     │ │Cache    │ │Store    │ │Search   │ │
-│  │pgvector │ │         │ │         │ │         │ │
-│  └─────────┘ └─────────┘ └─────────┘ └─────────┘ │
-└─────────────────────────────────────────────────────┘
+You: "Can you find a time for me to meet with the product team next week?"
+
+Tide: "I'll check calendars for you and the product team (John, Maria, David).
+Looking at next week...
+
+Found these options where everyone is free:
+📅 Monday 2-3pm
+📅 Tuesday 10-11am
+📅 Thursday 3-4pm
+
+Which works best for you?"
+
+You: "Tuesday at 10"
+
+Tide: "Perfect! Here's the meeting I'll create:
+
+Product Team Sync
+Tuesday, Jan 16, 10:00-11:00am
+Attendees: You, John, Maria, David
+Location: Conference Room A
+
+Should I add an agenda or Zoom link?"
+
+You: "Add zoom"
+
+Tide: "✓ Meeting created with Zoom link! Invites sent to all attendees."
 ```
 
-## 📦 Module Structure
+## Technology Stack
 
-The project is organized into 11 independent modules that can be developed in parallel by separate Claude instances:
+### Core Architecture
+- **Interface**: React Native (iOS/Android), Next.js (Web)
+- **AI Engine**: GPT-4 + Claude for understanding, Mixtral for speed
+- **Backend**: Node.js with event sourcing architecture
+- **Database**: PostgreSQL with pgvector for semantic search
+- **Infrastructure**: Edge computing for <200ms responses
 
-| Module | Instance | Focus | Duration | Dependencies |
-|--------|----------|-------|----------|--------------|
-| [00 - Foundation](docs/modules/MODULE-00-foundation.md) | #0 | Contracts, types, mocks, validation | 2 weeks | None |
-| [01 - Email Service](docs/modules/MODULE-01-email-service.md) | #1 | Gmail/Outlook integration, smart drafts | 3 weeks | Module 00 |
-| [02 - Calendar Service](docs/modules/MODULE-02-calendar-service.md) | #2 | Smart scheduling, availability engine | 3 weeks | Module 00 |
-| [03 - AI Agent System](docs/modules/MODULE-03-ai-agent-system.md) | #3 | Multi-agent orchestration, ReAct pattern | 4 weeks | Module 00 |
-| [04 - Event Sourcing](docs/modules/MODULE-04-event-sourcing.md) | #4 | CQRS, audit trail, time-travel | 4 weeks | Module 00 |
-| [05 - Context Engine](docs/modules/MODULE-05-context-engine.md) | #5 | Semantic search, relationship mapping | 4 weeks | Modules 00, 04 |
-| [06 - Mobile App](docs/modules/MODULE-06-mobile-app.md) | #6 | React Native, offline-first, voice | 4 weeks | Module 00 |
-| [07 - Web App](docs/modules/MODULE-07-web-app.md) | #7 | Next.js, real-time updates, dashboard | 4 weeks | Module 00 |
-| [08 - Learning & Analytics](docs/modules/MODULE-08-learning-analytics.md) | #8 | User behavior learning, insights | 4 weeks | Modules 00, 04 |
-| [09 - Security & Auth](docs/modules/MODULE-09-security-auth.md) | #9 | OAuth2, JWT, encryption, SOC 2 | 3 weeks | Modules 00, 04 |
-| [10 - Performance & Caching](docs/modules/MODULE-10-performance-caching.md) | #10 | Multi-tier cache, edge computing | 3 weeks | All modules |
+### Key Innovations
+- **Conversational Context Manager**: Maintains conversation state
+- **Action Preview System**: Shows before doing
+- **Trust Layer**: All actions reviewable and reversible
+- **Learning Engine**: Personalizes to each user
 
-## 🚀 Development Timeline (12 Weeks)
+## Getting Started
 
-### Phase 0: Foundation (Weeks 1-2)
-- **Module 00** - Contracts, types, mocks, database schema
-- All other modules wait for foundation completion
+### For Users
 
-### Phase 1: Core Infrastructure (Weeks 3-4)
-- **Module 04** - Event Sourcing (parallel)
-- **Module 09** - Security/OAuth (parallel - needed for Email/Calendar)
-- Start Modules 01, 02, 03, 05 with mocks
+1. **Sign up** at [tide.ai](https://tide.ai)
+2. **Connect** your email and calendar (Gmail, Outlook, Google Calendar)
+3. **Start chatting** - just type what you need
+4. **7-day free trial**, then $30/month
 
-### Phase 2: Core Services (Weeks 5-6)
-- **Module 01** - Email Service (complete)
-- **Module 02** - Calendar Service (complete)
-- **Module 03** - AI Agent System (complete)
-- **Module 05** - Context Engine (complete)
-- Integration testing between services
+### For Developers
 
-### Phase 3: Applications (Weeks 7-9)
-- **Module 06** - Mobile App (parallel)
-- **Module 07** - Web App (parallel)
-- **Module 09** - Complete security (RBAC, encryption)
+```bash
+# Clone the repository
+git clone https://github.com/tide-ai/tide.git
 
-### Phase 4: Polish & Optimization (Weeks 10-12)
-- **Module 08** - Learning & Analytics
-- **Module 10** - Performance & Caching
-- Production preparation and deployment
+# Install dependencies
+pnpm install
 
-## 🛠️ Tech Stack
+# Set up environment variables
+cp .env.example .env
 
-### Core
-- **Runtime**: Node.js 20+ with TypeScript
-- **Database**: PostgreSQL 16 with pgvector
-- **Cache**: Redis 7 with RedisJSON
-- **Queue**: BullMQ for job processing
+# Run development server
+pnpm dev
 
-### Backend
-- **API**: Fastify (3x faster than Express)
-- **AI**: OpenAI GPT-4, Anthropic Claude, Gemini Nano
-- **Email**: Direct Gmail/Outlook APIs
-- **Auth**: OAuth2 with PKCE, JWT
-
-### Frontend
-- **Web**: Next.js 14 with App Router
-- **Mobile**: React Native with Expo
-- **Voice**: Web Speech API, iOS/Android native
-
-### Infrastructure
-- **Edge**: Cloudflare Workers
-- **Monitoring**: OpenTelemetry + Grafana
-- **CI/CD**: GitHub Actions
-- **Hosting**: Railway/Render for backend, Vercel for web
-
-## 💡 For Claude Instances
-
-Each Claude instance should:
-
-1. **Read your module document** in `/docs/modules/`
-2. **Use the contracts** from Module 00 as interfaces
-3. **Mock external dependencies** that aren't ready yet
-4. **Write comprehensive tests** (>85% coverage)
-5. **Follow the architecture** outlined in your module
-6. **Optimize for latency** (<300ms is the goal)
-
-### Working with Contracts
-
-```typescript
-// Import contracts from Module 00
-import {
-  EmailServiceContract,
-  CalendarServiceContract,
-  UserContext
-} from '@tide/contracts';
-
-// Implement your service
-export class EmailService implements EmailServiceContract {
-  // Your implementation here
-}
-
-// Use mocks for dependencies
-import { MockCalendarService } from '@tide/contracts/mocks';
-
-const calendar = new MockCalendarService();
+# Run tests
+pnpm test
 ```
 
-### Communication Between Modules
+## Project Structure
 
-All inter-module communication happens through:
-1. **Contracts** - Type-safe interfaces
-2. **Events** - Event sourcing for state changes
-3. **API Gateway** - RESTful endpoints
+```
+/
+├── apps/
+│   ├── web/          # Next.js web application
+│   ├── mobile/       # React Native mobile app
+│   └── api/          # Core API service
+├── packages/
+│   ├── contracts/    # TypeScript interfaces
+│   ├── conversation/ # Conversation engine
+│   ├── actions/      # Action execution layer
+│   └── ai/          # AI integration layer
+├── docs/
+│   ├── modules/      # Module documentation
+│   └── architecture/ # System design docs
+└── infrastructure/   # Deployment configs
+```
 
-Never directly import from another module's implementation.
+## Documentation
 
-## 📊 Success Metrics
+- [Architecture Overview](./docs/STREAMLINED-ARCHITECTURE-FINAL.md)
+- [Business Strategy](./docs/BUSINESS-STRATEGY-TEXT-FIRST.md)
+- [Module Documentation](./docs/modules/)
+- [Complex Task Handling](./docs/COMPLEX-TASK-ARCHITECTURE.md)
 
-- **Performance**: p95 latency <300ms
-- **Availability**: 99.9% uptime
-- **Accuracy**: >90% intent recognition
-- **Security**: SOC 2 compliant
-- **Scale**: 10,000+ concurrent users
+## Roadmap
 
-## 🔒 Security & Compliance
+### Phase 1: Foundation (Weeks 1-4) ✅
+- [x] Core conversation engine
+- [x] Natural language understanding
+- [x] Action preview system
+- [x] Basic email/calendar integration
 
-- OAuth2 with PKCE for all auth
-- End-to-end encryption for PII
-- Complete audit trail via event sourcing
-- GDPR & CCPA compliant
-- SOC 2 Type II ready
+### Phase 2: Integration (Weeks 5-8) 🚧
+- [ ] Gmail/Outlook deep integration
+- [ ] Google Calendar/Outlook Calendar
+- [ ] Contact management
+- [ ] File search capabilities
 
-## 📚 Documentation
+### Phase 3: Intelligence (Weeks 9-12) 📅
+- [ ] Learning system
+- [ ] Personalization engine
+- [ ] Complex task orchestration
+- [ ] Proactive suggestions
 
-### Core Documents
-- [Architecture Decisions](docs/ARCHITECTURE-DECISIONS.md)
-- [Core Philosophy](docs/CORE-PHILOSOPHY.md)
-- [Streamlined Architecture](docs/STREAMLINED-ARCHITECTURE-FINAL.md)
-- [Latency Optimization](docs/LATENCY-OPTIMIZATION-ARCHITECTURE.md)
+### Phase 4: Launch (Weeks 13-16) 📅
+- [ ] Performance optimization
+- [ ] Security hardening
+- [ ] Beta testing program
+- [ ] Public launch
 
-### Module Guides
-All module documentation is in `/docs/modules/`. Each guide includes:
-- Claude instance prompt
-- Success criteria
-- Core architecture with code examples
-- Key deliverables
-- Integration points
+## Pricing
 
-## 🎯 Getting Started
+- **Free Trial**: 7 days, full features
+- **Professional**: $30/month
+- **Team**: $25/user/month (5+ seats)
+- **Enterprise**: Custom pricing
 
-### For Development Lead
-1. Deploy Module 00 (Foundation) first
-2. Assign Claude instances to remaining modules
-3. Set up weekly integration checkpoints
-4. Monitor progress via event store
+## Security & Privacy
 
-### For Claude Instances
-1. Read your assigned module guide
-2. Import contracts from Module 00
-3. Build according to specification
-4. Write tests alongside code
-5. Document all API endpoints
+- **End-to-end encryption** for sensitive data
+- **SOC 2 Type II** compliance (in progress)
+- **GDPR compliant** with data controls
+- **Your data is yours** - export anytime
 
-## 🌟 Key Principles
+## Support
 
-1. **Speed is a feature** - Every millisecond counts
-2. **Offline-first** - Mobile should work without internet
-3. **Learn and adapt** - Get smarter with each interaction
-4. **Security by default** - Never compromise on security
-5. **Developer experience** - Clean APIs and good documentation
+- 📧 Email: support@tide.ai
+- 💬 Discord: [discord.gg/tide](https://discord.gg/tide)
+- 📚 Docs: [docs.tide.ai](https://docs.tide.ai)
+- 🐦 Twitter: [@tideai](https://twitter.com/tideai)
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+## License
+
+Copyright © 2024 Tide AI, Inc. All rights reserved.
+
+Private and confidential. This software is proprietary and not open source.
 
 ---
 
-Built with 🤖 by Claude Instances #0-10
+## Why $30/month?
+
+**Simple math:** If Tide saves you just 1 hour per week, that's 4 hours per month. At any professional hourly rate, Tide pays for itself immediately.
+
+But most users save 5-10 hours per week.
+
+**The real value:** Never miss an important email. Never double-book. Never forget a follow-up. Always be prepared for meetings. Get your evenings back.
+
+## The Vision
+
+We believe the future of work isn't about voice commands in quiet rooms - it's about natural conversation that works everywhere you do.
+
+Tide is building that future. One conversation at a time.
+
+---
+
+**Ready to get your time back?**
+
+[Start your free trial →](https://tide.ai)

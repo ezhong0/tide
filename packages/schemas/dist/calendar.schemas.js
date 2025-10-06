@@ -81,7 +81,7 @@ exports.RecurrenceRuleSchema = zod_1.z.object({
     byMonthDay: zod_1.z.array(zod_1.z.number().int().min(1).max(31)).optional(),
     byMonth: zod_1.z.array(zod_1.z.number().int().min(1).max(12)).optional(),
     exceptions: zod_1.z.array(primitives_schemas_1.TimestampSchema).optional()
-}).refine(data => !(data.count && data.until), 'Cannot specify both count and until for recurrence');
+}).refine(data => !(data.count !== undefined && data.until !== undefined), 'Cannot specify both count and until for recurrence');
 // Base calendar event schema (without refinement)
 const CreateCalendarEventBase = zod_1.z.object({
     userId: primitives_schemas_1.UUIDSchema,

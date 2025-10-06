@@ -3,7 +3,7 @@
  */
 
 import {
-  UUID, Timestamp, UserId, AgentId, SessionId, Result
+  UUID, Timestamp, UserId, AgentId, SessionId
 } from '../base.types';
 
 // Agent types

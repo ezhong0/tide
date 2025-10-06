@@ -12,7 +12,7 @@ import { Result, UUID, UserId, Email } from '@tide/types';
 import {
   UserContext, UserProfile, Relationship, Contact,
   ContextPreferences, WorkContext, BehaviorProfile,
-  LearningProfile, ContextUpdate, Project, Team, Goal,
+  LearningProfile, Project, Team, Goal,
   Priority, LearnedPreference, ImprovementArea
 } from '@tide/types';
 
