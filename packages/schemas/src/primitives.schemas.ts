@@ -69,7 +69,7 @@ export const TimeRangeSchema = z.object({
 }).refine(data => data.end > data.start, 'End time must be after start time');
 
 // Result wrapper for error handling
-export function ResultSchema<T extends z.ZodType>(dataSchema: T) {
+export function ResultSchema<T extends z.ZodType>(dataSchema: T): ReturnType<typeof z.discriminatedUnion> {
   return z.discriminatedUnion('success', [
     z.object({
       success: z.literal(true),
@@ -87,16 +87,13 @@ export function ResultSchema<T extends z.ZodType>(dataSchema: T) {
 }
 
 // Safe parsing helper
-export function safeParse<T>(schema: z.ZodType<T>, data: unknown) {
+export function safeParse<T>(schema: z.ZodType<T>, data: unknown): { success: true; data: T } | { success: false; error: z.ZodError } {
   const result = schema.safeParse(data);
   if (result.success) {
     return { success: true as const, data: result.data };
   }
   return {
     success: false as const,
-    error: {
-      message: result.error.errors.map(e => e.message).join(', '),
-      details: result.error.errors
-    }
+    error: result.error
   };
 }

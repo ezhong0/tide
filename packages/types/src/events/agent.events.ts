@@ -7,7 +7,7 @@ import {
 } from '../base.types';
 import {
   AgentRole, AgentStatus, Intent, Action, Task, UserFeedback,
-  ReasoningStep, Thought, Observation, Reflection
+  Thought, Observation, Reflection
 } from '../domain/agent.types';
 
 // Base agent event
@@ -27,10 +27,10 @@ export abstract class AgentEvent implements DomainEvent {
     this.eventId = UUID(crypto.randomUUID());
     this.timestamp = Timestamp(Date.now());
     this.metadata = {
-      correlationId: metadata?.correlationId || UUID(crypto.randomUUID()),
-      causationId: metadata?.causationId || UUID(crypto.randomUUID()),
+      correlationId: metadata?.correlationId ?? UUID(crypto.randomUUID()),
+      causationId: metadata?.causationId ?? UUID(crypto.randomUUID()),
       userId: this.userId,
-      source: metadata?.source || 'agent-service',
+      source: metadata?.source ?? 'agent-service',
       ...metadata
     };
   }

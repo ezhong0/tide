@@ -28,10 +28,10 @@ export abstract class CalendarDomainEvent implements DomainEvent {
     this.eventId = UUID(crypto.randomUUID());
     this.timestamp = Timestamp(Date.now());
     this.metadata = {
-      correlationId: metadata?.correlationId || UUID(crypto.randomUUID()),
-      causationId: metadata?.causationId || UUID(crypto.randomUUID()),
+      correlationId: metadata?.correlationId ?? UUID(crypto.randomUUID()),
+      causationId: metadata?.causationId ?? UUID(crypto.randomUUID()),
       userId: this.userId,
-      source: metadata?.source || 'calendar-service',
+      source: metadata?.source ?? 'calendar-service',
       ...metadata
     };
   }

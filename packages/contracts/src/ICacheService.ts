@@ -8,7 +8,7 @@
  * - Cache invalidation: <20ms
  */
 
-import { Result, UUID, Timestamp } from '@tide/types';
+import { Result, Timestamp } from '@tide/types';
 
 export interface ICacheService {
   /**

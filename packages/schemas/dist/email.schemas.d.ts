@@ -169,7 +169,7 @@ export declare const SendEmailParamsSchema: z.ZodEffects<z.ZodObject<{
         html?: string | undefined;
         markdown?: string | undefined;
     };
-    provider: "custom" | "gmail" | "outlook" | "icloud";
+    provider: "gmail" | "outlook" | "icloud" | "custom";
     cc?: {
         email: string;
         name?: string | undefined;
@@ -210,7 +210,7 @@ export declare const SendEmailParamsSchema: z.ZodEffects<z.ZodObject<{
         html?: string | undefined;
         markdown?: string | undefined;
     };
-    provider: "custom" | "gmail" | "outlook" | "icloud";
+    provider: "gmail" | "outlook" | "icloud" | "custom";
     cc?: {
         email: string;
         name?: string | undefined;
@@ -251,7 +251,7 @@ export declare const SendEmailParamsSchema: z.ZodEffects<z.ZodObject<{
         html?: string | undefined;
         markdown?: string | undefined;
     };
-    provider: "custom" | "gmail" | "outlook" | "icloud";
+    provider: "gmail" | "outlook" | "icloud" | "custom";
     cc?: {
         email: string;
         name?: string | undefined;
@@ -292,7 +292,7 @@ export declare const SendEmailParamsSchema: z.ZodEffects<z.ZodObject<{
         html?: string | undefined;
         markdown?: string | undefined;
     };
-    provider: "custom" | "gmail" | "outlook" | "icloud";
+    provider: "gmail" | "outlook" | "icloud" | "custom";
     cc?: {
         email: string;
         name?: string | undefined;
@@ -511,9 +511,9 @@ export declare const EmailQuerySchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodNumber>;
     offset: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
-    userId: string;
     limit: number;
     offset: number;
+    userId: string;
     text?: string | undefined;
     from?: string | undefined;
     to?: string | undefined;
@@ -528,6 +528,8 @@ export declare const EmailQuerySchema: z.ZodObject<{
     } | undefined;
 }, {
     userId: string;
+    limit?: number | undefined;
+    offset?: number | undefined;
     text?: string | undefined;
     from?: string | undefined;
     to?: string | undefined;
@@ -540,8 +542,6 @@ export declare const EmailQuerySchema: z.ZodObject<{
         start: number;
         end: number;
     } | undefined;
-    limit?: number | undefined;
-    offset?: number | undefined;
 }>;
 export declare const DraftContextSchema: z.ZodObject<{
     userId: z.ZodString;
@@ -601,15 +601,15 @@ export declare const EmailTemplateSchema: z.ZodObject<{
         defaultValue: z.ZodOptional<z.ZodString>;
         required: z.ZodDefault<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
-        type: "number" | "date" | "email" | "text";
+        type: "number" | "email" | "text" | "date";
         name: string;
         required: boolean;
         defaultValue?: string | undefined;
     }, {
-        type: "number" | "date" | "email" | "text";
+        type: "number" | "email" | "text" | "date";
         name: string;
-        required?: boolean | undefined;
         defaultValue?: string | undefined;
+        required?: boolean | undefined;
     }>, "many">>;
     category: z.ZodString;
     usageCount: z.ZodDefault<z.ZodNumber>;
@@ -622,10 +622,10 @@ export declare const EmailTemplateSchema: z.ZodObject<{
     body: string;
     category: string;
     usageCount: number;
-    description?: string | undefined;
     templateId?: string | undefined;
+    description?: string | undefined;
     variables?: {
-        type: "number" | "date" | "email" | "text";
+        type: "number" | "email" | "text" | "date";
         name: string;
         required: boolean;
         defaultValue?: string | undefined;
@@ -638,13 +638,13 @@ export declare const EmailTemplateSchema: z.ZodObject<{
     subject: string;
     body: string;
     category: string;
-    description?: string | undefined;
     templateId?: string | undefined;
+    description?: string | undefined;
     variables?: {
-        type: "number" | "date" | "email" | "text";
+        type: "number" | "email" | "text" | "date";
         name: string;
-        required?: boolean | undefined;
         defaultValue?: string | undefined;
+        required?: boolean | undefined;
     }[] | undefined;
     usageCount?: number | undefined;
     lastUsed?: number | undefined;

@@ -80,40 +80,40 @@ export declare const ScheduleMeetingCommandSchema: z.ZodEffects<z.ZodObject<{
     description: z.ZodOptional<z.ZodString>;
     isVirtual: z.ZodDefault<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
-    duration: number;
     participant: string;
     timeframe: "custom" | "today" | "tomorrow" | "this_week" | "next_week";
+    duration: number;
     isVirtual: boolean;
     description?: string | undefined;
-    location?: string | undefined;
     customDate?: number | undefined;
     meetingType?: "lunch" | "coffee" | "discussion" | "review" | "standup" | "one-on-one" | undefined;
+    location?: string | undefined;
 }, {
     participant: string;
     timeframe: "custom" | "today" | "tomorrow" | "this_week" | "next_week";
     description?: string | undefined;
-    location?: string | undefined;
-    duration?: number | undefined;
     customDate?: number | undefined;
+    duration?: number | undefined;
     meetingType?: "lunch" | "coffee" | "discussion" | "review" | "standup" | "one-on-one" | undefined;
+    location?: string | undefined;
     isVirtual?: boolean | undefined;
 }>, {
-    duration: number;
     participant: string;
     timeframe: "custom" | "today" | "tomorrow" | "this_week" | "next_week";
+    duration: number;
     isVirtual: boolean;
     description?: string | undefined;
-    location?: string | undefined;
     customDate?: number | undefined;
     meetingType?: "lunch" | "coffee" | "discussion" | "review" | "standup" | "one-on-one" | undefined;
+    location?: string | undefined;
 }, {
     participant: string;
     timeframe: "custom" | "today" | "tomorrow" | "this_week" | "next_week";
     description?: string | undefined;
-    location?: string | undefined;
-    duration?: number | undefined;
     customDate?: number | undefined;
+    duration?: number | undefined;
     meetingType?: "lunch" | "coffee" | "discussion" | "review" | "standup" | "one-on-one" | undefined;
+    location?: string | undefined;
     isVirtual?: boolean | undefined;
 }>;
 export declare const DraftEmailCommandSchema: z.ZodObject<{
@@ -155,9 +155,9 @@ export declare const SearchCommandSchema: z.ZodObject<{
     limit: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
     limit: number;
+    dateRange: "custom" | "today" | "this_week" | "this_month" | "all_time";
     query: string;
     scope: "emails" | "calendar" | "contacts" | "all";
-    dateRange: "custom" | "today" | "this_week" | "this_month" | "all_time";
     customDateRange?: {
         start: number;
         end: number;
@@ -165,8 +165,8 @@ export declare const SearchCommandSchema: z.ZodObject<{
 }, {
     query: string;
     limit?: number | undefined;
-    scope?: "emails" | "calendar" | "contacts" | "all" | undefined;
     dateRange?: "custom" | "today" | "this_week" | "this_month" | "all_time" | undefined;
+    scope?: "emails" | "calendar" | "contacts" | "all" | undefined;
     customDateRange?: {
         start: number;
         end: number;
@@ -216,14 +216,14 @@ export declare const CommandResultSchema: z.ZodDiscriminatedUnion<"status", [z.Z
     suggestions: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     status: "failed";
-    error: string;
     commandId: string;
+    error: string;
     recoverable: boolean;
     suggestions?: string[] | undefined;
 }, {
     status: "failed";
-    error: string;
     commandId: string;
+    error: string;
     recoverable: boolean;
     suggestions?: string[] | undefined;
 }>]>;
@@ -262,14 +262,14 @@ export declare const CommandApprovalSchema: z.ZodObject<{
     userId: string;
     commandId: string;
     approved: boolean;
-    reason?: string | undefined;
     modifications?: Record<string, unknown> | undefined;
+    reason?: string | undefined;
 }, {
     userId: string;
     commandId: string;
     approved: boolean;
-    reason?: string | undefined;
     modifications?: Record<string, unknown> | undefined;
+    reason?: string | undefined;
 }>;
 export declare const BatchCommandSchema: z.ZodObject<{
     commands: z.ZodArray<z.ZodObject<{

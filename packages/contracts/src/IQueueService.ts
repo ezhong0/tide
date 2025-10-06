@@ -8,7 +8,7 @@
  * - Job completion: Based on job type
  */
 
-import { Result, UUID, Timestamp } from '@tide/types';
+import { Result, Timestamp } from '@tide/types';
 
 export interface IQueueService {
   /**

@@ -225,7 +225,7 @@ export interface IDatabaseService {
     stream<T>(query: string, params: unknown[], handler: (row: T) => Promise<void>): Promise<Result<void>>;
 }
 export interface WhereCondition {
-    [column: string]: unknown | WhereOperator;
+    [column: string]: WhereOperator;
 }
 export interface WhereOperator {
     $eq?: unknown;

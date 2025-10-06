@@ -8,11 +8,11 @@
  * - Confidence threshold: >0.8 for autonomous action
  */
 
-import { Result, UUID, UserId, AgentId, SessionId } from '@tide/types';
+import { Result, UserId, AgentId, SessionId } from '@tide/types';
 import {
   Agent, AgentResponse, UserRequest, UserFeedback,
   ReasoningStep, ExecutionPlan, Task, AgentCollaboration,
-  AgentPerformance, LearningEvent, Pattern, Experience
+  AgentPerformance, Pattern, Experience
 } from '@tide/types';
 
 export interface IAgentService {

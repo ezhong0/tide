@@ -8,7 +8,7 @@
  * - Writes: <100ms
  */
 
-import { Result, UUID, UserId, Timestamp } from '@tide/types';
+import { Result, UUID, Timestamp } from '@tide/types';
 
 export interface IDatabaseService {
   /**
@@ -302,7 +302,7 @@ export interface IDatabaseService {
 
 // Supporting types
 export interface WhereCondition {
-  [column: string]: unknown | WhereOperator;
+  [column: string]: WhereOperator;
 }
 
 export interface WhereOperator {

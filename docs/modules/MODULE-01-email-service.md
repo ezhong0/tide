@@ -1,28 +1,30 @@
-# Module 01: Email Service
+# Module 01: Email Service (Conversational Text-First)
 
 ## 🤖 Claude Instance Prompt
 
 ```
 You are Claude Instance #1, the Email Service Architect for Tide.
 
-Your mission: Build a production-ready email service that integrates with Gmail and Outlook, achieving <100ms response times for cached operations and <500ms for API calls.
+Your mission: Build a production-ready email service that integrates with Gmail and Outlook for a conversational text-first AI assistant, achieving <100ms response times for cached operations and <500ms for API calls.
 
 Core responsibilities:
 1. Implement OAuth 2.0 flows for Gmail and Outlook (NO third-party services like Nylas)
 2. Build provider abstraction using Strategy pattern
-3. Handle email sending, searching, and thread monitoring
-4. Process webhooks for real-time updates
-5. Implement intelligent caching for performance
-6. Ensure all operations emit proper domain events
+3. Handle email operations through conversational interface
+4. Support preview-and-confirm pattern for all actions
+5. Process natural language requests for email management
+6. Implement intelligent caching for instant responses
+7. Ensure all operations emit proper domain events
 
 Key constraints:
-- Must use IEmailService interface from Module 00
-- Must emit events to MockEventStore
+- Must use IConversation and IEmailService interfaces from Module 00
+- Must support conversational context (understanding "it", "that email", etc.)
+- Must provide human-readable action previews before execution
 - Must achieve 90% test coverage
 - Must handle offline scenarios gracefully
 - Zero external dependencies beyond Google/Microsoft APIs
 
-Remember: This is a voice-first app. Users expect instant responses. Every millisecond counts.
+Remember: This is a conversational text-first app. Users type naturally and expect to see what will happen before it happens. Trust through transparency.
 ```
 
 ## 📋 Module Overview
@@ -138,6 +140,181 @@ class EmailCacheStrategy {
     }
 
     return null;
+  }
+}
+```
+
+## 💬 Conversational Integration
+
+### Email Operations Through Natural Language
+
+```typescript
+// Conversational email handler that understands context
+class ConversationalEmailHandler {
+  constructor(
+    private emailService: IEmailService,
+    private conversationContext: IConversationContext
+  ) {}
+
+  async handleMessage(message: IMessage): Promise<IConversationResponse> {
+    // Extract intent from natural language
+    const intent = await this.extractIntent(message.content);
+
+    switch (intent.type) {
+      case 'send_email':
+        return this.handleSendEmail(intent, message);
+      case 'search_email':
+        return this.handleSearchEmail(intent, message);
+      case 'reply_to_email':
+        return this.handleReplyToEmail(intent, message);
+      case 'forward_email':
+        return this.handleForwardEmail(intent, message);
+      default:
+        return this.handleUnknown(message);
+    }
+  }
+
+  private async handleSendEmail(
+    intent: EmailIntent,
+    message: IMessage
+  ): Promise<IConversationResponse> {
+    // Parse natural language into email parameters
+    const params = await this.parseEmailParams(message.content);
+
+    // Generate preview for user confirmation
+    const preview: IActionPreview = {
+      action: 'send_email',
+      description: `Send email to ${params.to}`,
+      details: {
+        to: params.to,
+        subject: params.subject,
+        body: params.body.substring(0, 200) + '...'
+      },
+      editable: true
+    };
+
+    // Return conversational response with preview
+    return {
+      message: `I'll compose an email to ${params.to} with the subject "${params.subject}". Here's what I'll send:`,
+      preview,
+      requiresConfirmation: true,
+      onConfirm: async () => {
+        const result = await this.emailService.sendEmail(params);
+        return {
+          message: `✓ Email sent to ${params.to}!`,
+          result
+        };
+      }
+    };
+  }
+
+  private async handleSearchEmail(
+    intent: EmailIntent,
+    message: IMessage
+  ): Promise<IConversationResponse> {
+    // Resolve references like "that email from John"
+    const query = await this.resolveReferences(message.content);
+
+    // Perform search
+    const emails = await this.emailService.searchEmails(query);
+
+    // Format results conversationally
+    if (emails.length === 0) {
+      return {
+        message: "I couldn't find any emails matching your search.",
+        suggestions: ['Try different keywords', 'Check your spam folder']
+      };
+    }
+
+    return {
+      message: `I found ${emails.length} email${emails.length > 1 ? 's' : ''}:`,
+      results: emails.map(email => ({
+        from: email.from,
+        subject: email.subject,
+        preview: email.body.substring(0, 100),
+        date: this.formatRelativeDate(email.date),
+        actions: ['Reply', 'Forward', 'Archive']
+      })),
+      followUpQuestions: [
+        'Would you like me to reply to any of these?',
+        'Should I summarize any of them?'
+      ]
+    };
+  }
+
+  // Resolve contextual references
+  private async resolveReferences(text: string): Promise<string> {
+    // Handle references like "it", "that email", "the last one"
+    const context = this.conversationContext.getActiveContext();
+
+    if (text.includes('it') || text.includes('that email')) {
+      const lastEmail = context.lastMentionedEmail;
+      if (lastEmail) {
+        text = text.replace(/it|that email/g, `email ${lastEmail.id}`);
+      }
+    }
+
+    if (text.includes('them') || text.includes('those emails')) {
+      const lastEmails = context.lastSearchResults;
+      if (lastEmails) {
+        text = text.replace(/them|those emails/g, `emails ${lastEmails.join(',')}`);
+      }
+    }
+
+    return text;
+  }
+}
+```
+
+### Natural Language Email Composition
+
+```typescript
+class NaturalLanguageEmailComposer {
+  async composeFromConversation(request: string): Promise<EmailDraft> {
+    // Example: "Send an email to John about the quarterly report"
+    // Or: "Reply to Sarah's message saying I'll be there at 3pm"
+
+    const draft: EmailDraft = {
+      to: await this.extractRecipients(request),
+      subject: await this.generateSubject(request),
+      body: await this.generateBody(request),
+      tone: await this.detectTone(request) // formal, casual, friendly
+    };
+
+    // Learn user's style over time
+    draft.body = await this.applyUserStyle(draft.body);
+
+    return draft;
+  }
+
+  private async extractRecipients(text: string): Promise<string[]> {
+    // Handle various formats:
+    // "to John" -> lookup John in contacts
+    // "to john@example.com" -> use directly
+    // "to the team" -> expand team alias
+    const recipients: string[] = [];
+
+    // Extract names/emails from text
+    const matches = text.match(/to\s+(\w+(?:\s+\w+)?)/gi);
+
+    for (const match of matches || []) {
+      const name = match.replace(/^to\s+/i, '');
+      const email = await this.resolveContactEmail(name);
+      if (email) recipients.push(email);
+    }
+
+    return recipients;
+  }
+
+  private async generateSubject(text: string): Promise<string> {
+    // Extract topic and generate appropriate subject
+    if (text.includes('about')) {
+      const topic = text.split('about')[1].trim();
+      return this.capitalizeTitle(topic);
+    }
+
+    // Use AI to generate if not explicit
+    return this.ai.generateEmailSubject(text);
   }
 }
 ```

@@ -21,10 +21,10 @@ class EmailEvent {
         this.eventId = (0, base_types_1.UUID)(crypto.randomUUID());
         this.timestamp = (0, base_types_1.Timestamp)(Date.now());
         this.metadata = {
-            correlationId: metadata?.correlationId || (0, base_types_1.UUID)(crypto.randomUUID()),
-            causationId: metadata?.causationId || (0, base_types_1.UUID)(crypto.randomUUID()),
+            correlationId: metadata?.correlationId ?? (0, base_types_1.UUID)(crypto.randomUUID()),
+            causationId: metadata?.causationId ?? (0, base_types_1.UUID)(crypto.randomUUID()),
             userId: this.userId,
-            source: metadata?.source || 'email-service',
+            source: metadata?.source ?? 'email-service',
             ...metadata
         };
     }

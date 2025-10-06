@@ -8,7 +8,7 @@
  * - Find meeting times: <300ms for 5 participants
  */
 
-import { Result, UUID, UserId, EventId, Email, TimeSlot } from '@tide/types';
+import { Result, UserId, EventId, Email, TimeSlot } from '@tide/types';
 import {
   CalendarEvent, AvailabilityParams, MeetingConstraints, MeetingOption,
   CalendarHealth, CalendarSyncStatus, CalendarPreferences, WorkingHours,

@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+
 import {
   EmailSchema,
   UUIDSchema,
@@ -61,8 +62,8 @@ export const SendEmailParamsSchema = SendEmailParamsBase.refine(
     // Validate total recipients doesn't exceed limit
     const totalRecipients =
       data.to.length +
-      (data.cc?.length || 0) +
-      (data.bcc?.length || 0);
+      (data.cc?.length ?? 0) +
+      (data.bcc?.length ?? 0);
     return totalRecipients <= 100;
   },
   { message: 'Total recipients cannot exceed 100' }

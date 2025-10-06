@@ -84,10 +84,7 @@ function safeParse(schema, data) {
     }
     return {
         success: false,
-        error: {
-            message: result.error.errors.map(e => e.message).join(', '),
-            details: result.error.errors
-        }
+        error: result.error
     };
 }
 //# sourceMappingURL=primitives.schemas.js.map
