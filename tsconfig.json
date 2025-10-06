@@ -35,17 +35,11 @@
     "sourceMap": true,
     "removeComments": false,
     "importHelpers": true,
-    "importsNotUsedAsValues": "error",
+    "verbatimModuleSyntax": true,
 
     /* Advanced Options */
     "incremental": true,
     "tsBuildInfoFile": ".tsbuildinfo"
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    ".next",
-    ".expo",
-    "build"
-  ]
+  "exclude": ["node_modules", "dist", ".next", ".expo", "build"]
 }

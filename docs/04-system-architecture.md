@@ -2,7 +2,9 @@
 
 ## Architectural Overview
 
-### High-Level Architecture Pattern: **Event-Driven Microservices with AI Orchestration**
+### High-Level Architecture Pattern: **Modular Monolith with Async Workers**
+
+**Design Philosophy**: Start simple, scale smart. Microservices add complexity without solving our actual bottlenecks (GPT-5 latency dominates, not service boundaries). This architecture supports 100k+ users while remaining operationally simple.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -13,73 +15,92 @@
 │  │   Native)    │  │   Native)    │  │              │      │
 │  └──────────────┘  └──────────────┘  └──────────────┘      │
 └─────────────────────────────────────────────────────────────┘
-                            ↓ WebSocket/REST
+                            ↓ HTTPS/WSS
 ┌─────────────────────────────────────────────────────────────┐
-│                       API Gateway                            │
-│              (Kong / AWS API Gateway)                        │
-│  - Authentication (JWT)                                      │
-│  - Rate Limiting                                             │
-│  - Request Routing                                           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    Core Services (Node.js/TypeScript)        │
+│              API Service (Modular Monolith)                  │
+│              Express + TypeScript                            │
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ Command        │  │ Email          │  │ Calendar      │ │
-│  │ Processor      │  │ Service        │  │ Service       │ │
-│  │                │  │                │  │               │ │
-│  │ - Voice-to-    │  │ - Gmail API    │  │ - Google Cal  │ │
-│  │   Intent       │  │ - Outlook API  │  │ - Outlook Cal │ │
-│  │ - GPT-5        │  │ - Sending      │  │ - Scheduling  │ │
-│  │   Orchestrator │  │ - Monitoring   │  │ - Availability│ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  Core Modules (shared transaction scope):                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  /command  - Voice intent → GPT-5 orchestration        │ │
+│  │  /email    - Custom Gmail/Outlook OAuth & API          │ │
+│  │  /calendar - Google/Outlook Calendar integration       │ │
+│  │  /context  - Semantic search via pgvector              │ │
+│  │  /learning - User style & preference learning          │ │
+│  └────────────────────────────────────────────────────────┘ │
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ Context        │  │ Learning       │  │ Notification  │ │
-│  │ Engine         │  │ Engine         │  │ Service       │ │
-│  │                │  │                │  │               │ │
-│  │ - Semantic     │  │ - User Style   │  │ - Push        │ │
-│  │   Search       │  │ - Preferences  │  │ - Email       │ │
-│  │ - Thread       │  │ - Personalize  │  │ - In-app      │ │
-│  │   Analysis     │  │                │  │               │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  Shared Infrastructure:                                      │
+│  - Auth middleware (JWT + refresh tokens)                   │
+│  - Rate limiting (Redis)                                     │
+│  - Zod validation at all boundaries                         │
+│  - WebSocket for real-time updates                          │
+│  - Database connection pool                                  │
 └─────────────────────────────────────────────────────────────┘
-                            ↓
+              ↓ (enqueue async jobs)
 ┌─────────────────────────────────────────────────────────────┐
-│                    Message Queue (RabbitMQ/SQS)              │
-│  - Async job processing                                      │
-│  - Event streaming                                           │
-│  - Retry logic                                               │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                    AI/ML Services                            │
+│         Background Job Workers (BullMQ + Redis)              │
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ GPT-5 API      │  │ Vector DB      │  │ Speech        │ │
-│  │ (OpenAI)       │  │ (Pinecone/     │  │ (Whisper/     │ │
-│  │                │  │  Weaviate)     │  │  Deepgram)    │ │
-│  │ - Function     │  │                │  │               │ │
-│  │   Calling      │  │ - Semantic     │  │ - STT         │ │
-│  │ - Intent       │  │   Search       │  │ - TTS         │ │
-│  │ - Drafting     │  │ - Embeddings   │  │               │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  - Email webhook processor (Gmail/Outlook push)        │ │
+│  │  - Email indexing worker (generate embeddings)         │ │
+│  │  - Follow-up checker (periodic scan)                   │ │
+│  │  - Notification sender (push/email/in-app)             │ │
+│  │  - Calendar sync worker (periodic refresh)             │ │
+│  └────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────┘
-                            ↓
+              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                    External AI Services                      │
+│                                                              │
+│  OpenAI GPT-5 (with Claude 3.5 fallback) - Command intent   │
+│  OpenAI Embeddings - Semantic search indexing               │
+│  Native Device STT + Deepgram - Voice transcription         │
+└─────────────────────────────────────────────────────────────┘
+              ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                    Data Layer                                │
 │                                                              │
-│  ┌────────────────┐  ┌────────────────┐  ┌───────────────┐ │
-│  │ PostgreSQL     │  │ Redis          │  │ S3 / Cloud    │ │
-│  │                │  │                │  │ Storage       │ │
-│  │ - Users        │  │ - Sessions     │  │               │ │
-│  │ - Commands     │  │ - Cache        │  │ - Email       │ │
-│  │ - Preferences  │  │ - Rate Limits  │  │   Archives    │ │
-│  │ - Audit Logs   │  │ - Pub/Sub      │  │ - Attachments │ │
-│  └────────────────┘  └────────────────┘  └───────────────┘ │
+│  ┌───────────────────────────┐  ┌────────────────────────┐ │
+│  │  PostgreSQL 16            │  │  Redis 7               │ │
+│  │  (Drizzle ORM)            │  │                        │ │
+│  │                           │  │  - Sessions            │ │
+│  │  Tables:                  │  │  - Job Queue (BullMQ)  │ │
+│  │  - users, commands        │  │  - Cache               │ │
+│  │  - emails, drafts         │  │  - Rate limiting       │ │
+│  │  - calendar_events        │  │  - Real-time pub/sub   │ │
+│  │  - preferences            │  │                        │ │
+│  │  - audit_logs             │  │                        │ │
+│  │                           │  │                        │ │
+│  │  Extensions:              │  │                        │ │
+│  │  - pgvector (semantic)    │  │                        │ │
+│  └───────────────────────────┘  └────────────────────────┘ │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Cloud Object Storage (S3-compatible)                │   │
+│  │  - Email archives, Attachments, Backups              │   │
+│  └──────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────────────────────────────┐
+│  Hosting: Railway (MVP) → AWS ECS/Fargate (Post-PMF)        │
+│  - Multiple API instances (horizontal scaling)               │
+│  - Multiple worker instances (job parallelization)           │
+│  - Auto-scaling based on metrics                             │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Why Modular Monolith?
+
+**Advantages for our use case**:
+
+1. **Shared transactions**: Command → Draft → Email → Audit flow stays consistent
+2. **Simpler operations**: One deployment, unified monitoring, easier debugging
+3. **Sufficient scale**: Supports 100k+ users (GPT-5 API is bottleneck, not our code)
+4. **Clean boundaries**: Modules can be extracted to microservices later if needed
+5. **Fast development**: No network calls between modules, easier local dev
+6. **Cost efficient**: Fewer services = lower infrastructure costs
+
+**When to split into microservices**: Team > 10 engineers OR users > 100k OR specific bottleneck identified
 
 ---
 
@@ -88,6 +109,7 @@
 ### Frontend
 
 **Mobile Apps**
+
 - **Framework**: React Native (iOS + Android single codebase)
 - **State Management**: Zustand (lightweight, performant)
 - **Navigation**: React Navigation
@@ -97,6 +119,7 @@
 - **Type Safety**: TypeScript strict mode
 
 **Web App**
+
 - **Framework**: Next.js 14 (App Router)
 - **UI**: React + TailwindCSS
 - **State Management**: Zustand
@@ -107,6 +130,7 @@
 ### Backend
 
 **Core Services** (Node.js/TypeScript)
+
 - **Runtime**: Node.js 20 LTS
 - **Framework**: Express.js with async/await patterns
 - **API Style**: RESTful + WebSocket for real-time
@@ -114,74 +138,223 @@
 - **Testing**: Jest + Supertest
 - **Type Safety**: TypeScript 5.0+ strict mode
 
-**API Gateway**
-- **Option A**: Kong (self-hosted, feature-rich)
-- **Option B**: AWS API Gateway (managed, scalable)
-- **Features**: Auth, rate limiting, request transformation
+**Job Queue**
 
-**Message Queue**
-- **Option A**: RabbitMQ (self-hosted, reliable)
-- **Option B**: AWS SQS + SNS (managed, scalable)
-- **Use Cases**: Async jobs, event streaming, retries
+- **BullMQ**: Redis-based job queue
+  - Handles async jobs, retries, scheduling
+  - Uses existing Redis infrastructure
+  - Excellent DX and monitoring (Bull Board)
+  - Perfect for scale: 100k users = ~5k jobs/hour
+- **Use Cases**: Email webhooks, indexing, follow-ups, notifications
 
 ### AI/ML Stack
 
-**LLM Orchestration**
+**LLM for Command Processing**
+
 - **Primary**: OpenAI GPT-5 API (function calling)
 - **Fallback**: Anthropic Claude 3.5 Sonnet (if GPT-5 issues)
-- **Framework**: LangChain.js (for complex chains)
+- **Orchestration**: Custom TypeScript state machines (not LangGraph)
+  - Domain-specific flows are linear state machines, not complex agent loops
+  - Explicit control flow is easier to debug and test
+  - Example: Parse intent → Check calendar → Draft email → Get approval → Send
 - **Prompt Management**: Helicone (observability + caching)
 
-**Speech**
-- **STT**: Deepgram Nova (fast, accurate)
-- **TTS**: ElevenLabs (natural voice) / OpenAI TTS
-- **Fallback**: Native device STT (offline mode)
+**Speech-to-Text**
 
-**Vector Database**
-- **Option A**: Pinecone (managed, easy)
-- **Option B**: Weaviate (self-hosted, cheaper at scale)
-- **Use Case**: Semantic email search, context retrieval
+- **Primary**: Native device STT (instant, free, offline-capable)
+- **Server-side**: Deepgram Nova (webhooks, batch processing)
+- **Fallback**: OpenAI Whisper API (high accuracy for complex audio)
+
+**Text-to-Speech** (lower priority)
+
+- ElevenLabs (natural voice) or OpenAI TTS
+
+**Vector Search**
+
+- **pgvector extension in PostgreSQL**
+  - Unified database: SQL + vector search in one place
+  - ACID guarantees for consistency
+  - Join vector search with relational queries
+  - Performance: Handles 10M+ vectors with HNSW index
+  - Cost: $0 (part of PostgreSQL)
+- **Migration path**: Switch to Pinecone if QPS > 500/sec or dataset > 50M vectors
 
 **Embeddings**
+
 - **Model**: OpenAI text-embedding-3-large
 - **Dimension**: 3072 (high quality for semantic search)
+- **Cost**: ~$0.00013 per 1k tokens (~$0.05/user/month for email indexing)
 
 ### Data Layer
 
 **Primary Database**
+
 - **DB**: PostgreSQL 16 (ACID compliance, reliability)
 - **ORM**: Drizzle ORM (type-safe, performant)
 - **Hosting**: AWS RDS / Supabase (managed)
 - **Migrations**: Drizzle Kit
 
 **Caching & Sessions**
+
 - **Cache**: Redis 7 (in-memory, fast)
 - **Use Cases**: Session storage, rate limiting, pub/sub, cache
 - **Hosting**: AWS ElastiCache / Upstash (serverless option)
 
 **Object Storage**
+
 - **Storage**: AWS S3 (reliable, cheap)
 - **Use Cases**: Email archives, attachments, backups
 - **CDN**: CloudFront (fast global delivery)
 
 ### Infrastructure
 
-**Hosting**
-- **Option A**: AWS (ECS Fargate for containers, RDS, S3, etc.)
-- **Option B**: Railway (simpler, faster to start)
-- **Frontend**: Vercel (Next.js) + Expo EAS (mobile)
+**Hosting Strategy: Railway → AWS**
+
+- **MVP (0-6 months)**: Railway
+  - Deploy in minutes (connect GitHub, deploy)
+  - Built-in PostgreSQL, Redis, monitoring
+  - Auto-scaling included
+  - Focus 100% on product, not DevOps
+  - Cost: ~$100-500/month for MVP
+
+- **Growth (6-18 months)**: Stay on Railway while iterating to PMF
+  - Migrate to AWS only when: Revenue > $50k MRR OR Infrastructure cost > $5k/month
+
+- **Scale (18+ months)**: AWS ECS/Fargate
+  - Lower costs at scale (~2-3x cheaper than Railway)
+  - Full control and enterprise features
+  - Dedicated DevOps engineer on team
+
+- **Portability**: Use standard Docker containers, PostgreSQL, Redis (no platform-specific APIs)
+  - Migration Railway → AWS is ~1 week with proper abstraction
+
+**Frontend Hosting**
+
+- Vercel (Next.js web app)
+- Expo EAS (React Native mobile apps)
 
 **Monitoring**
+
 - **APM**: Sentry (error tracking)
 - **Logging**: Axiom / DataDog (structured logs)
 - **Metrics**: Prometheus + Grafana / DataDog
 - **Uptime**: BetterStack (status page + alerts)
 
 **CI/CD**
+
 - **Pipeline**: GitHub Actions
 - **Testing**: Jest (unit), Playwright (e2e)
 - **Deployment**: Docker containers → ECS/Railway
 - **Mobile**: Expo EAS Build & Submit
+
+---
+
+## Modular Monolith Structure
+
+**Folder Organization**: Modules are domain-bounded with clear interfaces
+
+```
+src/
+├── modules/
+│   ├── command/              # Command processing domain
+│   │   ├── service.ts        # CommandProcessorService
+│   │   ├── routes.ts         # Express routes
+│   │   ├── types.ts          # Domain types (Zod schemas)
+│   │   ├── orchestrator.ts   # State machine logic
+│   │   └── __tests__/
+│   │
+│   ├── email/                # Email integration domain
+│   │   ├── service.ts        # EmailService
+│   │   ├── providers/        # Gmail, Outlook providers
+│   │   │   ├── gmail.ts
+│   │   │   └── outlook.ts
+│   │   ├── routes.ts
+│   │   ├── types.ts
+│   │   └── __tests__/
+│   │
+│   ├── calendar/             # Calendar domain
+│   │   ├── service.ts
+│   │   ├── providers/
+│   │   ├── routes.ts
+│   │   └── types.ts
+│   │
+│   ├── context/              # Context & semantic search
+│   │   ├── service.ts
+│   │   ├── vector-store.ts   # pgvector abstraction
+│   │   ├── routes.ts
+│   │   └── types.ts
+│   │
+│   └── learning/             # User style learning
+│       ├── service.ts
+│       ├── routes.ts
+│       └── types.ts
+│
+├── shared/                   # Cross-cutting concerns
+│   ├── db/
+│   │   ├── schema.ts         # Drizzle schema
+│   │   ├── migrations/
+│   │   └── client.ts
+│   ├── types/                # Shared types
+│   ├── middleware/
+│   │   ├── auth.ts
+│   │   ├── validation.ts
+│   │   └── rate-limit.ts
+│   ├── utils/
+│   └── config/
+│
+├── jobs/                     # Background workers
+│   ├── email-webhook.ts
+│   ├── email-indexing.ts
+│   ├── follow-up-checker.ts
+│   └── notification-sender.ts
+│
+├── api/                      # API server
+│   ├── server.ts             # Express app
+│   ├── websocket.ts          # WebSocket server
+│   └── routes.ts             # Route aggregation
+│
+└── workers/                  # Worker processes
+    └── index.ts              # BullMQ worker setup
+```
+
+**Module Communication**:
+
+- Modules import and use each other's services directly (in-process calls)
+- All interactions go through service classes (dependency injection)
+- No HTTP calls between modules
+- Shared database transactions across modules
+
+**Example: Command Module using Email Module**:
+
+```typescript
+// src/modules/command/service.ts
+import { EmailService } from '../email/service';
+
+class CommandProcessorService {
+  constructor(
+    private emailService: EmailService,
+    private calendarService: CalendarService
+    // ... other dependencies
+  ) {}
+
+  async executeScheduleMeeting(intent: ScheduleMeetingIntent) {
+    // Direct in-process call - fast and simple
+    const draft = await this.emailService.draftMeetingRequest({
+      to: intent.participants,
+      times: intent.proposedTimes,
+    });
+
+    return draft;
+  }
+}
+```
+
+**Migration to Microservices** (if needed later):
+Each module can be extracted with minimal changes:
+
+1. Change service imports to HTTP clients
+2. Deploy module as separate service
+3. Update routing configuration
 
 ---
 
@@ -220,16 +393,16 @@ class CommandProcessorService {
     const context = await this.contextEngine.getUserContext(userId);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: 'gpt-5',
       messages: [
-        { role: "system", content: INTENT_CLASSIFICATION_PROMPT },
-        { role: "user", content: transcript }
+        { role: 'system', content: INTENT_CLASSIFICATION_PROMPT },
+        { role: 'user', content: transcript },
       ],
       tools: AVAILABLE_TOOLS, // Function definitions
-      tool_choice: "auto",
+      tool_choice: 'auto',
       // GPT-5 specific params
       parallel_tool_calls: true,
-      custom_tools: customToolDefinitions
+      custom_tools: customToolDefinitions,
     });
 
     return parseIntentFromResponse(response);
@@ -243,7 +416,7 @@ class CommandProcessorService {
 
     // Execute parallel calls
     const parallelResults = await Promise.all(
-      parallel.map(call => this.executeToolCall(call, userId))
+      parallel.map((call) => this.executeToolCall(call, userId))
     );
 
     // Execute sequential calls
@@ -273,11 +446,13 @@ export const CheckCalendarSchema = z.object({
     duration_minutes: z.number().optional(),
     time_of_day: z.enum(['morning', 'lunch', 'afternoon', 'evening']).optional(),
     participants: z.array(z.string().email()).optional(),
-    date_range: z.object({
-      start: z.string().datetime(),
-      end: z.string().datetime()
-    }).optional()
-  })
+    date_range: z
+      .object({
+        start: z.string().datetime(),
+        end: z.string().datetime(),
+      })
+      .optional(),
+  }),
 });
 
 export const DraftEmailSchema = z.object({
@@ -289,8 +464,8 @@ export const DraftEmailSchema = z.object({
     key_points: z.array(z.string()),
     tone: z.enum(['professional', 'casual', 'friendly', 'formal']),
     in_reply_to: z.string().optional(), // thread_id
-    cc: z.array(z.string().email()).optional()
-  })
+    cc: z.array(z.string().email()).optional(),
+  }),
 });
 
 // Convert Zod schemas to OpenAI function format
@@ -309,6 +484,14 @@ export const AVAILABLE_TOOLS = [
 ### 2. Email Service
 
 **Responsibility**: Email integration (Gmail, Outlook), sending, monitoring
+
+**Design Decision: Custom Integrations (Not Nylas)**
+
+- Gmail and Outlook APIs are mature, stable, and well-documented
+- Building custom gives us full control over our core product functionality
+- Cost: $0 (free APIs) vs Nylas at $9-49/user/month
+- No vendor lock-in on critical path
+- Direct OAuth 2.0, webhook handling, and rate limiting (~4-6 weeks to build)
 
 #### Architecture
 
@@ -336,7 +519,7 @@ class GmailProvider implements EmailProvider {
 
     const result = await this.gmail.users.messages.send({
       userId: 'me',
-      requestBody: { raw }
+      requestBody: { raw },
     });
 
     // Store in audit log
@@ -346,7 +529,7 @@ class GmailProvider implements EmailProvider {
       action: 'sent',
       recipients: params.to,
       subject: params.subject,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     return { success: true, messageId: result.data.id };
@@ -358,8 +541,8 @@ class GmailProvider implements EmailProvider {
       userId: 'me',
       requestBody: {
         topicName: `projects/${PROJECT_ID}/topics/gmail-notifications`,
-        labelIds: ['INBOX']
-      }
+        labelIds: ['INBOX'],
+      },
     });
 
     // Store callback in Redis for when notification arrives
@@ -402,34 +585,24 @@ class EmailService {
 // src/services/calendar/index.ts
 
 class CalendarService {
-  async checkAvailability(
-    userId: string,
-    params: AvailabilityParams
-  ): Promise<TimeSlot[]> {
+  async checkAvailability(userId: string, params: AvailabilityParams): Promise<TimeSlot[]> {
     const provider = await this.getProvider(userId);
 
     const events = await provider.getEvents({
       start: params.timeframe.start,
-      end: params.timeframe.end
+      end: params.timeframe.end,
     });
 
     // Find free slots
-    const freeSlots = this.calculateFreeSlots(
-      events,
-      params.duration_minutes,
-      params.time_of_day
-    );
+    const freeSlots = this.calculateFreeSlots(events, params.duration_minutes, params.time_of_day);
 
     return freeSlots;
   }
 
-  async findOverlappingSlots(
-    userIds: string[],
-    params: AvailabilityParams
-  ): Promise<TimeSlot[]> {
+  async findOverlappingSlots(userIds: string[], params: AvailabilityParams): Promise<TimeSlot[]> {
     // Get availability for all users in parallel
     const availabilities = await Promise.all(
-      userIds.map(id => this.checkAvailability(id, params))
+      userIds.map((id) => this.checkAvailability(id, params))
     );
 
     // Find overlapping free slots
@@ -443,8 +616,8 @@ class CalendarService {
       summary: params.title,
       start: { dateTime: params.start_time },
       end: { dateTime: this.calculateEndTime(params.start_time, params.duration_minutes) },
-      attendees: params.attendees.map(email => ({ email })),
-      sendNotifications: params.send_invites
+      attendees: params.attendees.map((email) => ({ email })),
+      sendNotifications: params.send_invites,
     });
 
     // Emit event for other services
@@ -474,19 +647,17 @@ class CalendarService {
         issues.push({
           type: 'back_to_back',
           events: [current, next],
-          severity: 'medium'
+          severity: 'medium',
         });
       }
     }
 
     // Check for no lunch break
-    const lunchSlot = events.find(e =>
-      e.start.getHours() >= 12 && e.start.getHours() < 14
-    );
+    const lunchSlot = events.find((e) => e.start.getHours() >= 12 && e.start.getHours() < 14);
     if (lunchSlot) {
       issues.push({
         type: 'no_lunch_break',
-        severity: 'high'
+        severity: 'high',
       });
     }
 
@@ -501,31 +672,32 @@ class CalendarService {
 
 **Responsibility**: Semantic search, context retrieval, understanding user intent
 
+**Design Decision: pgvector in PostgreSQL**
+
+- Unified database: combine SQL queries with vector search
+- Example: "Find emails from VIP contacts about Q4 in last 30 days" = SQL + vector
+- Performance: Supports 10M+ vectors with HNSW index
+- No data synchronization between databases
+- ACID guarantees for consistency
+
 ```typescript
 // src/services/context-engine/index.ts
 
 class ContextEngineService {
-  private vectorDB: VectorDatabase;
+  private db: DrizzleDB; // Direct PostgreSQL with pgvector
 
   async indexEmail(email: Email): Promise<void> {
     // Generate embedding for email content
-    const embedding = await this.generateEmbedding(
-      `${email.subject} ${email.body} ${email.from}`
-    );
+    const embedding = await this.generateEmbedding(`${email.subject} ${email.body} ${email.from}`);
 
-    // Store in vector DB
-    await this.vectorDB.upsert({
-      id: email.id,
-      values: embedding,
-      metadata: {
-        userId: email.userId,
-        subject: email.subject,
-        from: email.from,
-        to: email.to,
-        date: email.date.toISOString(),
-        snippet: email.body.substring(0, 200)
-      }
-    });
+    // Store directly in PostgreSQL with pgvector
+    await this.db
+      .update(emails)
+      .set({
+        embedding: embedding, // pgvector column
+        indexed: true,
+      })
+      .where(eq(emails.id, email.id));
   }
 
   async semanticSearch(
@@ -535,17 +707,47 @@ class ContextEngineService {
   ): Promise<EmailSearchResult[]> {
     const queryEmbedding = await this.generateEmbedding(query);
 
-    const results = await this.vectorDB.query({
-      vector: queryEmbedding,
-      filter: { userId },
-      topK: limit,
-      includeMetadata: true
-    });
+    // SQL + vector search in one query!
+    const results = await this.db.execute(sql`
+      SELECT
+        id, subject, from, to, date, snippet,
+        (embedding <=> ${queryEmbedding}::vector) as distance
+      FROM emails
+      WHERE user_id = ${userId}
+        AND indexed = true
+      ORDER BY embedding <=> ${queryEmbedding}::vector
+      LIMIT ${limit}
+    `);
 
-    return results.matches.map(match => ({
-      email: match.metadata,
-      score: match.score
+    return results.rows.map((row) => ({
+      email: row,
+      score: 1 - row.distance, // Convert distance to similarity score
     }));
+  }
+
+  // Example: Combined SQL + vector search
+  async searchVIPEmails(
+    userId: string,
+    query: string,
+    vipContacts: string[]
+  ): Promise<EmailSearchResult[]> {
+    const queryEmbedding = await this.generateEmbedding(query);
+
+    // Power of unified database: filter by VIP contacts AND semantic similarity
+    const results = await this.db.execute(sql`
+      SELECT
+        id, subject, from, to, date, snippet,
+        (embedding <=> ${queryEmbedding}::vector) as distance
+      FROM emails
+      WHERE user_id = ${userId}
+        AND indexed = true
+        AND from = ANY(${vipContacts})
+        AND date > NOW() - INTERVAL '30 days'
+      ORDER BY embedding <=> ${queryEmbedding}::vector
+      LIMIT 10
+    `);
+
+    return results.rows;
   }
 
   async getUserContext(userId: string): Promise<UserContext> {
@@ -554,10 +756,10 @@ class ContextEngineService {
       db.command.findMany({
         where: { userId },
         orderBy: { timestamp: 'desc' },
-        take: 10
+        take: 10,
       }),
       db.userPreferences.findUnique({ where: { userId } }),
-      this.getFrequentContacts(userId)
+      this.getFrequentContacts(userId),
     ]);
 
     return {
@@ -565,7 +767,7 @@ class ContextEngineService {
       recentActivity: recentCommands,
       preferences,
       frequentContacts,
-      communicationStyle: await this.analyzeCommStyle(userId)
+      communicationStyle: await this.analyzeCommStyle(userId),
     };
   }
 
@@ -574,27 +776,30 @@ class ContextEngineService {
     const sentEmails = await db.email.findMany({
       where: { userId, direction: 'sent' },
       orderBy: { date: 'desc' },
-      take: 50
+      take: 50,
     });
 
     // Use GPT to analyze style
     const analysis = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: 'gpt-5',
       messages: [
         {
-          role: "system",
-          content: "Analyze these emails and determine the user's communication style, tone preferences, common phrases, and signature style."
+          role: 'system',
+          content:
+            "Analyze these emails and determine the user's communication style, tone preferences, common phrases, and signature style.",
         },
         {
-          role: "user",
-          content: JSON.stringify(sentEmails.map(e => ({
-            to: e.to,
-            subject: e.subject,
-            body: e.body
-          })))
-        }
+          role: 'user',
+          content: JSON.stringify(
+            sentEmails.map((e) => ({
+              to: e.to,
+              subject: e.subject,
+              body: e.body,
+            }))
+          ),
+        },
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: 'json_object' },
     });
 
     return JSON.parse(analysis.choices[0].message.content);
@@ -603,24 +808,24 @@ class ContextEngineService {
   async getMeetingContext(meetingId: string): Promise<MeetingContext> {
     const meeting = await db.calendarEvent.findUnique({
       where: { id: meetingId },
-      include: { attendees: true }
+      include: { attendees: true },
     });
 
     // Get previous meeting with same attendees
     const previousMeeting = await db.calendarEvent.findFirst({
       where: {
-        attendees: { some: { email: { in: meeting.attendees.map(a => a.email) } } },
+        attendees: { some: { email: { in: meeting.attendees.map((a) => a.email) } } },
         start: { lt: meeting.start },
-        id: { not: meetingId }
+        id: { not: meetingId },
       },
       orderBy: { start: 'desc' },
-      include: { notes: true }
+      include: { notes: true },
     });
 
     // Get recent emails with attendees
     const recentEmails = await this.searchEmailsWithParticipants(
       meeting.userId,
-      meeting.attendees.map(a => a.email),
+      meeting.attendees.map((a) => a.email),
       7 // last 7 days
     );
 
@@ -628,15 +833,15 @@ class ContextEngineService {
       meeting,
       previousMeeting,
       recentEmails,
-      suggestedTopics: await this.generateMeetingTopics(meeting, previousMeeting, recentEmails)
+      suggestedTopics: await this.generateMeetingTopics(meeting, previousMeeting, recentEmails),
     };
   }
 
   private async generateEmbedding(text: string): Promise<number[]> {
     const response = await openai.embeddings.create({
-      model: "text-embedding-3-large",
+      model: 'text-embedding-3-large',
       input: text,
-      dimensions: 3072
+      dimensions: 3072,
     });
 
     return response.data[0].embedding;
@@ -654,19 +859,15 @@ class ContextEngineService {
 // src/services/learning-engine/index.ts
 
 class LearningEngineService {
-  async recordFeedback(
-    userId: string,
-    commandId: string,
-    feedback: Feedback
-  ): Promise<void> {
+  async recordFeedback(userId: string, commandId: string, feedback: Feedback): Promise<void> {
     await db.feedback.create({
       data: {
         userId,
         commandId,
         type: feedback.type, // 'edit', 'approve', 'reject'
         changes: feedback.changes, // what user edited
-        timestamp: new Date()
-      }
+        timestamp: new Date(),
+      },
     });
 
     // Update user model
@@ -684,8 +885,8 @@ class LearningEngineService {
         where: { userId },
         data: {
           defaultTone: newTone,
-          toneConfidence: userModel.toneConfidence + 0.1
-        }
+          toneConfidence: userModel.toneConfidence + 0.1,
+        },
       });
     }
 
@@ -696,13 +897,10 @@ class LearningEngineService {
     }
   }
 
-  async getPersonalizedDraftStyle(
-    userId: string,
-    recipient: string
-  ): Promise<DraftStyle> {
+  async getPersonalizedDraftStyle(userId: string, recipient: string): Promise<DraftStyle> {
     // Check for contact-specific preferences
     const contactPref = await db.contactPreferences.findFirst({
-      where: { userId, contactEmail: recipient }
+      where: { userId, contactEmail: recipient },
     });
 
     if (contactPref) {
@@ -719,7 +917,7 @@ class LearningEngineService {
     const history = await db.command.findMany({
       where: { userId },
       orderBy: { timestamp: 'desc' },
-      take: 100
+      take: 100,
     });
 
     // Find patterns
@@ -727,10 +925,10 @@ class LearningEngineService {
 
     // Predict likely completions
     return patterns
-      .filter(p => p.trigger.startsWith(partialInput))
-      .map(p => ({
+      .filter((p) => p.trigger.startsWith(partialInput))
+      .map((p) => ({
         intent: p.intent,
-        confidence: p.frequency / history.length
+        confidence: p.frequency / history.length,
       }))
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, 3);
@@ -758,12 +956,14 @@ export const users = pgTable('users', {
   calendarProvider: text('calendar_provider').notNull(),
   calendarCredentials: jsonb('calendar_credentials').notNull(), // encrypted
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  lastActiveAt: timestamp('last_active_at').notNull().defaultNow()
+  lastActiveAt: timestamp('last_active_at').notNull().defaultNow(),
 });
 
 export const userPreferences = pgTable('user_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   defaultTone: text('default_tone').notNull().default('professional'),
   emailSignature: text('email_signature').notNull(),
   autoAcceptMeetings: boolean('auto_accept_meetings').notNull().default(false),
@@ -771,12 +971,14 @@ export const userPreferences = pgTable('user_preferences', {
   notificationPreferences: jsonb('notification_preferences').notNull(),
   vipContacts: jsonb('vip_contacts').notNull().default([]),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const commands = pgTable('commands', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   transcript: text('transcript').notNull(),
   intent: text('intent').notNull(),
   intentData: jsonb('intent_data').notNull(),
@@ -784,12 +986,14 @@ export const commands = pgTable('commands', {
   result: jsonb('result'),
   error: text('error'),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
-  completedAt: timestamp('completed_at')
+  completedAt: timestamp('completed_at'),
 });
 
 export const emails = pgTable('emails', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   externalId: text('external_id').notNull(), // Gmail/Outlook message ID
   threadId: text('thread_id').notNull(),
   direction: text('direction').notNull(), // 'sent' | 'received'
@@ -802,12 +1006,18 @@ export const emails = pgTable('emails', {
   labels: jsonb('labels'),
   date: timestamp('date').notNull(),
   indexed: boolean('indexed').notNull().default(false),
-  createdAt: timestamp('created_at').notNull().defaultNow()
+  embedding: 'vector(3072)', // pgvector extension for semantic search
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// pgvector index for fast similarity search
+// CREATE INDEX ON emails USING hnsw (embedding vector_cosine_ops);
 
 export const calendarEvents = pgTable('calendar_events', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   externalId: text('external_id').notNull(), // Google/Outlook event ID
   title: text('title').notNull(),
   description: text('description'),
@@ -818,45 +1028,57 @@ export const calendarEvents = pgTable('calendar_events', {
   isAllDay: boolean('is_all_day').notNull().default(false),
   status: text('status').notNull(), // 'confirmed' | 'tentative' | 'cancelled'
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const drafts = pgTable('drafts', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  commandId: uuid('command_id').notNull().references(() => commands.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  commandId: uuid('command_id')
+    .notNull()
+    .references(() => commands.id),
   type: text('type').notNull(), // 'email' | 'meeting_request'
   content: jsonb('content').notNull(),
   status: text('status').notNull(), // 'pending_review' | 'approved' | 'rejected' | 'edited' | 'sent'
   userEdits: jsonb('user_edits'), // track what user changed
   sentAt: timestamp('sent_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow()
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 export const followUps = pgTable('follow_ups', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   emailThreadId: text('email_thread_id').notNull(),
   followUpAt: timestamp('follow_up_at').notNull(),
   status: text('status').notNull(), // 'active' | 'completed' | 'cancelled'
   followUpAction: text('follow_up_action').notNull(), // 'notify' | 'draft_reminder' | 'auto_send'
   followUpMessage: text('follow_up_message'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  completedAt: timestamp('completed_at')
+  completedAt: timestamp('completed_at'),
 });
 
 export const feedback = pgTable('feedback', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
-  commandId: uuid('command_id').notNull().references(() => commands.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  commandId: uuid('command_id')
+    .notNull()
+    .references(() => commands.id),
   feedbackType: text('feedback_type').notNull(), // 'approve' | 'edit' | 'reject'
   changes: jsonb('changes'), // what user changed
-  timestamp: timestamp('timestamp').notNull().defaultNow()
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 
 export const contactPreferences = pgTable('contact_preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   contactEmail: text('contact_email').notNull(),
   preferredTone: text('preferred_tone').notNull(),
   relationshipType: text('relationship_type'), // 'colleague' | 'client' | 'friend' | 'boss'
@@ -864,17 +1086,19 @@ export const contactPreferences = pgTable('contact_preferences', {
   interactionCount: integer('interaction_count').notNull().default(0),
   lastInteraction: timestamp('last_interaction').notNull().defaultNow(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
 export const auditLogs = pgTable('audit_logs', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id').notNull().references(() => users.id),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
   action: text('action').notNull(),
   entityType: text('entity_type').notNull(), // 'email' | 'calendar_event' | 'command'
   entityId: text('entity_id').notNull(),
   metadata: jsonb('metadata'),
-  timestamp: timestamp('timestamp').notNull().defaultNow()
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 ```
 
@@ -964,7 +1188,7 @@ const JWTPayloadSchema = z.object({
   userId: z.string().uuid(),
   email: z.string().email(),
   iat: z.number(),
-  exp: z.number()
+  exp: z.number(),
 });
 
 export async function authenticateRequest(req: Request): Promise<User> {
@@ -990,11 +1214,13 @@ export async function authenticateRequest(req: Request): Promise<User> {
 ### Data Encryption
 
 **At Rest**:
+
 - Email credentials: AES-256-GCM encryption with user-specific keys
 - Stored emails: Not encrypted (searchable), but access-controlled
 - Backups: Encrypted with rotating keys
 
 **In Transit**:
+
 - All API calls: HTTPS/TLS 1.3
 - WebSocket: WSS (TLS)
 - Internal services: mTLS (mutual TLS)
@@ -1015,7 +1241,7 @@ export function encryptCredentials(credentials: any, userId: string): string {
 
   const encrypted = Buffer.concat([
     cipher.update(JSON.stringify(credentials), 'utf8'),
-    cipher.final()
+    cipher.final(),
   ]);
 
   const authTag = cipher.getAuthTag();
@@ -1025,24 +1251,20 @@ export function encryptCredentials(credentials: any, userId: string): string {
     iv: iv.toString('base64'),
     authTag: authTag.toString('base64'),
     encrypted: encrypted.toString('base64'),
-    userId // for key derivation
+    userId, // for key derivation
   });
 }
 
 export function decryptCredentials(encryptedData: string): any {
   const { iv, authTag, encrypted } = JSON.parse(encryptedData);
 
-  const decipher = crypto.createDecipheriv(
-    ALGORITHM,
-    KEY,
-    Buffer.from(iv, 'base64')
-  );
+  const decipher = crypto.createDecipheriv(ALGORITHM, KEY, Buffer.from(iv, 'base64'));
 
   decipher.setAuthTag(Buffer.from(authTag, 'base64'));
 
   const decrypted = Buffer.concat([
     decipher.update(Buffer.from(encrypted, 'base64')),
-    decipher.final()
+    decipher.final(),
   ]);
 
   return JSON.parse(decrypted.toString('utf8'));
@@ -1063,16 +1285,19 @@ export function decryptCredentials(encryptedData: string): any {
 ### Horizontal Scaling
 
 **Stateless Services**:
+
 - All core services are stateless (session in Redis)
 - Can scale to N instances behind load balancer
 - Auto-scaling based on CPU/memory metrics
 
 **Database**:
+
 - PostgreSQL read replicas for read-heavy queries
 - Connection pooling (PgBouncer)
 - Sharding strategy (if >10M users): Shard by userId hash
 
 **Caching Strategy**:
+
 ```typescript
 // Multilevel caching
 // L1: In-memory (Node.js app)
@@ -1115,7 +1340,7 @@ const rateLimiter = new RateLimiterRedis({
   keyPrefix: 'rl',
   points: 100, // Number of requests
   duration: 60, // Per 60 seconds
-  blockDuration: 60 * 10 // Block for 10 minutes if exceeded
+  blockDuration: 60 * 10, // Block for 10 minutes if exceeded
 });
 
 export async function rateLimitMiddleware(req: Request): Promise<void> {
@@ -1132,28 +1357,45 @@ export async function rateLimitMiddleware(req: Request): Promise<void> {
 const tierLimits = {
   free: { points: 50, duration: 60 },
   pro: { points: 200, duration: 60 },
-  enterprise: { points: 1000, duration: 60 }
+  enterprise: { points: 1000, duration: 60 },
 };
 ```
 
 ### Cost Optimization
 
-**GPT-5 API**:
+**Design Principle: Variable costs scale with usage, not user count**
+
+**Cost Per User Per Month** (at 10k active users):
+
+- OpenAI GPT-5 (50 commands): $1.00
+- OpenAI Embeddings (email indexing): $0.05
+- Deepgram STT (20 voice commands): $0.10
+- Infrastructure (Railway/AWS): $0.07
+- Monitoring: $0.02
+- **Total**: ~$1.24/user/month
+
+**Key Architecture Decisions for Cost Efficiency**:
+
+1. **Free Email/Calendar APIs** (custom Gmail/Outlook, not Nylas at $9-49/user)
+2. **pgvector in PostgreSQL** (not Pinecone at $0.10+/user, saves $1k-10k/mo at scale)
+3. **BullMQ with Redis** (not RabbitMQ or SQS, saves $50-500/mo)
+4. **Native device STT primary** (instant + free, Deepgram for fallback only)
+5. **Modular monolith** (fewer services = lower ops costs)
+
+**Cost Scaling Examples**:
+
+- **100 users**: $174/month total = **$1.74/user** (mostly AI, minimal infra)
+- **1,000 users**: $1,390/month = **$1.39/user**
+- **10,000 users**: $13,100/month = **$1.31/user**
+- **100,000 users**: $125k/month = **$1.25/user**
+
+**GPT-5 API Optimization**:
+
+- Aggressive caching (Helicone) - reduces costs 30-50%
 - Cache common intents (Redis, 1 hour TTL)
-- Use cheaper model for classification, GPT-5 only for complex tasks
-- Implement prompt caching (Helicone)
 - Budget: $0.02 per command avg → $1/user/month at 50 commands
 
-**Vector DB**:
-- Index only recent emails (90 days) for semantic search
-- Archive older to cheaper storage
-- Budget: $0.10/user/month (Pinecone)
-
-**Infrastructure**:
-- Use spot instances for non-critical workloads
-- Auto-scale down during off-hours
-- CDN for static assets
-- Budget: $5/user/month at scale
+**At $49/user pricing**: **97.5% gross margin**
 
 ---
 
@@ -1170,20 +1412,20 @@ import { Counter, Histogram, Gauge } from 'prom-client';
 export const commandsProcessed = new Counter({
   name: 'tide_commands_processed_total',
   help: 'Total number of voice commands processed',
-  labelNames: ['intent', 'status']
+  labelNames: ['intent', 'status'],
 });
 
 export const commandLatency = new Histogram({
   name: 'tide_command_latency_seconds',
   help: 'Command processing latency',
   labelNames: ['intent'],
-  buckets: [0.1, 0.5, 1, 2, 5, 10]
+  buckets: [0.1, 0.5, 1, 2, 5, 10],
 });
 
 export const activeUsers = new Gauge({
   name: 'tide_active_users',
   help: 'Number of active users',
-  labelNames: ['timeframe'] // 'daily', 'weekly', 'monthly'
+  labelNames: ['timeframe'], // 'daily', 'weekly', 'monthly'
 });
 
 // Technical Metrics
@@ -1191,19 +1433,19 @@ export const apiRequestDuration = new Histogram({
   name: 'api_request_duration_seconds',
   help: 'API request duration',
   labelNames: ['method', 'route', 'status'],
-  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5]
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
 });
 
 export const gptApiCalls = new Counter({
   name: 'gpt_api_calls_total',
   help: 'Total GPT API calls',
-  labelNames: ['model', 'status']
+  labelNames: ['model', 'status'],
 });
 
 export const gptTokensUsed = new Counter({
   name: 'gpt_tokens_used_total',
   help: 'Total GPT tokens consumed',
-  labelNames: ['model', 'type'] // 'prompt' | 'completion'
+  labelNames: ['model', 'type'], // 'prompt' | 'completion'
 });
 ```
 
@@ -1227,15 +1469,15 @@ Sentry.init({
       }
     }
     return event;
-  }
+  },
 });
 
 export function captureError(error: Error, context?: any): void {
   Sentry.captureException(error, {
     extra: context,
     tags: {
-      service: 'tide-backend'
-    }
+      service: 'tide-backend',
+    },
   });
 }
 ```
@@ -1250,23 +1492,24 @@ import pino from 'pino';
 export const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
   formatters: {
-    level: (label) => ({ level: label })
+    level: (label) => ({ level: label }),
   },
   redact: {
     paths: ['email', 'password', 'credentials', 'token'],
-    remove: true
+    remove: true,
   },
-  transport: process.env.NODE_ENV === 'development'
-    ? { target: 'pino-pretty' }
-    : undefined
+  transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined,
 });
 
 // Structured logging
-logger.info({
-  userId: 'user-123',
-  commandId: 'cmd-456',
-  intent: 'schedule_meeting'
-}, 'Processing command');
+logger.info(
+  {
+    userId: 'user-123',
+    commandId: 'cmd-456',
+    intent: 'schedule_meeting',
+  },
+  'Processing command'
+);
 ```
 
 ---
@@ -1351,10 +1594,7 @@ pnpm dev # Starts all services + frontend
 describe('CommandProcessorService', () => {
   it('should classify intent correctly', async () => {
     const service = new CommandProcessorService();
-    const intent = await service.classifyIntent(
-      "Schedule lunch with Sarah next week",
-      "user-123"
-    );
+    const intent = await service.classifyIntent('Schedule lunch with Sarah next week', 'user-123');
 
     expect(intent.intent).toBe('schedule_meeting');
     expect(intent.entities.participant).toBe('Sarah');
@@ -1371,7 +1611,7 @@ describe('POST /api/commands', () => {
       .post('/api/commands')
       .set('Authorization', `Bearer ${testToken}`)
       .send({
-        transcript: "Schedule lunch with Sarah next week"
+        transcript: 'Schedule lunch with Sarah next week',
       })
       .expect(200);
 
@@ -1386,18 +1626,14 @@ describe('POST /api/commands', () => {
 test('user can schedule meeting via voice', async ({ page }) => {
   await page.goto('/');
   await page.click('[data-testid="voice-button"]');
-  await page.fill('[data-testid="voice-input"]',
-    'Schedule lunch with Sarah next week'
-  );
+  await page.fill('[data-testid="voice-input"]', 'Schedule lunch with Sarah next week');
   await page.click('[data-testid="send-command"]');
 
-  await expect(page.locator('[data-testid="draft-preview"]'))
-    .toContainText('Sarah');
+  await expect(page.locator('[data-testid="draft-preview"]')).toContainText('Sarah');
 
   await page.click('[data-testid="approve-button"]');
 
-  await expect(page.locator('[data-testid="success-message"]'))
-    .toBeVisible();
+  await expect(page.locator('[data-testid="success-message"]')).toBeVisible();
 });
 ```
 
@@ -1489,17 +1725,20 @@ jobs:
 ## Performance Targets
 
 ### API Latency (p95)
+
 - Voice command processing: < 3s
 - Email search: < 500ms
 - Calendar availability: < 300ms
 - Draft generation: < 2s
 
 ### Throughput
+
 - 1000 concurrent users per instance
 - 10,000 commands/minute per cluster
 - 100,000 emails indexed/hour
 
 ### Availability
+
 - **Uptime SLA**: 99.9% (43 minutes downtime/month)
 - **Data durability**: 99.999999999% (11 nines)
 - **RPO (Recovery Point Objective)**: < 1 minute
