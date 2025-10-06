@@ -6,6 +6,8 @@
  */
 
 export * from './MockEmailService';
+export * from './conversation/MockConversationService';
+
 // Additional mock services would be implemented here:
 // export * from './MockCalendarService';
 // export * from './MockAgentService';
