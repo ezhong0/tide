@@ -7,6 +7,7 @@ export * from './email.types';
 export * from './calendar.types';
 export * from './agent.types';
 export * from './context.types';
+export * from './conversation.types';
 
 // Re-export specific conflicting types to resolve ambiguity
 export type { ImportanceFactor } from './calendar.types';

@@ -4,11 +4,9 @@ import { describe, it, expect } from '@jest/globals';
 import {
   EmailContactSchema,
   AttachmentSchema,
-  SendEmailParamsSchema,
   EmailQuerySchema
 } from './email.schemas';
-
-import { EmailSchema, PrioritySchema, UUIDSchema } from './primitives.schemas';
+import { EmailSchema, PrioritySchema } from './primitives.schemas';
 
 describe('Email Schemas', () => {
   describe('EmailSchema (from primitives)', () => {

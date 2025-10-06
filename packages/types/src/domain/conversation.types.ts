@@ -3,8 +3,7 @@
  * Text-first conversational interface with deep productivity integration
  */
 
-import type { UUID, Timestamp, Email } from '../base.types';
-import type { EmailId, ThreadId, UserId } from '../base.types';
+import type { UUID, Timestamp, Email, UserId } from '../base.types';
 
 // ============================================================================
 // Core Conversation Types
