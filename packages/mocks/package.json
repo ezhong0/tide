@@ -10,7 +10,9 @@
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "test:performance": "jest --testPathPattern=performance"
+    "test:coverage": "jest --coverage",
+    "test:performance": "jest --testPathPattern=performance",
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@tide/contracts": "workspace:*",

@@ -60,6 +60,30 @@ export type Result<T, E = Error> =
 export const Ok = <T>(data: T): Result<T> => ({ success: true, data });
 export const Err = <E = Error>(error: E): Result<never, E> => ({ success: false, error });
 
+// Alias functions to match test expectations
+export const ok = Ok;
+export const err = Err;
+export const isOk = <T, E>(result: Result<T, E>): result is { success: true; data: T } => result.success;
+export const isErr = <T, E>(result: Result<T, E>): result is { success: false; error: E } => !result.success;
+export const unwrap = <T, E>(result: Result<T, E>): T => {
+  if (result.success) return result.data;
+  throw new Error('Called unwrap on an error result');
+};
+export const unwrapErr = <T, E>(result: Result<T, E>): E => {
+  if (!result.success) return result.error;
+  throw new Error('Called unwrapErr on a success result');
+};
+export const map = <T, E, U>(result: Result<T, E>, fn: (value: T) => U): Result<U, E> =>
+  result.success ? Ok(fn(result.data)) as Result<U, E> : result;
+export const mapErr = <T, E, F>(result: Result<T, E>, fn: (error: E) => F): Result<T, F> =>
+  !result.success ? Err(fn(result.error)) as Result<T, F> : result as Result<T, F>;
+export const flatMap = <T, E, U>(result: Result<T, E>, fn: (value: T) => Result<U, E>): Result<U, E> =>
+  result.success ? fn(result.data) : result as Result<U, E>;
+export const match = <T, E, U>(result: Result<T, E>, handlers: {
+  ok: (value: T) => U;
+  err: (error: E) => U;
+}): U => result.success ? handlers.ok(result.data) : handlers.err(result.error);
+
 // Event sourcing base types
 export interface DomainEvent {
   aggregateId: UUID;
@@ -140,15 +164,6 @@ export interface DomainError extends Error {
   details?: unknown;
 }
 
-// Utility type helpers
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends Record<string, unknown>
-    ? DeepReadonly<T[P]>
-    : T[P];
-};
-
-export type Nullable<T> = T | null;
-export type Optional<T> = T | undefined;
 
 // Type guards
 export const isUUID = (value: unknown): value is UUID => {
@@ -232,3 +247,11 @@ export interface UserPreferences {
   workingHours: TimeRange;
   responseStyle: 'concise' | 'detailed' | 'balanced';
 }
+
+// Utility types
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+export type DeepReadonly<T> = {
+  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
+};
+export type Optional<T> = T | undefined;
+export type Nullable<T> = T | null;

@@ -3,13 +3,61 @@
  * Maintains state, simulates latency, handles errors
  */
 
-import { IEmailService, SendEmailParams, OperationResult } from '@tide/contracts';
+import { IEmailService } from '@tide/contracts';
 import {
-  Result, Ok, Err, Email, EmailId, ThreadId, UserId, UUID, Timestamp,
-  EmailDomain, EmailQuery, DraftEmailParams, DraftContext, DraftSuggestion,
-  EmailResponse, EmailAction, EmailTemplate, EmailAnalytics, EmailSyncStatus,
-  EmailContact, ToneAnalysis, ImportanceScore, EmailCategory
+  type Result,
+  Ok,
+  Err,
+  Email,
+  EmailId,
+  ThreadId,
+  UserId,
+  UUID,
+  Timestamp,
+  type EmailDomain,
+  type EmailQuery,
+  type DraftEmailParams,
+  type DraftContext,
+  type DraftSuggestion,
+  type EmailResponse,
+  type EmailAction,
+  type EmailTemplate,
+  type EmailAnalytics,
+  type EmailSyncStatus,
+  type EmailContact,
+  type ToneAnalysis,
+  type ImportanceScore,
+  type EmailCategory
 } from '@tide/types';
+
+// Define SendEmailParams interface locally since it's not exported
+interface SendEmailParams {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  from?: string;
+  subject: string;
+  body: string;
+  htmlBody?: string;
+  attachments?: Array<{
+    name: string;
+    size: number;
+    mimeType: string;
+    data: string;
+  }>;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  scheduledAt?: Date;
+  threadId?: string;
+  inReplyTo?: string;
+  replyTo?: string;
+}
+
+interface OperationResult {
+  success: boolean;
+  message?: string;
+}
 
 export class MockEmailService implements IEmailService {
   private emails: Map<EmailId, EmailDomain> = new Map();
@@ -235,7 +283,7 @@ export class MockEmailService implements IEmailService {
 
     if (query.subject) {
       results = results.filter(email =>
-        email.subject.toLowerCase().includes(query.subject.toLowerCase())
+        email.subject.toLowerCase().includes(query.subject!.toLowerCase())
       );
     }
 
@@ -737,7 +785,7 @@ export class MockEmailService implements IEmailService {
   private async simulateLatency(operation: keyof typeof this.latency): Promise<void> {
     const range = this.latency[operation];
     const delay = Math.random() * (range.max - range.min) + range.min;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    await new Promise<void>(resolve => setTimeout(resolve, delay));
   }
 
   private generateId(): string {

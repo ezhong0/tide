@@ -44,7 +44,6 @@ module.exports = {
   moduleNameMapper: {
     '^@tide/(.*)$': '<rootDir>/../$1/src'
   },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
   globals: {
     'ts-jest': {
       isolatedModules: true

@@ -3,7 +3,7 @@
  * Re-exports agent types from domain for convenience
  */
 
-export {
+export type {
   // Agent types
   Agent,
   AgentRole,

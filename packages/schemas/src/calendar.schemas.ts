@@ -101,8 +101,8 @@ export const RecurrenceRuleSchema = z.object({
   'Cannot specify both count and until for recurrence'
 );
 
-// Create calendar event
-export const CreateCalendarEventSchema = z.object({
+// Base calendar event schema (without refinement)
+const CreateCalendarEventBase = z.object({
   userId: UUIDSchema,
   title: z.string().min(1, 'Event title required').max(200),
   description: z.string().max(2000).optional(),
@@ -120,7 +120,10 @@ export const CreateCalendarEventSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
   categories: z.array(z.string().max(50)).max(10).optional(),
   isPrivate: z.boolean().default(false)
-}).refine(
+});
+
+// Create calendar event
+export const CreateCalendarEventSchema = CreateCalendarEventBase.refine(
   data => data.endTime > data.startTime,
   'End time must be after start time'
 ).refine(
@@ -129,7 +132,7 @@ export const CreateCalendarEventSchema = z.object({
 );
 
 // Update calendar event
-export const UpdateCalendarEventSchema = CreateCalendarEventSchema.partial().extend({
+export const UpdateCalendarEventSchema = CreateCalendarEventBase.partial().extend({
   eventId: UUIDSchema
 });
 

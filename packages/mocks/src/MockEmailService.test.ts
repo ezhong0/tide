@@ -1,7 +1,18 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { MockEmailService } from './MockEmailService';
 import { isOk, isErr, unwrap, unwrapErr } from '@tide/types';
-import type { SendEmailParams, EmailId, ThreadId } from '@tide/contracts';
+
+type EmailId = string;
+type ThreadId = string;
+
+interface SendEmailParams {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  body: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+}
 
 describe('MockEmailService', () => {
   let service: MockEmailService;

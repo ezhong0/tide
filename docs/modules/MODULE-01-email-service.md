@@ -902,6 +902,338 @@ const performanceRequirements = {
 - [ ] Documentation complete
 - [ ] Ready for integration
 
+## 🚨 Error Handling & Recovery
+
+```typescript
+export class EmailError extends Error {
+  constructor(
+    message: string,
+    public code: EmailErrorCode,
+    public retryable: boolean = false,
+    public details?: any
+  ) {
+    super(message);
+    this.name = 'EmailError';
+  }
+}
+
+export enum EmailErrorCode {
+  RATE_LIMITED = 'RATE_LIMITED',
+  QUOTA_EXCEEDED = 'QUOTA_EXCEEDED',
+  AUTH_EXPIRED = 'AUTH_EXPIRED',
+  INVALID_RECIPIENT = 'INVALID_RECIPIENT',
+  ATTACHMENT_TOO_LARGE = 'ATTACHMENT_TOO_LARGE',
+  THREAD_NOT_FOUND = 'THREAD_NOT_FOUND',
+  PROVIDER_ERROR = 'PROVIDER_ERROR'
+}
+
+// Retry with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxAttempts = 3,
+  baseDelay = 1000
+): Promise<T> {
+  let lastError: any;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryable(error) || attempt === maxAttempts - 1) {
+        throw error;
+      }
+
+      const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+      await sleep(delay);
+    }
+  }
+
+  throw lastError;
+}
+```
+
+## ⚡ Enhanced Rate Limiting
+
+```typescript
+class AdvancedRateLimiter {
+  // Gmail: 250 quota units/sec, different costs per operation
+  private readonly GMAIL_COSTS = {
+    send: 100,        // High cost
+    get: 5,           // Medium cost
+    list: 5,          // Medium cost
+    modify: 5,        // Medium cost
+    watch: 10,        // Medium-high cost
+    batchGet: 50      // High cost for batch
+  };
+
+  // Outlook: 10,000 requests per 10 minutes
+  private readonly OUTLOOK_LIMITS = {
+    windowMs: 10 * 60 * 1000,  // 10 minutes
+    maxRequests: 10000,
+    burstLimit: 4               // Max concurrent requests
+  };
+
+  async executeGmailOperation<T>(
+    operation: () => Promise<T>,
+    operationType: keyof typeof GMAIL_COSTS
+  ): Promise<T> {
+    const cost = this.GMAIL_COSTS[operationType];
+
+    // Check if we have quota
+    const currentUsage = await this.getCurrentUsage('gmail');
+    if (currentUsage + cost > 250) {
+      // Wait for next second
+      const msUntilNextSecond = 1000 - (Date.now() % 1000);
+      await sleep(msUntilNextSecond);
+    }
+
+    // Track usage
+    await this.incrementUsage('gmail', cost);
+
+    try {
+      return await operation();
+    } catch (error) {
+      if (error.code === 429) {
+        // Exponential backoff on rate limit
+        await this.handleRateLimit('gmail');
+        return this.executeGmailOperation(operation, operationType);
+      }
+      throw error;
+    }
+  }
+}
+```
+
+## 📊 Monitoring & Observability
+
+```typescript
+import { metrics } from '@tide/metrics';
+import { logger } from '@tide/logger';
+import { tracer } from '@tide/tracing';
+
+class MonitoredEmailService extends EmailService {
+  async sendEmail(params: SendEmailParams): Promise<Result<EmailId>> {
+    const span = tracer.startSpan('email.send', {
+      attributes: {
+        'email.provider': params.provider,
+        'email.recipients': params.to.length,
+        'email.has_attachments': !!params.attachments?.length
+      }
+    });
+
+    const timer = metrics.startTimer('email.send.duration');
+
+    try {
+      const result = await super.sendEmail(params);
+
+      // Success metrics
+      metrics.increment('email.sent', {
+        provider: params.provider,
+        priority: params.priority || 'normal'
+      });
+
+      logger.info('Email sent successfully', {
+        emailId: result.data,
+        userId: params.userId,
+        duration: timer.end()
+      });
+
+      span.setStatus({ code: SpanStatusCode.OK });
+      return result;
+
+    } catch (error) {
+      // Error metrics
+      metrics.increment('email.failed', {
+        provider: params.provider,
+        errorCode: error.code || 'unknown'
+      });
+
+      logger.error('Failed to send email', {
+        error,
+        userId: params.userId,
+        duration: timer.end()
+      });
+
+      span.recordException(error);
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      throw error;
+
+    } finally {
+      span.end();
+    }
+  }
+
+  // Dashboard metrics
+  async getMetrics(): Promise<EmailMetrics> {
+    return {
+      sentToday: metrics.getCounter('email.sent'),
+      failedToday: metrics.getCounter('email.failed'),
+      avgLatency: metrics.getAverage('email.send.duration'),
+      p95Latency: metrics.getPercentile('email.send.duration', 95),
+      cacheHitRate: metrics.getRate('email.cache.hit'),
+      rateLimitHits: metrics.getCounter('email.rate_limited')
+    };
+  }
+}
+```
+
+## 🔄 Graceful Degradation
+
+```typescript
+class ResilientEmailService {
+  async sendEmailWithFallback(params: SendEmailParams): Promise<Result<EmailId>> {
+    // Try primary provider
+    try {
+      return await this.sendViaProvider(params, params.provider);
+    } catch (primaryError) {
+      logger.warn('Primary provider failed, trying fallback', {
+        provider: params.provider,
+        error: primaryError
+      });
+
+      // Try fallback provider if available
+      const fallbackProvider = this.getFallbackProvider(params.provider);
+      if (fallbackProvider && params.allowFallback !== false) {
+        try {
+          return await this.sendViaProvider(params, fallbackProvider);
+        } catch (fallbackError) {
+          logger.error('Fallback provider also failed', {
+            provider: fallbackProvider,
+            error: fallbackError
+          });
+        }
+      }
+
+      // Queue for retry if all providers fail
+      if (params.allowQueuing !== false) {
+        await this.queueForRetry(params);
+        return {
+          success: false,
+          error: new EmailError(
+            'Email queued for retry',
+            EmailErrorCode.PROVIDER_ERROR,
+            true
+          )
+        };
+      }
+
+      throw primaryError;
+    }
+  }
+
+  async searchEmailsWithDegradation(query: SearchQuery): Promise<Result<Email[]>> {
+    // Try full search
+    try {
+      return await this.searchEmailsFull(query);
+    } catch (error) {
+      logger.warn('Full search failed, degrading to cache-only', { error });
+
+      // Degrade to cache-only search
+      const cached = await this.searchCacheOnly(query);
+      if (cached.data.length > 0) {
+        return {
+          success: true,
+          data: cached.data,
+          degraded: true,
+          warning: 'Results from cache only, may be incomplete'
+        };
+      }
+
+      // Degrade further to basic metadata search
+      return await this.searchMetadataOnly(query);
+    }
+  }
+
+  private async searchCacheOnly(query: SearchQuery): Promise<Result<Email[]>> {
+    const cacheKeys = await this.cache.keys(`email:*`);
+    const emails = await Promise.all(
+      cacheKeys.map(key => this.cache.get(key))
+    );
+
+    // Filter in memory
+    const filtered = emails.filter(email =>
+      this.matchesQuery(email, query)
+    );
+
+    return {
+      success: true,
+      data: filtered,
+      fromCache: true
+    };
+  }
+}
+```
+
+## 🧪 Comprehensive Testing Strategy
+
+```typescript
+// Performance benchmarks
+describe('Performance Benchmarks', () => {
+  it('should handle burst traffic', async () => {
+    const results = await loadTest({
+      concurrent: 100,
+      duration: 60000,
+      rampUp: 5000,
+      operation: () => service.sendEmail(generateTestEmail())
+    });
+
+    expect(results.successRate).toBeGreaterThan(0.95);
+    expect(results.p95).toBeLessThan(500);
+  });
+});
+
+// Chaos testing
+describe('Chaos Engineering', () => {
+  it('should handle provider outage', async () => {
+    // Simulate Gmail outage
+    mockGmail.fail();
+
+    const result = await service.sendEmail({
+      ...testEmail,
+      provider: 'gmail',
+      allowFallback: true
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.provider).toBe('outlook'); // Fallback
+  });
+
+  it('should handle intermittent network issues', async () => {
+    // Simulate 50% packet loss
+    mockNetwork.setPacketLoss(0.5);
+
+    const results = await Promise.allSettled(
+      Array(10).fill(null).map(() => service.sendEmail(testEmail))
+    );
+
+    const successful = results.filter(r => r.status === 'fulfilled');
+    expect(successful.length).toBeGreaterThan(7); // 70% success with retries
+  });
+});
+
+// Contract testing
+describe('Provider Contracts', () => {
+  const providers = ['gmail', 'outlook'];
+
+  providers.forEach(provider => {
+    describe(`${provider} provider`, () => {
+      it('should implement IEmailProvider', () => {
+        const instance = createProvider(provider);
+        expect(instance).toMatchInterface(IEmailProvider);
+      });
+
+      it('should handle auth refresh', async () => {
+        const instance = createProvider(provider);
+        const newTokens = await instance.refreshAccessToken('refresh_token');
+        expect(newTokens.accessToken).toBeDefined();
+      });
+    });
+  });
+});
+```
+
 ## 🚨 Critical Implementation Notes
 
 1. **NO Nylas/SendGrid** - Direct Gmail/Outlook APIs only (saves $49/user/month)
