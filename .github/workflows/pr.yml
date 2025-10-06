@@ -1,0 +1,214 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  label:
+    name: Auto Label
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Label PR based on files changed
+        uses: actions/labeler@v4
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+  size:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR size
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+
+            let label = '';
+            if (total < 10) label = 'size/XS';
+            else if (total < 50) label = 'size/S';
+            else if (total < 200) label = 'size/M';
+            else if (total < 500) label = 'size/L';
+            else if (total < 1000) label = 'size/XL';
+            else label = 'size/XXL';
+
+            // Remove existing size labels
+            const labels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+            });
+
+            const sizeLabels = labels.data
+              .filter(l => l.name.startsWith('size/'))
+              .map(l => l.name);
+
+            for (const oldLabel of sizeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                name: oldLabel,
+              });
+            }
+
+            // Add new size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: [label],
+            });
+
+            // Post comment if PR is too large
+            if (total > 1000) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                body: `⚠️ This PR is quite large (${total} lines changed). Consider breaking it into smaller PRs for easier review.`,
+              });
+            }
+
+  coverage-report:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+
+      - name: Generate coverage report comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let coverageReport = '## 📊 Test Coverage Report\n\n';
+            coverageReport += '| Package | Statements | Branches | Functions | Lines |\n';
+            coverageReport += '|---------|------------|----------|-----------|-------|\n';
+
+            const packages = ['types', 'contracts', 'schemas', 'mocks'];
+            for (const pkg of packages) {
+              const coveragePath = path.join('packages', pkg, 'coverage', 'coverage-summary.json');
+              if (fs.existsSync(coveragePath)) {
+                const coverage = JSON.parse(fs.readFileSync(coveragePath, 'utf8'));
+                const total = coverage.total;
+
+                const formatPercent = (metric) => {
+                  const pct = metric.pct;
+                  const emoji = pct >= 80 ? '✅' : pct >= 60 ? '⚠️' : '❌';
+                  return `${emoji} ${pct.toFixed(1)}%`;
+                };
+
+                coverageReport += `| @tide/${pkg} | ${formatPercent(total.statements)} | ${formatPercent(total.branches)} | ${formatPercent(total.functions)} | ${formatPercent(total.lines)} |\n`;
+              }
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: coverageReport,
+            });
+
+  validate-commits:
+    name: Validate Commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate commit messages
+        run: |
+          # Get all commit messages in this PR
+          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=format:"%s")
+
+          # Define valid commit prefixes
+          VALID_TYPES="feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert"
+
+          # Check each commit
+          INVALID=false
+          while IFS= read -r commit; do
+            if ! echo "$commit" | grep -qE "^($VALID_TYPES)(\(.+\))?: .+"; then
+              echo "❌ Invalid commit message: $commit"
+              echo "   Expected format: type(scope): description"
+              echo "   Valid types: $VALID_TYPES"
+              INVALID=true
+            fi
+          done <<< "$COMMITS"
+
+          if [ "$INVALID" = true ]; then
+            exit 1
+          fi
+
+          echo "✅ All commit messages are valid!"
+
+  pr-comment:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - name: Post PR summary
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const author = pr.user.login;
+            const branch = pr.head.ref;
+            const baseBranch = pr.base.ref;
+
+            const body = `👋 Thanks for opening this PR, @${author}!
+
+            **PR Details:**
+            - 🌿 Branch: \`${branch}\` → \`${baseBranch}\`
+            - 📝 Files changed: ${pr.changed_files}
+            - ➕ Additions: ${pr.additions}
+            - ➖ Deletions: ${pr.deletions}
+
+            **Automated Checks:**
+            The following checks will run automatically:
+            - ✅ Code linting (ESLint)
+            - ✅ Type checking (TypeScript)
+            - ✅ Unit tests with coverage
+            - ✅ Build verification
+            - ✅ Security audit
+            - ✅ Performance tests
+
+            Please ensure all checks pass before requesting a review.`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: body,
+            });
