@@ -1,20 +1,15 @@
 {
-  "name": "@tide/mocks",
+  "name": "@tide/types",
   "version": "1.0.0",
   "private": true,
-  "description": "Realistic mock implementations for all Tide services",
+  "description": "Core TypeScript types for Tide with branded types and strict typing",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:performance": "jest --testPathPattern=performance"
-  },
-  "dependencies": {
-    "@tide/contracts": "workspace:*",
-    "@tide/types": "workspace:*"
+    "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^29.5.10",

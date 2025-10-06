@@ -1,21 +1,20 @@
 /**
- * Mock data exports
+ * @tide/mocks - Realistic mock implementations for all Tide services
  *
- * Provides mock data for testing and development
+ * These mocks provide stateful, realistic behavior for development and testing.
+ * All mocks simulate latency, handle errors, and maintain state.
  */
 
-export * from './users.mocks.js';
-export * from './emails.mocks.js';
-export * from './calendar.mocks.js';
-
-// Re-export all mocks as a single object for convenience
-import { mockUsers, mockUserPreferences } from './users.mocks.js';
-import { mockEmails } from './emails.mocks.js';
-import { mockCalendarEvents } from './calendar.mocks.js';
-
-export const MockData = {
-  users: mockUsers,
-  userPreferences: mockUserPreferences,
-  emails: mockEmails,
-  calendarEvents: mockCalendarEvents,
-} as const;
+export * from './MockEmailService';
+// Additional mock services would be implemented here:
+// export * from './MockCalendarService';
+// export * from './MockAgentService';
+// export * from './MockContextService';
+// export * from './MockEventStore';
+// export * from './MockCacheService';
+// export * from './MockDatabaseService';
+// export * from './MockQueueService';
+// export * from './MockAuthService';
+// export * from './MockNotificationService';
+// export * from './MockLearningService';
+// export * from './MockAnalyticsService';

@@ -1,0 +1,253 @@
+%-------------------------------------------------------------------------------
+% CONFIGURATIONS
+%-------------------------------------------------------------------------------
+% A4 paper size by default, use 'letterpaper' for US letter
+\documentclass[12pt, letterpaper]{russell}
+
+% Configure page margins with geometry
+\geometry{left=0.75cm, top=.6cm, right=0.75cm, bottom=0.0cm, footskip=.4cm}
+
+% Specify the location of the included fonts
+\fontdir[fonts/]
+
+% Color for highlights
+\colorlet{russell}{russell-black}
+
+% Set false if you don't want to highlight section with russell color
+\setbool{acvSectionColorHighlight}{true}
+
+% Social info separator
+\renewcommand{\acvHeaderSocialSep}{\quad\textbar\quad}
+
+%-------------------------------------------------------------------------------
+% PERSONAL INFORMATION
+\name{Edward}{Zhong}
+\address{Los Altos, CA, 94024}
+\mobile{(650) 772-8909}
+\email{edwardrzhong@gmail.com}
+\github{github.com/ezhong0}
+\linkedin{linkedin.com/in/edwardzhong0}
+
+%-------------------------------------------------------------------------------
+\begin{document}
+
+% Print the header with above personal information
+\makecvheader
+
+% Reduce space after the header before the content
+\vspace{-.6cm}
+
+\cvsection{Summary}
+\vspace{-0.05cm}
+\begin{cvsummary}
+Full-stack engineer who architected novel 3-layer DAG execution system for AI query processing with 2-5x parallel speedup. UCSB CS grad with production experience building secure, scalable systems (OAuth 2.0, microservices, 72K+ LOC). Strong foundation in backend architecture, AI/LLM integration, and shipping quality code.
+\end{cvsummary}
+
+%-------------------------------------------------------------------------------
+%	SECTION TITLE
+%-------------------------------------------------------------------------------
+\vspace{-0.05cm}
+
+\cvsection{Projects}
+\vspace{-0.2cm}
+%-------------------------------------------------------------------------------
+%	CONTENT
+%-------------------------------------------------------------------------------
+\begin{cventries}
+%---------------------------------------------------------
+\cvprojectinline
+    {\href{https://github.com/ezhong0/assistantapp}{github.com/ezhong0/assistantapp}} % Link
+    {AI-Powered Email \& Calendar Assistant} % Project
+    {Node.js, TypeScript, Gmail API, PostgreSQL, OpenAI, React Native} % Technology
+    {2024 - 2025} % Date(s)
+    {
+      \begin{cvitems}
+        \item {Built AI assistant with novel 3-layer DAG execution pipeline processing natural language queries across Gmail, Calendar, and Contacts APIs}
+        \item {Stateless backend enables horizontal scaling with dependency injection, OAuth 2.0 token encryption, and parallel execution achieving 2-5x speedup}
+        \item {Implemented 5 execution strategies including semantic analysis, cross-reference search, and batch operations with automatic dependency resolution}
+        \item {Custom E2E testing framework validates multi-LLM outputs (GPT-4, Claude) against ground truth datasets, generating detailed evaluation reports}
+        \item {Shipped React Native mobile app with offline-first architecture, AsyncStorage state persistence, comprehensive onboarding, and contextual tutorials}
+        \item {Documented 700+ use cases reducing inbox triage time 70\%; 80\%+ test coverage across 72,000+ lines of TypeScript/React code}
+      \end{cvitems}
+    }
+%---------------------------------------------------------
+\cvprojectinline
+    {\href{https://github.com/ezhong0/humanebench}{github.com/ezhong0/humanebench}} % Link
+    {AI Ethics Evaluation Framework} % Project
+    {Python, AISI Inspect, OpenAI, Anthropic, Google Gemini} % Technology
+    {Dec 2024} % Date(s)
+    {
+      \begin{cvitems}
+        \item {Hackathon team project: Production benchmark evaluates AI chatbot safety across 8 domains (mental health, medical emergencies, financial scams, abuse)}
+        \item {Multi-dimensional scoring rubric assesses Safety \& Dignity, Long-term Wellbeing, Transparency across 125 scenarios with 6 AI models (Claude, GPT-4, Gemini)}
+        \item {Chart.js visualizations and comprehensive safety metrics reporting achieved 97.6\% safety pass rate with Claude 3 Haiku for AI safety research}
+      \end{cvitems}
+    }
+%---------------------------------------------------------
+\cvprojectinline
+    {\href{https://csvtoinvoice.vercel.app}{csvtoinvoice.vercel.app} \textbar{} \href{https://github.com/ezhong0/csvtoinvoice}{github.com/ezhong0/csvtoinvoice}} % Link
+    {Invoice Automation SaaS Platform} % Project
+    {Next.js, TypeScript, PostgreSQL, Stripe} % Technology
+    {Jan 2025} % Date(s)
+    {
+      \begin{cvitems}
+        \item {Hackathon team project: Full-stack SaaS automating PDF invoice generation from CSV/Excel with intelligent column mapping and validation}
+        \item {Supabase backend architecture implements row-level security policies, JWT authentication, and multi-tenant data isolation with PostgreSQL}
+        \item {Dynamic React/TypeScript interface supports drag-and-drop CSV upload, real-time preview, and bulk processing (10K rows in 1.5s, 100 invoices in 5s)}
+        \item {Stripe integration handles payment processing, subscription management, webhook events, and automated billing for recurring revenue workflows}
+      \end{cvitems}
+    }
+\end{cventries}
+\vspace{-0.25cm}
+
+%-------------------------------------------------------------------------------
+%	SECTION TITLE
+%-------------------------------------------------------------------------------
+\cvsection{Work Experience}
+\vspace{-0.2cm}
+%-------------------------------------------------------------------------------
+%	CONTENT
+%-------------------------------------------------------------------------------
+\begin{cventries}
+
+%---------------------------------------------------------
+\cventry
+  {Software Engineer} % Job title
+  {Integuru} % Organisation
+  {San Francisco, CA} % Location
+  {2024 -- 2025} % Date(s)
+  {
+\begin{cvitems}
+  \item {Developed secure Python REST APIs connecting 5 distributed microservices, delivering key features to 200+ customer accounts in early-stage startup}
+  \item {Billing system built with OpenMeter and Stripe APIs streamlines payment processing and subscription management workflows across the platform}
+  \item {React dashboard provides real-time analytics and usage data visualization, reducing customer support inquiry volume by 35\%}
+  \item {Maintained Dockerized microservices architecture and established CI/CD pipelines with GitHub Actions for reliable automated deployments}
+  \item {Collaborated with product and design teams to optimize UI responsiveness and improve user workflows in fast-paced agile environment}
+\end{cvitems}
+}
+
+\vspace{0.1cm}
+
+%---------------------------------------------------------
+  \cventry
+    {Engineering Intern} % Job title
+    {Bill.com} % Organisation
+    {Palo Alto, CA} % Location
+    {Summer 2019} % Date(s)
+    {
+\begin{cvitems}
+  \item {Google Authenticator MFA implementation on Risk and Compliance team enhanced security architecture for 100,000+ enterprise accounts}
+  \item {Full-stack authentication system integrates backend services, frontend UI, and third-party APIs with comprehensive automated testing}
+  \item {Whitepages API integration with internal fraud detection system enables real-time risk analysis of thousands of high-value transactions daily}
+  \item {Java/MySQL backend and Angular/Node.js frontend delivered with Jenkins CI/CD automation and Perforce version control workflows}
+\end{cvitems}
+    }
+
+%---------------------------------------------------------
+\end{cventries}
+\vspace{-0.25cm}
+
+%-------------------------------------------------------------------------------
+%	SECTION TITLE
+%-------------------------------------------------------------------------------
+\cvsection{Skills}
+
+%-------------------------------------------------------------------------------
+%	CONTENT
+%-------------------------------------------------------------------------------
+\vspace{-0.45cm}
+
+%-------------------------------------------------------------------------------
+%	CONTENT
+%-------------------------------------------------------------------------------
+\begin{minipage}[t]{0.48\textwidth}
+\begin{cvskills}
+%---------------------------------------------------------
+  \cvskill
+    {Languages} % Category
+    {TypeScript, Python, JavaScript, SQL, Java} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {Backend \& APIs} % Category
+    {Node.js, Express.js, Flask, PostgreSQL, RESTful APIs} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {Frontend} % Category
+    {React, React Native, Next.js, TypeScript, Supabase} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {AI \& ML} % Category
+    {OpenAI, Anthropic, LLM Integration, Prompt Engineering} % Skills
+
+    \cvskill
+    {Tools} % Category
+    {Git, GitHub, Perforce, Jenkins, Awilix, Winston, Zod} % Skills
+\end{cvskills}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{cvskills}
+%---------------------------------------------------------
+  \cvskill
+    {DevOps \& Cloud} % Category
+    {Docker, GitHub Actions, Railway, Vercel, CI/CD Pipelines} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {Architecture} % Category
+    {Dependency Injection, OAuth 2.0, Microservices, DAG} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {Databases} % Category
+    {PostgreSQL, MySQL, Redis, Supabase, Database Design} % Skills
+
+%---------------------------------------------------------
+  \cvskill
+    {Testing} % Category
+    {Jest, E2E Testing, Integration Tests, Test Automation} % Skills
+
+    \cvskill
+    {Security} % Category
+    {OAuth 2.0, JWT, Encryption, Rate Limiting, Helmet} % Skills
+    
+\end{cvskills}
+\end{minipage}
+\vspace{0.1cm}
+
+
+\hfill
+\begin{minipage}[t]{0.48\textwidth}
+\begin{cvskills}
+%---------------------------------------------------------
+\end{cvskills}
+\end{minipage}
+\vspace{-0.3cm}
+
+%-------------------------------------------------------------------------------
+%	SECTION TITLE
+%-------------------------------------------------------------------------------
+\cvsection{Education}
+\vspace{-0.2cm}
+
+%-------------------------------------------------------------------------------
+%	CONTENT
+%-------------------------------------------------------------------------------
+\begin{cventries}
+
+%---------------------------------------------------------
+  \cventry
+    {B.S. in Computer Science} % Degree
+    {University of California, Santa Barbara} % Institution
+    {Santa Barbara, CA} % Location
+    {Graduated 2023} % Date(s)
+    { }
+
+%---------------------------------------------------------
+
+\end{cventries}
+
+\end{document}
