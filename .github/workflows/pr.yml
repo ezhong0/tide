@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR size
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -105,7 +105,7 @@ jobs:
         run: pnpm test:coverage
 
       - name: Generate coverage report comment
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
@@ -179,7 +179,7 @@ jobs:
     if: github.event.action == 'opened'
     steps:
       - name: Post PR summary
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const pr = context.payload.pull_request;
