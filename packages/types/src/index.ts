@@ -6,18 +6,19 @@
  * with no 'any' types allowed.
  */
 
-// Export base types (excluding conflicts)
+// Export base types (both types and constructor functions)
 export {
-  // Branded types
-  type UUID,
-  type EmailId,
-  type ThreadId,
-  type UserId,
-  type SessionId,
-  type AgentId,
-  type EventId,
-  type Timestamp,
-  type PhoneNumber,
+  // Branded types (exports both type and constructor function)
+  UUID,
+  EmailId,
+  ThreadId,
+  UserId,
+  SessionId,
+  AgentId,
+  EventId,
+  Timestamp,
+  PhoneNumber,
+  Email,
 
   // Result types
   type Result,
@@ -35,7 +36,6 @@ export {
   match,
 
   // Domain primitives
-  type Email,
   type Command,
   type Query,
   type DomainEvent,
