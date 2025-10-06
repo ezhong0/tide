@@ -1,62 +1,36 @@
 {
   "name": "tide",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "AI Executive Assistant - Voice-first mobile assistant for professionals",
-  "keywords": [
-    "ai",
-    "assistant",
-    "email",
-    "calendar",
-    "productivity"
-  ],
-  "author": "Tide Team",
-  "license": "UNLICENSED",
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0",
+  "description": "AI Executive Assistant with ultra-low latency and sophisticated reasoning",
   "scripts": {
-    "dev": "pnpm --filter \"./apps/*\" dev",
-    "dev:api": "pnpm --filter @tide/api dev",
-    "dev:web": "pnpm --filter @tide/web dev",
-    "dev:mobile": "pnpm --filter @tide/mobile start",
-    "build": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" build",
-    "build:api": "pnpm --filter @tide/api build",
-    "build:web": "pnpm --filter @tide/web build",
-    "build:mobile": "pnpm --filter @tide/mobile build",
-    "test": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test",
-    "test:unit": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test:unit",
-    "test:integration": "pnpm --filter @tide/api test:integration",
-    "test:e2e": "pnpm --filter @tide/web test:e2e",
-    "test:changed": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test --changedSince=HEAD~1",
-    "lint": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" lint",
-    "lint:fix": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" lint:fix",
-    "type-check": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" type-check",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
-    "clean": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" clean && rm -rf node_modules",
-    "db:generate": "pnpm --filter @tide/api db:generate",
-    "db:migrate": "pnpm --filter @tide/api db:migrate",
-    "db:seed": "pnpm --filter @tide/api db:seed",
-    "db:studio": "pnpm --filter @tide/api db:studio",
-    "openapi:generate": "tsx scripts/generate-openapi.ts",
+    "dev": "pnpm --parallel dev",
+    "build": "pnpm --filter ./packages/* build && pnpm --filter ./apps/* build",
+    "test": "pnpm --recursive test",
+    "test:watch": "pnpm --recursive test -- --watch",
+    "test:coverage": "pnpm --recursive test -- --coverage",
+    "test:contracts": "pnpm --filter @tide/contracts test",
+    "test:performance": "pnpm --filter @tide/mocks test:performance",
+    "test:e2e": "pnpm --filter ./apps/* test:e2e",
+    "typecheck": "pnpm --recursive typecheck",
+    "lint": "pnpm --recursive lint",
+    "clean": "pnpm --recursive clean",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.0",
     "husky": "^8.0.3",
-    "lint-staged": "^15.2.0",
-    "prettier": "^3.2.4",
-    "tsx": "^4.7.0",
-    "turbo": "^1.12.0",
-    "typescript": "^5.3.3",
-    "zod-to-json-schema": "^3.22.4"
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.3"
   },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx,json,md,yml,yaml}": [
-      "prettier --write"
-    ]
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
   }
 }
