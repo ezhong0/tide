@@ -18,6 +18,7 @@ export * from './primitives.schemas';
 export * from './email.schemas';
 export * from './calendar.schemas';
 export * from './command.schemas';
+export * from './conversation.schemas';
 
 // Middleware and utilities
 export * from './middleware';
