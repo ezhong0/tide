@@ -1,0 +1,63 @@
+{
+  "name": "tide",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI Executive Assistant - Voice-first mobile assistant for professionals",
+  "keywords": [
+    "ai",
+    "assistant",
+    "email",
+    "calendar",
+    "productivity"
+  ],
+  "author": "Tide Team",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "pnpm --filter \"./apps/*\" dev",
+    "dev:api": "pnpm --filter @tide/api dev",
+    "dev:web": "pnpm --filter @tide/web dev",
+    "dev:mobile": "pnpm --filter @tide/mobile start",
+    "build": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" build",
+    "build:api": "pnpm --filter @tide/api build",
+    "build:web": "pnpm --filter @tide/web build",
+    "build:mobile": "pnpm --filter @tide/mobile build",
+    "test": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test",
+    "test:unit": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test:unit",
+    "test:integration": "pnpm --filter @tide/api test:integration",
+    "test:e2e": "pnpm --filter @tide/web test:e2e",
+    "test:changed": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" test --changedSince=HEAD~1",
+    "lint": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" lint",
+    "lint:fix": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" lint:fix",
+    "type-check": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" type-check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "clean": "pnpm --filter \"./apps/*\" --filter \"./packages/*\" clean && rm -rf node_modules",
+    "db:generate": "pnpm --filter @tide/api db:generate",
+    "db:migrate": "pnpm --filter @tide/api db:migrate",
+    "db:seed": "pnpm --filter @tide/api db:seed",
+    "db:studio": "pnpm --filter @tide/api db:studio",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.4",
+    "turbo": "^1.12.0",
+    "typescript": "^5.3.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
+}

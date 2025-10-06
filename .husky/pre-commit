@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged
+pnpm lint-staged
+
+# Run type checking on changed packages
+pnpm type-check
+
+# Run tests on changed files
+pnpm test:changed || true
