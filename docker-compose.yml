@@ -1,0 +1,91 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: tide-postgres
+    environment:
+      POSTGRES_USER: tide
+      POSTGRES_PASSWORD: tide_dev_password
+      POSTGRES_DB: tide_dev
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tide"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tide-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: tide-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tide-network
+
+  # RabbitMQ Message Queue (optional, can also use AWS SQS)
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: tide-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: tide
+      RABBITMQ_DEFAULT_PASS: tide_dev_password
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tide-network
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: tide-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@tide.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - tide-network
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  tide-network:
+    driver: bridge
