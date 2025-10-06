@@ -1,0 +1,78 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+
+    /* Type Checking */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
+    "noPropertyAccessFromIndexSignature": false,
+
+    /* Modules */
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* Emit */
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "importHelpers": true,
+    "downlevelIteration": true,
+
+    /* Interop Constraints */
+    "isolatedModules": false,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": false,
+
+    /* Skip Lib Check */
+    "skipLibCheck": true,
+
+    /* Paths */
+    "baseUrl": ".",
+    "paths": {
+      "@tide/types": ["packages/types/src"],
+      "@tide/types/*": ["packages/types/src/*"],
+      "@tide/contracts": ["packages/contracts/src"],
+      "@tide/contracts/*": ["packages/contracts/src/*"],
+      "@tide/schemas": ["packages/schemas/src"],
+      "@tide/schemas/*": ["packages/schemas/src/*"],
+      "@tide/mocks": ["packages/mocks/src"],
+      "@tide/mocks/*": ["packages/mocks/src/*"]
+    }
+  },
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./packages/contracts" },
+    { "path": "./packages/schemas" },
+    { "path": "./packages/mocks" }
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".next",
+    "out",
+    "*.js",
+    "*.d.ts"
+  ]
+}

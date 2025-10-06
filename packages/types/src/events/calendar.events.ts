@@ -3,12 +3,12 @@
  */
 
 import {
-  DomainEvent, UUID, Timestamp, EventId, UserId, Email
+  DomainEvent, UUID, Timestamp, EventId, UserId, Email, TimeSlot
 } from '../base.types';
 import {
   CalendarProvider, EventType, EventStatus, ResponseStatus,
   Participant, EventLocation, Reminder, ConferenceData,
-  RecurrenceRule, TimeSlot
+  RecurrenceRule
 } from '../domain/calendar.types';
 
 // Base calendar event

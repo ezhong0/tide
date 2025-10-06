@@ -6,7 +6,66 @@
  * with no 'any' types allowed.
  */
 
-export * from './base.types';
+// Export base types (excluding conflicts)
+export {
+  // Branded types
+  type UUID,
+  type EmailId,
+  type ThreadId,
+  type UserId,
+  type SessionId,
+  type AgentId,
+  type EventId,
+  type Timestamp,
+  type PhoneNumber,
+
+  // Result types
+  type Result,
+  Ok,
+  Err,
+  ok,
+  err,
+  isOk,
+  isErr,
+  unwrap,
+  unwrapErr,
+  map,
+  mapErr,
+  flatMap,
+  match,
+
+  // Domain primitives
+  type Email,
+  type Command,
+  type Query,
+  type DomainEvent,
+  type EventMetadata,
+  type DomainError,
+  type ValidationError,
+
+  // Common structures
+  type AgentContext,
+  type PaginatedResponse,
+  type Pagination,
+  type TimeSlot,
+  type SyncableEntity,
+  type SyncConflict,
+  type PerformanceMetric,
+  type CacheEntry,
+  type CacheStats,
+
+  // Utility types
+  type Json,
+  type DeepReadonly,
+  type Optional,
+  type Nullable
+} from './base.types';
+
+// Export domain types
 export * from './domain/index';
+
+// Export event types
 export * from './events/index';
+
+// Export agent types
 export * from './agents/index';

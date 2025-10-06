@@ -37,8 +37,8 @@ export const AttachmentSchema = z.object({
   contentId: z.string().optional()
 });
 
-// Send email parameters - the most critical validation
-export const SendEmailParamsSchema = z.object({
+// Base send email parameters (without refinement)
+const SendEmailParamsBase = z.object({
   userId: UUIDSchema,
   from: EmailContactSchema,
   to: z.array(EmailContactSchema).min(1, 'At least one recipient required'),
@@ -53,7 +53,10 @@ export const SendEmailParamsSchema = z.object({
   priority: PrioritySchema.optional(),
   replyTo: UUIDSchema.optional(),
   threadId: UUIDSchema.optional()
-}).refine(
+});
+
+// Send email parameters - the most critical validation
+export const SendEmailParamsSchema = SendEmailParamsBase.refine(
   data => {
     // Validate total recipients doesn't exceed limit
     const totalRecipients =
@@ -66,7 +69,7 @@ export const SendEmailParamsSchema = z.object({
 );
 
 // Draft email parameters
-export const DraftEmailParamsSchema = SendEmailParamsSchema.omit({
+export const DraftEmailParamsSchema = SendEmailParamsBase.omit({
   userId: true,
   from: true,
   provider: true
