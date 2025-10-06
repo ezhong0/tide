@@ -1,0 +1,40 @@
+{
+  "name": "@tide/monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tide - AI Chief of Staff Platform",
+  "scripts": {
+    "dev": "pnpm --parallel --filter './services/*' dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "lint": "pnpm --recursive lint",
+    "type-check": "pnpm --recursive type-check",
+    "clean": "pnpm --recursive clean && rm -rf node_modules",
+    "db:migrate": "pnpm --filter @tide/database migrate",
+    "db:seed": "pnpm --filter @tide/database seed",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "k8s:deploy": "kubectl apply -f infrastructure/k8s/",
+    "services:health": "./scripts/check-health.sh"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "typescript": "^5.3.3"
+    }
+  }
+}
