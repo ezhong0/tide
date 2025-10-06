@@ -11,6 +11,13 @@ export * from './ICalendarService';
 export * from './IAgentService';
 export * from './IContextService';
 
+// Module 00: Conversational AI contracts
+export * from './IConversationService';
+export * from './INaturalLanguageProcessor';
+export * from './IPersonalizationEngine';
+export * from './IActionPreviewService';
+export * from './IContextualMemory';
+
 // Infrastructure contracts
 export * from './IEventStore';
 // export * from './ICacheService';  // Conflicts: OptimizationResult

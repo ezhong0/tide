@@ -9,4 +9,5 @@ tslib_1.__exportStar(require("./email.types"), exports);
 tslib_1.__exportStar(require("./calendar.types"), exports);
 tslib_1.__exportStar(require("./agent.types"), exports);
 tslib_1.__exportStar(require("./context.types"), exports);
+tslib_1.__exportStar(require("./conversation.types"), exports);
 //# sourceMappingURL=index.js.map

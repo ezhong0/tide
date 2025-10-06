@@ -12,6 +12,12 @@ tslib_1.__exportStar(require("./IEmailService"), exports);
 tslib_1.__exportStar(require("./ICalendarService"), exports);
 tslib_1.__exportStar(require("./IAgentService"), exports);
 tslib_1.__exportStar(require("./IContextService"), exports);
+// Module 00: Conversational AI contracts
+tslib_1.__exportStar(require("./IConversationService"), exports);
+tslib_1.__exportStar(require("./INaturalLanguageProcessor"), exports);
+tslib_1.__exportStar(require("./IPersonalizationEngine"), exports);
+tslib_1.__exportStar(require("./IActionPreviewService"), exports);
+tslib_1.__exportStar(require("./IContextualMemory"), exports);
 // Infrastructure contracts
 tslib_1.__exportStar(require("./IEventStore"), exports);
 // export * from './ICacheService';  // Conflicts: OptimizationResult
