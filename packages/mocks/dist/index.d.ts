@@ -5,4 +5,5 @@
  * All mocks simulate latency, handle errors, and maintain state.
  */
 export * from './MockEmailService';
+export * from './conversation/MockConversationService';
 //# sourceMappingURL=index.d.ts.map

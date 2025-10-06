@@ -7,6 +7,10 @@
 
 export * from './MockEmailService';
 export * from './conversation/MockConversationService';
+export * from './action/MockActionPreviewService';
+export * from './nlp/MockNaturalLanguageProcessor';
+export * from './personalization/MockPersonalizationEngine';
+export * from './memory/MockContextualMemory';
 
 // Additional mock services would be implemented here:
 // export * from './MockCalendarService';

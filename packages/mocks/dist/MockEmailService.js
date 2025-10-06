@@ -39,9 +39,9 @@ class MockEmailService {
         if (Math.random() < 0.02) {
             return (0, types_1.Err)(new Error('Failed to connect to email provider'));
         }
-        const emailId = EmailId(this.generateId());
-        const threadId = params.threadId || ThreadId(this.generateId());
-        const now = Timestamp(Date.now());
+        const emailId = (0, types_1.EmailId)(this.generateId());
+        const threadId = params.threadId || (0, types_1.ThreadId)(this.generateId());
+        const now = (0, types_1.Timestamp)(Date.now());
         const email = {
             emailId,
             userId: params.userId,
@@ -81,9 +81,9 @@ class MockEmailService {
     }
     async scheduleEmail(params, scheduledFor) {
         await this.simulateLatency('update');
-        const emailId = EmailId(this.generateId());
-        const threadId = params.threadId || ThreadId(this.generateId());
-        const now = Timestamp(Date.now());
+        const emailId = (0, types_1.EmailId)(this.generateId());
+        const threadId = params.threadId || (0, types_1.ThreadId)(this.generateId());
+        const now = (0, types_1.Timestamp)(Date.now());
         const email = {
             emailId,
             userId: params.userId,
@@ -114,7 +114,7 @@ class MockEmailService {
         // Simulate scheduling
         setTimeout(async () => {
             email.status = 'sent';
-            email.sentAt = Timestamp(Date.now());
+            email.sentAt = (0, types_1.Timestamp)(Date.now());
             email.isDraft = false;
             this.emails.set(emailId, email);
         }, scheduledFor - Date.now());
@@ -122,19 +122,19 @@ class MockEmailService {
     }
     async createDraft(params) {
         await this.simulateLatency('update');
-        const emailId = EmailId(this.generateId());
-        const threadId = params.threadId || ThreadId(this.generateId());
-        const now = Timestamp(Date.now());
+        const emailId = (0, types_1.EmailId)(this.generateId());
+        const threadId = params.threadId || (0, types_1.ThreadId)(this.generateId());
+        const now = (0, types_1.Timestamp)(Date.now());
         const email = {
             emailId,
-            userId: UserId('mock-user'),
+            userId: (0, types_1.UserId)('mock-user'),
             threadId,
             messageId: '',
             provider: 'gmail',
             status: 'draft',
             priority: params.priority || 'normal',
             category: 'work',
-            from: { email: Email('user@tide.ai'), name: 'User' },
+            from: { email: (0, types_1.Email)('user@tide.ai'), name: 'User' },
             to: params.to,
             cc: params.cc,
             bcc: params.bcc,
@@ -314,7 +314,7 @@ class MockEmailService {
             return (0, types_1.Err)(new Error('Email not found'));
         }
         email.isRead = true;
-        email.readAt = Timestamp(Date.now());
+        email.readAt = (0, types_1.Timestamp)(Date.now());
         this.emails.set(emailId, email);
         return (0, types_1.Ok)(undefined);
     }
@@ -392,7 +392,7 @@ class MockEmailService {
         }
         const actions = [];
         // Suggest reply if it's received
-        if (!email.isDraft && email.from.email !== Email('user@tide.ai')) {
+        if (!email.isDraft && email.from.email !== (0, types_1.Email)('user@tide.ai')) {
             actions.push({
                 type: 'reply',
                 reason: 'This email appears to require a response',
@@ -424,8 +424,8 @@ class MockEmailService {
         const templateId = this.generateId();
         const fullTemplate = {
             ...template,
-            templateId: UUID(templateId),
-            createdAt: Timestamp(Date.now()),
+            templateId: (0, types_1.UUID)(templateId),
+            createdAt: (0, types_1.Timestamp)(Date.now()),
             usageCount: 0
         };
         this.templates.set(templateId, fullTemplate);
@@ -445,9 +445,9 @@ class MockEmailService {
             email.createdAt <= endDate);
         const analytics = {
             userId,
-            period: { start: Timestamp(startDate), end: Timestamp(endDate) },
+            period: { start: (0, types_1.Timestamp)(startDate), end: (0, types_1.Timestamp)(endDate) },
             sent: userEmails.filter(e => e.status === 'sent').length,
-            received: userEmails.filter(e => e.from.email !== Email('user@tide.ai')).length,
+            received: userEmails.filter(e => e.from.email !== (0, types_1.Email)('user@tide.ai')).length,
             averageResponseTime: 3600000, // 1 hour in ms
             topSenders: this.getTopSenders(userEmails),
             topRecipients: this.getTopRecipients(userEmails),
@@ -463,8 +463,8 @@ class MockEmailService {
         const status = {
             userId,
             provider: 'gmail',
-            lastSync: Timestamp(Date.now() - 3600000),
-            nextSync: Timestamp(Date.now() + 300000),
+            lastSync: (0, types_1.Timestamp)(Date.now() - 3600000),
+            nextSync: (0, types_1.Timestamp)(Date.now() + 300000),
             status: 'syncing',
             totalEmails: this.emails.size,
             syncedEmails: this.emails.size,
@@ -474,7 +474,7 @@ class MockEmailService {
         // Simulate sync completion
         setTimeout(() => {
             status.status = 'idle';
-            status.lastSync = Timestamp(Date.now());
+            status.lastSync = (0, types_1.Timestamp)(Date.now());
             this.syncStatus.set(userId, status);
         }, 2000);
         return (0, types_1.Ok)(status);
@@ -484,8 +484,8 @@ class MockEmailService {
         const status = this.syncStatus.get(userId) || {
             userId,
             provider: 'gmail',
-            lastSync: Timestamp(Date.now()),
-            nextSync: Timestamp(Date.now() + 300000),
+            lastSync: (0, types_1.Timestamp)(Date.now()),
+            nextSync: (0, types_1.Timestamp)(Date.now() + 300000),
             status: 'idle',
             totalEmails: this.emails.size,
             syncedEmails: this.emails.size
@@ -500,7 +500,7 @@ class MockEmailService {
         }
         const params = {
             userId: originalEmail.userId,
-            from: { email: Email('user@tide.ai'), name: 'User' },
+            from: { email: (0, types_1.Email)('user@tide.ai'), name: 'User' },
             to: [originalEmail.from],
             subject: `Re: ${originalEmail.subject}`,
             body: replyParams.body,
@@ -518,7 +518,7 @@ class MockEmailService {
         }
         const params = {
             userId: originalEmail.userId,
-            from: { email: Email('user@tide.ai'), name: 'User' },
+            from: { email: (0, types_1.Email)('user@tide.ai'), name: 'User' },
             to: forwardParams.to,
             cc: forwardParams.cc,
             subject: `Fwd: ${originalEmail.subject}`,
@@ -703,11 +703,11 @@ class MockEmailService {
         const callbacks = this.threadMonitors.get(threadId) || [];
         if (callbacks.length > 0) {
             const response = {
-                emailId: EmailId(this.generateId()),
+                emailId: (0, types_1.EmailId)(this.generateId()),
                 threadId,
-                from: { email: Email('colleague@company.com'), name: 'Colleague' },
+                from: { email: (0, types_1.Email)('colleague@company.com'), name: 'Colleague' },
                 subject: 'Re: Your inquiry',
-                receivedAt: Timestamp(Date.now()),
+                receivedAt: (0, types_1.Timestamp)(Date.now()),
                 isAutoReply: false,
                 requiresAction: true,
                 suggestedActions: [{
@@ -750,7 +750,7 @@ User`;
     getTopSenders(emails) {
         const senderCount = new Map();
         emails.forEach(email => {
-            if (email.from.email !== Email('user@tide.ai')) {
+            if (email.from.email !== (0, types_1.Email)('user@tide.ai')) {
                 const key = email.from.email;
                 if (!senderCount.has(key)) {
                     senderCount.set(key, email.from);
