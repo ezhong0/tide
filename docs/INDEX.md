@@ -8,6 +8,8 @@
 - [**Complex Task Handling**](./COMPLEX-TASK-ARCHITECTURE.md) - How Tide handles multi-step workflows
 
 ### 🛠️ Development
+- [**Execution Plan**](./EXECUTION-PLAN.md) - Phased implementation roadmap with dependencies
+- [**Module 00 Completion**](./MODULE-00-COMPLETION-CHECKLIST.md) - What's needed to complete foundation
 - [**Development Guide**](./DEVELOPMENT-GUIDE.md) - How to build and deploy Tide
 - [**Architecture Decisions**](./ARCHITECTURE-DECISIONS.md) - Key technical decisions and rationale
 - [**Setup Guide**](./setup/EXTERNAL-SETUP-GUIDE.md) - External services setup (OAuth, APIs)
@@ -77,16 +79,27 @@ All modules follow the conversational text-first approach:
 - [Contributing Guide](../CONTRIBUTING.md) - How to contribute
 - [API Documentation](https://docs.tide.ai) - API reference (when deployed)
 
-## 📝 Document Status
+## 📝 Implementation Status
 
-✅ **Current & Updated:**
-- Business Strategy (Text-First)
-- Streamlined Architecture
-- Module 00 (Conversational Foundation)
-- Module 01 (Email - partially updated for text-first)
+### Module 00: Foundation (60% Complete)
+✅ **Done:**
+- Types and interfaces defined
+- Service contracts complete
+- Basic mocks for email
 
-⚠️ **Needs Update for Text-First:**
-- Modules 02-10 (still have voice-first references)
+❌ **Missing (Week 1 Priority):**
+- Conversation schemas
+- MockConversationService
+- MockActionPreviewService
+- Integration tests
+- Basic CLI
+
+### Execution Timeline:
+- **Week 1**: Complete Module 00
+- **Weeks 2-4**: Phase 1 (Modules 03, 04, 09)
+- **Weeks 5-7**: Phase 2 (Modules 01, 02, 05)
+- **Weeks 8-10**: Phase 3 (Modules 06, 07, 10)
+- **Weeks 11-12**: Phase 4 (Module 08, Polish)
 
 ## 🎯 Key Concepts
 
