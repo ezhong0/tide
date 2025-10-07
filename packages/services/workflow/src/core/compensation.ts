@@ -7,7 +7,7 @@ import {
   StepResult,
   CompensationHandler,
   WorkflowContext,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Compensation Manager

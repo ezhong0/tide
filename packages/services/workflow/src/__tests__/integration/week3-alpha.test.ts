@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Pool } from 'pg';
-import { WorkflowEngine } from '../../engine/workflow-engine';
-import { WorkflowDefinition, WorkflowStepId } from '../../types';
+import { WorkflowEngine } from '../../engine/workflow-engine.js';
+import { WorkflowDefinition, WorkflowStepId } from '../../types/index.js';
 import { databaseConfig } from '@tide/config';
 
 /**

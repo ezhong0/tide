@@ -1,57 +1,42 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyAccessToken = verifyAccessToken;
-exports.optionalAuth = optionalAuth;
-exports.extractToken = extractToken;
-exports.createAuthContext = createAuthContext;
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const config_1 = require("@tide/config");
-const errors_1 = require("@tide/errors");
-const logger_1 = require("@tide/logger");
+import { createClient } from '@supabase/supabase-js';
+import { supabaseConfig } from '@tide/config';
+import { AuthErrors } from '@tide/errors';
+import { logger } from '@tide/logger';
 /**
- * Verify JWT access token and extract user information
+ * Supabase Authentication Middleware
+ *
+ * Week 3 Alpha uses Supabase Auth - no custom JWT validation needed.
+ * This file verifies Supabase JWTs using the Supabase client.
+ */
+const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+/**
+ * Verify Supabase JWT token and extract user information
  *
  * @param token - JWT access token from Authorization header
  * @returns AuthContext with user information
  * @throws AuthError if token is invalid or expired
  */
-function verifyAccessToken(token) {
+export async function verifyAccessToken(token) {
     if (!token) {
-        throw errors_1.AuthErrors.invalidToken();
+        throw AuthErrors.invalidToken();
     }
     try {
-        // Verify token signature and expiration
-        const decoded = jsonwebtoken_1.default.verify(token, config_1.jwtConfig.accessTokenSecret);
-        // Ensure it's an access token (not refresh token)
-        if (decoded.type !== 'access') {
-            logger_1.logger.warn({ tokenType: decoded.type }, 'Invalid token type used for access');
-            throw errors_1.AuthErrors.invalidToken();
+        const { data, error } = await supabase.auth.getUser(token);
+        if (error || !data.user) {
+            logger.warn({ error }, 'Invalid Supabase token');
+            throw AuthErrors.invalidToken();
         }
-        // Return user context
         return {
-            userId: decoded.userId,
-            email: decoded.email,
+            userId: data.user.id,
+            email: data.user.email || '',
             isAuthenticated: true,
         };
     }
     catch (error) {
-        if (error instanceof jsonwebtoken_1.default.TokenExpiredError) {
-            logger_1.logger.debug('Access token expired');
-            throw errors_1.AuthErrors.tokenExpired();
-        }
-        if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
-            logger_1.logger.warn({ error: error.message }, 'Invalid JWT token');
-            throw errors_1.AuthErrors.invalidToken();
-        }
-        // Re-throw if it's already an AuthError
         if (error instanceof Error) {
-            throw error;
+            logger.warn({ error: error.message }, 'Failed to verify Supabase token');
         }
-        // Unknown error
-        throw new Error('Failed to verify token');
+        throw AuthErrors.invalidToken();
     }
 }
 /**
@@ -60,7 +45,7 @@ function verifyAccessToken(token) {
  * @param token - Optional JWT access token
  * @returns AuthContext (isAuthenticated = false if no token)
  */
-function optionalAuth(token) {
+export async function optionalAuth(token) {
     if (!token) {
         return {
             userId: '',
@@ -69,11 +54,10 @@ function optionalAuth(token) {
         };
     }
     try {
-        return verifyAccessToken(token);
+        return await verifyAccessToken(token);
     }
     catch (error) {
-        // Log but don't throw for optional auth
-        logger_1.logger.debug({ error }, 'Optional auth failed');
+        logger.debug({ error }, 'Optional auth failed');
         return {
             userId: '',
             email: '',
@@ -87,7 +71,7 @@ function optionalAuth(token) {
  * @param authHeader - Authorization header value
  * @returns Token string or undefined
  */
-function extractToken(authHeader) {
+export function extractToken(authHeader) {
     if (!authHeader) {
         return undefined;
     }
@@ -105,14 +89,14 @@ function extractToken(authHeader) {
  * @returns AuthContext
  * @throws AuthError if required and token is missing/invalid
  */
-function createAuthContext(authHeader, required = true) {
+export async function createAuthContext(authHeader, required = true) {
     const token = extractToken(authHeader);
     if (required) {
         if (!token) {
-            throw errors_1.AuthErrors.missingToken();
+            throw AuthErrors.missingToken();
         }
-        return verifyAccessToken(token);
+        return await verifyAccessToken(token);
     }
-    return optionalAuth(token);
+    return await optionalAuth(token);
 }
 //# sourceMappingURL=auth.js.map

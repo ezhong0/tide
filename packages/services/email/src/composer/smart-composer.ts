@@ -6,7 +6,7 @@ import type {
   ComposeRequest,
   DraftApproach,
   WritingStyle,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Smart email composer that generates multiple draft options

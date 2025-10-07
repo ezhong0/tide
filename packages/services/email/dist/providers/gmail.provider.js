@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GmailProvider = void 0;
-const googleapis_1 = require("googleapis");
-const logger_1 = require("@tide/logger");
+import { google } from 'googleapis';
+import { logger } from '@tide/logger';
 /**
  * Gmail provider implementation
  */
-class GmailProvider {
+export class GmailProvider {
     constructor() {
         this.gmail = null;
         this.userId = null;
@@ -18,18 +15,18 @@ class GmailProvider {
         try {
             this.userId = userId;
             // Create OAuth2 client
-            this.auth = new googleapis_1.google.auth.OAuth2();
+            this.auth = new google.auth.OAuth2();
             this.auth.setCredentials({
                 access_token: tokens.accessToken,
                 refresh_token: tokens.refreshToken,
                 expiry_date: tokens.expiresAt.getTime(),
             });
             // Initialize Gmail API client
-            this.gmail = googleapis_1.google.gmail({ version: 'v1', auth: this.auth });
-            logger_1.logger.info({ userId }, 'Gmail provider initialized');
+            this.gmail = google.gmail({ version: 'v1', auth: this.auth });
+            logger.info({ userId }, 'Gmail provider initialized');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to initialize Gmail provider');
+            logger.error({ userId, error }, 'Failed to initialize Gmail provider');
             throw error;
         }
     }
@@ -63,7 +60,7 @@ class GmailProvider {
             return emails.filter((email) => email !== null);
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to fetch emails');
+            logger.error({ userId: this.userId, error }, 'Failed to fetch emails');
             throw error;
         }
     }
@@ -118,7 +115,7 @@ class GmailProvider {
             };
         }
         catch (error) {
-            logger_1.logger.error({ messageId, error }, 'Failed to fetch full email');
+            logger.error({ messageId, error }, 'Failed to fetch full email');
             return null;
         }
     }
@@ -201,10 +198,10 @@ class GmailProvider {
                     raw: Buffer.from(message).toString('base64url'),
                 },
             });
-            logger_1.logger.info({ userId: this.userId, to, subject: draft.subject }, 'Email sent');
+            logger.info({ userId: this.userId, to, subject: draft.subject }, 'Email sent');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to send email');
+            logger.error({ userId: this.userId, error }, 'Failed to send email');
             throw error;
         }
     }
@@ -237,10 +234,10 @@ class GmailProvider {
                     threadId: original.data.threadId,
                 },
             });
-            logger_1.logger.info({ userId: this.userId, emailId }, 'Reply sent');
+            logger.info({ userId: this.userId, emailId }, 'Reply sent');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, emailId, error }, 'Failed to reply to email');
+            logger.error({ userId: this.userId, emailId, error }, 'Failed to reply to email');
             throw error;
         }
     }
@@ -283,10 +280,10 @@ class GmailProvider {
                     removeLabelIds: remove.length > 0 ? remove : undefined,
                 },
             });
-            logger_1.logger.info({ userId: this.userId, messageId, add, remove }, 'Labels modified');
+            logger.info({ userId: this.userId, messageId, add, remove }, 'Labels modified');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, messageId, error }, 'Failed to modify labels');
+            logger.error({ userId: this.userId, messageId, error }, 'Failed to modify labels');
             throw error;
         }
     }
@@ -300,13 +297,12 @@ class GmailProvider {
         try {
             // This would require Google Cloud Pub/Sub setup
             // For now, we'll log that notifications are not yet implemented
-            logger_1.logger.info({ userId }, 'Gmail push notifications setup (not yet implemented)');
+            logger.info({ userId }, 'Gmail push notifications setup (not yet implemented)');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to setup notifications');
+            logger.error({ userId, error }, 'Failed to setup notifications');
             throw error;
         }
     }
 }
-exports.GmailProvider = GmailProvider;
 //# sourceMappingURL=gmail.provider.js.map

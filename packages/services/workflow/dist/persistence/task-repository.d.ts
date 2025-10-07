@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { UserId } from '@tide/types';
-import { Task, TaskId, TaskStatus, Subtask, TaskDependency } from '../types/task.types';
+import { Task, TaskId, TaskStatus, Subtask, TaskDependency } from '../types/task.types.js';
 /**
  * Task Repository
  *

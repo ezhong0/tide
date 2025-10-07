@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailTriageEngine = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Email triage engine that analyzes emails and determines handling strategy
  */
-class EmailTriageEngine {
+export class EmailTriageEngine {
     /**
      * Analyze email and generate triage result
      */
     async analyze(email) {
-        logger_1.logger.info({ emailId: email.id, userId: email.userId }, 'Analyzing email for triage');
+        logger.info({ emailId: email.id, userId: email.userId }, 'Analyzing email for triage');
         try {
             // Run all analysis in parallel
             const [importance, urgency, category, sentiment, actionRequired, relationships,] = await Promise.all([
@@ -47,7 +44,7 @@ class EmailTriageEngine {
                 confidence,
                 canAutoHandle: strategy.auto && confidence > 0.85,
             };
-            logger_1.logger.info({
+            logger.info({
                 emailId: email.id,
                 importance,
                 urgency,
@@ -57,7 +54,7 @@ class EmailTriageEngine {
             return result;
         }
         catch (error) {
-            logger_1.logger.error({ emailId: email.id, error }, 'Failed to analyze email');
+            logger.error({ emailId: email.id, error }, 'Failed to analyze email');
             throw error;
         }
     }
@@ -375,5 +372,4 @@ class EmailTriageEngine {
         return null;
     }
 }
-exports.EmailTriageEngine = EmailTriageEngine;
 //# sourceMappingURL=triage-engine.js.map

@@ -22,7 +22,7 @@ export type TriageStrategy = 'auto_reply' | 'auto_decline' | 'auto_delegate' | '
 /**
  * Draft approach types
  */
-export type DraftApproach = 'detailed' | 'concise' | 'friendly' | 'formal';
+export type DraftApproach = 'detailed' | 'concise' | 'friendly' | 'formal' | 'ai-enhanced';
 /**
  * Email sentiment
  */

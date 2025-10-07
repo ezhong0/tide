@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { WorkflowDefinition, WorkflowId, WorkflowExecutionId, WorkflowState } from '../types';
+import { WorkflowDefinition, WorkflowId, WorkflowExecutionId, WorkflowState } from '../types/index.js';
 import { UserId } from '@tide/types';
 /**
  * Workflow Repository

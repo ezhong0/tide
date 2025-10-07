@@ -19,18 +19,19 @@
 
 ### 1. AI Service
 **Path**: `packages/services/ai`
-**Port**: 4003
-**Dependencies**: Anthropic API, OpenAI API
+**Port**: 8080
+**Dependencies**: OpenAI API (GPT-5 models only)
 
 **Environment Variables**:
 ```bash
 NODE_ENV=production
-PORT=4003
-ANTHROPIC_API_KEY=<from .env line 70>
+PORT=8080
 OPENAI_API_KEY=<from .env>
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
 LOG_LEVEL=info
+ENABLE_REASONING=true
+ENABLE_LEARNING=true
 ```
 
 **Deployment Command**:
@@ -43,21 +44,18 @@ railway up --detach
 
 ### 2. Email Service
 **Path**: `packages/services/email`
-**Port**: 4004
+**Port**: 8080
 **Dependencies**: Gmail API, Exchange API
 
 **Environment Variables**:
 ```bash
 NODE_ENV=production
-PORT=4004
-GOOGLE_CLIENT_ID=<from .env>
-GOOGLE_CLIENT_SECRET=<from .env>
-AZURE_CLIENT_ID=<from .env>
-AZURE_CLIENT_SECRET=<from .env>
+PORT=8080
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
-AI_SERVICE_URL=<railway-ai-service-url>
 LOG_LEVEL=info
+ENABLE_SMART_COMPOSE=true
+ENABLE_RELATIONSHIP_TRACKING=true
 ```
 
 **Deployment Command**:
@@ -70,21 +68,17 @@ railway up --detach
 
 ### 3. Calendar Service
 **Path**: `packages/services/calendar`
-**Port**: 4005
+**Port**: 8080
 **Dependencies**: Google Calendar API, Exchange Calendar API
 
 **Environment Variables**:
 ```bash
 NODE_ENV=production
-PORT=4005
-GOOGLE_CLIENT_ID=<from .env>
-GOOGLE_CLIENT_SECRET=<from .env>
-AZURE_CLIENT_ID=<from .env>
-AZURE_CLIENT_SECRET=<from .env>
+PORT=8080
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
-AI_SERVICE_URL=<railway-ai-service-url>
 LOG_LEVEL=info
+ENABLE_SMART_SCHEDULING=true
 ```
 
 **Deployment Command**:
@@ -97,20 +91,21 @@ railway up --detach
 
 ### 4. Workflow Service
 **Path**: `packages/services/workflow`
-**Port**: 4006
-**Dependencies**: Kafka, Redis
+**Port**: 8080
+**Dependencies**: None (Kafka disabled for Alpha)
 
 **Environment Variables**:
 ```bash
 NODE_ENV=production
-PORT=4006
+PORT=8080
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
-KAFKA_BROKERS=<railway-kafka-url>
-REDIS_URL=<railway-redis-url>
-AI_SERVICE_URL=<railway-ai-service-url>
 LOG_LEVEL=info
+KAFKA_ENABLED=false
+ENABLE_WORKFLOW_ENGINE=true
 ```
+
+**Note**: Kafka event-driven workflows disabled for Alpha. Core request-response workflows work fine.
 
 **Deployment Command**:
 ```bash
@@ -122,23 +117,25 @@ railway up --detach
 
 ### 5. Gateway Service
 **Path**: `packages/services/gateway`
-**Port**: 4000
+**Port**: 8080
 **Dependencies**: All backend services
 
 **Environment Variables**:
 ```bash
 NODE_ENV=production
-PORT=4000
+PORT=8080
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
-AI_SERVICE_URL=<railway-ai-service-url>
-EMAIL_SERVICE_URL=<railway-email-service-url>
-CALENDAR_SERVICE_URL=<railway-calendar-service-url>
-WORKFLOW_SERVICE_URL=<railway-workflow-service-url>
-JWT_ACCESS_SECRET=<from .env>
-JWT_REFRESH_SECRET=<from .env>
+AI_SERVICE_URL=<auto-discovered or http://ai:8080>
+EMAIL_SERVICE_URL=<auto-discovered or http://email:8080>
+CALENDAR_SERVICE_URL=<auto-discovered or http://calendar:8080>
+WORKFLOW_SERVICE_URL=<auto-discovered or http://workflow:8080>
+JWT_SECRET=<generated or from .env>
 LOG_LEVEL=info
+CORS_ORIGIN=*
 ```
+
+**Note**: Service URLs are auto-discovered by `setup-railway-env.sh` script.
 
 **Deployment Command**:
 ```bash
@@ -215,10 +212,15 @@ railway logs --service tide-gateway
 
 ## Environment Variable Configuration
 
-### Via Railway CLI
+### Automated (RECOMMENDED)
+```bash
+# Use the automated setup script
+./scripts/setup-railway-env.sh
+```
+
+### Via Railway CLI (Manual)
 ```bash
 # Set individual variables
-railway variables set ANTHROPIC_API_KEY=<value> --service tide-ai
 railway variables set OPENAI_API_KEY=<value> --service tide-ai
 
 # Or use Railway dashboard for bulk updates
@@ -302,6 +304,26 @@ railway rollback --service <service-name>
 ---
 
 ## Quick Deployment (All Services)
+
+### Automated Environment Setup (RECOMMENDED)
+
+Use the automated script to configure all environment variables:
+
+```bash
+# From project root
+./scripts/setup-railway-env.sh
+```
+
+This script will:
+- ✅ Load variables from `.env`
+- ✅ Configure all 5 services with correct environment variables
+- ✅ Auto-discover service URLs from Railway
+- ✅ Restart services after configuration
+- ✅ Run health checks to verify deployment
+- ✅ Use GPT-5 models only (no Claude/Anthropic)
+- ✅ Disable Kafka for Alpha (request-response only)
+
+### Manual Deployment
 
 ```bash
 # From project root

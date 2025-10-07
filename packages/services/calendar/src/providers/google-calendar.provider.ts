@@ -8,7 +8,7 @@ import type {
   Availability,
   TimeSlot,
   Attendee,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Google Calendar provider implementation

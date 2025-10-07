@@ -1,11 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CalendarOptimizer = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Calendar Optimizer that analyzes and improves schedule efficiency
  */
-class CalendarOptimizer {
+export class CalendarOptimizer {
     constructor(userId) {
         this.userId = userId;
     }
@@ -13,7 +10,7 @@ class CalendarOptimizer {
      * Analyze weekly schedule and identify optimization opportunities
      */
     async optimizeWeek(events) {
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             eventCount: events.length,
         }, 'Optimizing weekly schedule');
@@ -32,7 +29,7 @@ class CalendarOptimizer {
                 actions,
                 projectedImpact,
             };
-            logger_1.logger.info({
+            logger.info({
                 userId: this.userId,
                 opportunityCount: opportunities.length,
                 timeRecoverable: projectedImpact.timeRecovered,
@@ -40,7 +37,7 @@ class CalendarOptimizer {
             return plan;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to optimize schedule');
+            logger.error({ userId: this.userId, error }, 'Failed to optimize schedule');
             throw error;
         }
     }
@@ -393,5 +390,4 @@ class CalendarOptimizer {
         };
     }
 }
-exports.CalendarOptimizer = CalendarOptimizer;
 //# sourceMappingURL=calendar-optimizer.js.map

@@ -1,23 +1,17 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.CalendarService = void 0;
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const helmet_1 = __importDefault(require("helmet"));
-const config_1 = require("@tide/config");
-const logger_1 = require("@tide/logger");
-const google_calendar_provider_1 = require("./providers/google-calendar.provider");
-const smart_scheduler_1 = require("./scheduler/smart-scheduler");
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { env } from '@tide/config';
+import { logger } from '@tide/logger';
+import { GoogleCalendarProvider } from './providers/google-calendar.provider.js';
+import { SmartScheduler } from './scheduler/smart-scheduler.js';
 /**
  * Calendar service main application
  */
 class CalendarService {
     constructor() {
-        this.app = (0, express_1.default)();
-        this.scheduler = new smart_scheduler_1.SmartScheduler();
+        this.app = express();
+        this.scheduler = new SmartScheduler();
         this.providers = new Map();
         this.setupMiddleware();
         this.setupRoutes();
@@ -26,12 +20,12 @@ class CalendarService {
      * Setup Express middleware
      */
     setupMiddleware() {
-        this.app.use((0, helmet_1.default)());
-        this.app.use((0, cors_1.default)());
-        this.app.use(express_1.default.json());
+        this.app.use(helmet());
+        this.app.use(cors());
+        this.app.use(express.json());
         // Request logging
         this.app.use((req, res, next) => {
-            logger_1.logger.info({
+            logger.info({
                 method: req.method,
                 path: req.path,
                 ip: req.ip,
@@ -62,11 +56,11 @@ class CalendarService {
                 const calendarProvider = this.getProvider(provider);
                 await calendarProvider.initialize(userId, tokens);
                 this.providers.set(`${userId}-${provider}`, calendarProvider);
-                logger_1.logger.info({ userId, provider }, 'Calendar provider connected');
+                logger.info({ userId, provider }, 'Calendar provider connected');
                 res.json({ success: true, provider });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to connect calendar provider');
+                logger.error({ error }, 'Failed to connect calendar provider');
                 res.status(500).json({ error: 'Failed to connect calendar provider' });
             }
         });
@@ -86,7 +80,7 @@ class CalendarService {
                 res.json({ events, count: events.length });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to fetch events');
+                logger.error({ error }, 'Failed to fetch events');
                 res.status(500).json({ error: 'Failed to fetch events' });
             }
         });
@@ -106,7 +100,7 @@ class CalendarService {
                 res.json({ availability });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to get availability');
+                logger.error({ error }, 'Failed to get availability');
                 res.status(500).json({ error: 'Failed to get availability' });
             }
         });
@@ -124,7 +118,7 @@ class CalendarService {
                 res.json({ result });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to schedule meeting');
+                logger.error({ error }, 'Failed to schedule meeting');
                 res.status(500).json({ error: 'Failed to schedule meeting' });
             }
         });
@@ -144,7 +138,7 @@ class CalendarService {
                 res.json({ event: created });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to create event');
+                logger.error({ error }, 'Failed to create event');
                 res.status(500).json({ error: 'Failed to create event' });
             }
         });
@@ -164,7 +158,7 @@ class CalendarService {
                 res.json({ event: updated });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to update event');
+                logger.error({ error }, 'Failed to update event');
                 res.status(500).json({ error: 'Failed to update event' });
             }
         });
@@ -180,7 +174,7 @@ class CalendarService {
                 res.json({ success: true });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to delete event');
+                logger.error({ error }, 'Failed to delete event');
                 res.status(500).json({ error: 'Failed to delete event' });
             }
         });
@@ -190,7 +184,7 @@ class CalendarService {
         });
         // Error handler
         this.app.use((err, req, res, next) => {
-            logger_1.logger.error({ error: err }, 'Unhandled error');
+            logger.error({ error: err }, 'Unhandled error');
             res.status(500).json({ error: 'Internal server error' });
         });
     }
@@ -200,7 +194,7 @@ class CalendarService {
     getProvider(provider) {
         switch (provider) {
             case 'google':
-                return new google_calendar_provider_1.GoogleCalendarProvider();
+                return new GoogleCalendarProvider();
             // case 'exchange':
             //   return new ExchangeCalendarProvider();
             default:
@@ -211,19 +205,19 @@ class CalendarService {
      * Start the calendar service
      */
     async start() {
-        const port = config_1.env.PORT || 3004;
+        const port = env.PORT || 3004;
         this.app.listen(port, () => {
-            logger_1.logger.info({ port, service: 'calendar' }, 'Calendar service started');
+            logger.info({ port, service: 'calendar' }, 'Calendar service started');
         });
     }
 }
-exports.CalendarService = CalendarService;
 // Start the service
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     const service = new CalendarService();
     service.start().catch((error) => {
-        logger_1.logger.error({ error }, 'Failed to start calendar service');
+        logger.error({ error }, 'Failed to start calendar service');
         process.exit(1);
     });
 }
+export { CalendarService };
 //# sourceMappingURL=index.js.map

@@ -6,8 +6,8 @@ import {
   TemporalPattern,
   SequentialPattern,
   PatternType,
-} from '../types/pattern.types';
-import { PatternRepository } from '../persistence/pattern-repository';
+} from '../types/pattern.types.js';
+import { PatternRepository } from '../persistence/pattern-repository.js';
 
 /**
  * Pattern Detector

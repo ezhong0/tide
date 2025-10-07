@@ -1,4 +1,4 @@
-import type { EmailDraft, ComposeRequest } from '../types';
+import type { EmailDraft, ComposeRequest } from '../types/index.js';
 /**
  * Smart email composer that generates multiple draft options
  */
@@ -16,9 +16,38 @@ export declare class SmartComposer {
      */
     private generateSubject;
     /**
-     * Generate email body
+     * Generate email body with AI enhancement
      */
     private generateBody;
+    /**
+     * Generate AI-enhanced email draft using AI Service
+     * This integrates with the AI Service for intelligent composition
+     */
+    generateAIDraft(request: ComposeRequest): Promise<EmailDraft>;
+    /**
+     * Build enhanced context including thread history and user preferences
+     */
+    private buildEnhancedContext;
+    /**
+     * Build AI prompt for email composition
+     */
+    private buildAIPrompt;
+    /**
+     * Generate content using AI (integration point for AI Service)
+     */
+    private generateWithAI;
+    /**
+     * Enhanced template generation with better context awareness
+     */
+    private generateEnhancedTemplate;
+    /**
+     * Parse AI-generated response
+     */
+    private parseAIResponse;
+    /**
+     * Summarize email thread for context
+     */
+    private summarizeThread;
     /**
      * Generate greeting based on approach
      */

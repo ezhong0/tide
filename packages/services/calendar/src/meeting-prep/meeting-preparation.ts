@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import type { CalendarEvent, Attendee } from '../types';
+import type { CalendarEvent, Attendee } from '../types/index.js';
 
 export interface ParticipantInfo {
   attendee: Attendee;

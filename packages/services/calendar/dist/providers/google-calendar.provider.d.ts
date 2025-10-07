@@ -1,5 +1,5 @@
 import type { UserId } from '@tide/types';
-import type { CalendarEvent, ICalendarProvider, OAuthTokens, Availability } from '../types';
+import type { CalendarEvent, ICalendarProvider, OAuthTokens, Availability } from '../types/index.js';
 /**
  * Google Calendar provider implementation
  */

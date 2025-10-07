@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SmartScheduler } from '../../scheduler/smart-scheduler';
-import { ConflictResolver } from '../../conflict/conflict-resolver';
-import { CalendarOptimizer } from '../../optimizer/calendar-optimizer';
-import { MeetingPreparation } from '../../meeting-prep/meeting-preparation';
-import type { CalendarEvent, SchedulingRequest } from '../../types';
+import { SmartScheduler } from '../../scheduler/smart-scheduler.js';
+import { ConflictResolver } from '../../conflict/conflict-resolver.js';
+import { CalendarOptimizer } from '../../optimizer/calendar-optimizer.js';
+import { MeetingPreparation } from '../../meeting-prep/meeting-preparation.js';
+import type { CalendarEvent, SchedulingRequest } from '../../types/index.js';
 import { createUserId, createCalendarEventId } from '@tide/types';
 
 /**

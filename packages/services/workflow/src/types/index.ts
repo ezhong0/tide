@@ -3,10 +3,10 @@
  */
 
 // Workflow types
-export * from './workflow.types';
+export * from './workflow.types.js';
 
 // Task types
-export * from './task.types';
+export * from './task.types.js';
 
 // Pattern types
-export * from './pattern.types';
+export * from './pattern.types.js';

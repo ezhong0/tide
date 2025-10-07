@@ -1,1 +1,1 @@
-export * from './pattern-detector';
+export * from './pattern-detector.js';

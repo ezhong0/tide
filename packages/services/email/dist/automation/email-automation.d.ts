@@ -1,5 +1,5 @@
-import type { SmartComposer } from '../composer/smart-composer';
-import type { Email, EmailDraft, TriageResult, IEmailProvider } from '../types';
+import type { SmartComposer } from '../composer/smart-composer.js';
+import type { Email, EmailDraft, TriageResult, IEmailProvider } from '../types/index.js';
 export interface EmailActionResult {
     type: 'send' | 'draft' | 'delegate' | 'archive' | 'queue_for_review';
     email?: EmailDraft;

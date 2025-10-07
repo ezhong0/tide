@@ -1,4 +1,4 @@
-import { WorkflowTransaction, WorkflowExecutionId, WorkflowStepId, StepResult, CompensationHandler, WorkflowContext } from '../types';
+import { WorkflowTransaction, WorkflowExecutionId, WorkflowStepId, StepResult, CompensationHandler, WorkflowContext } from '../types/index.js';
 /**
  * Compensation Manager
  *

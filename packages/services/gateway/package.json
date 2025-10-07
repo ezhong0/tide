@@ -1,6 +1,7 @@
 {
   "name": "@tide/gateway",
   "version": "0.1.0",
+  "type": "module",
   "description": "API Gateway with GraphQL Federation for Tide platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,6 +12,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.1",
     "@tide/config": "workspace:*",
     "@tide/types": "workspace:*",
     "@tide/errors": "workspace:*",

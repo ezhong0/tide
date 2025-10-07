@@ -1,5 +1,5 @@
 import type { UserId } from '@tide/types';
-import type { Email, EmailDraft, IEmailProvider, OAuthTokens, FetchOptions } from '../types';
+import type { Email, EmailDraft, IEmailProvider, OAuthTokens, FetchOptions } from '../types/index.js';
 /**
  * Exchange/Outlook provider implementation using Microsoft Graph API
  */

@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import type { SmartComposer } from '../composer/smart-composer';
+import type { SmartComposer } from '../composer/smart-composer.js';
 import type {
   Email,
   EmailDraft,
@@ -8,7 +8,7 @@ import type {
   EmailAction,
   IEmailProvider,
   ComposeRequest,
-} from '../types';
+} from '../types/index.js';
 
 export interface EmailActionResult {
   type: 'send' | 'draft' | 'delegate' | 'archive' | 'queue_for_review';

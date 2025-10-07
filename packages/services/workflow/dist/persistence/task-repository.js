@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.TaskRepository = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Task Repository
  *
  * Handles persistence of tasks, subtasks, and dependencies to PostgreSQL
  */
-class TaskRepository {
+export class TaskRepository {
     constructor(pool) {
         this.pool = pool;
     }
@@ -45,10 +42,10 @@ class TaskRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.info({ taskId: task.id }, 'Task created');
+            logger.info({ taskId: task.id }, 'Task created');
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId: task.id }, 'Failed to create task');
+            logger.error({ error, taskId: task.id }, 'Failed to create task');
             throw error;
         }
     }
@@ -68,7 +65,7 @@ class TaskRepository {
             return this.mapRowToTask(result.rows[0]);
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId: id }, 'Failed to get task');
+            logger.error({ error, taskId: id }, 'Failed to get task');
             throw error;
         }
     }
@@ -107,7 +104,7 @@ class TaskRepository {
             return result.rows.map(row => this.mapRowToTask(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get tasks by user');
+            logger.error({ error, userId }, 'Failed to get tasks by user');
             throw error;
         }
     }
@@ -154,10 +151,10 @@ class TaskRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ taskId: task.id }, 'Task updated');
+            logger.debug({ taskId: task.id }, 'Task updated');
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId: task.id }, 'Failed to update task');
+            logger.error({ error, taskId: task.id }, 'Failed to update task');
             throw error;
         }
     }
@@ -171,10 +168,10 @@ class TaskRepository {
     `;
         try {
             await this.pool.query(query, [id]);
-            logger_1.logger.info({ taskId: id }, 'Task deleted');
+            logger.info({ taskId: id }, 'Task deleted');
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId: id }, 'Failed to delete task');
+            logger.error({ error, taskId: id }, 'Failed to delete task');
             throw error;
         }
     }
@@ -203,10 +200,10 @@ class TaskRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ subtaskId: subtask.id }, 'Subtask created');
+            logger.debug({ subtaskId: subtask.id }, 'Subtask created');
         }
         catch (error) {
-            logger_1.logger.error({ error, subtaskId: subtask.id }, 'Failed to create subtask');
+            logger.error({ error, subtaskId: subtask.id }, 'Failed to create subtask');
             throw error;
         }
     }
@@ -224,7 +221,7 @@ class TaskRepository {
             return result.rows.map(row => this.mapRowToSubtask(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, parentId }, 'Failed to get subtasks');
+            logger.error({ error, parentId }, 'Failed to get subtasks');
             throw error;
         }
     }
@@ -247,10 +244,10 @@ class TaskRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ dependency }, 'Dependency added');
+            logger.debug({ dependency }, 'Dependency added');
         }
         catch (error) {
-            logger_1.logger.error({ error, dependency }, 'Failed to add dependency');
+            logger.error({ error, dependency }, 'Failed to add dependency');
             throw error;
         }
     }
@@ -272,7 +269,7 @@ class TaskRepository {
             }));
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId }, 'Failed to get task dependencies');
+            logger.error({ error, taskId }, 'Failed to get task dependencies');
             throw error;
         }
     }
@@ -289,7 +286,7 @@ class TaskRepository {
             return result.rows.map(row => row.task_id);
         }
         catch (error) {
-            logger_1.logger.error({ error, taskId }, 'Failed to get dependent tasks');
+            logger.error({ error, taskId }, 'Failed to get dependent tasks');
             throw error;
         }
     }
@@ -315,7 +312,7 @@ class TaskRepository {
             return result.rows.map(row => this.mapRowToTask(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get ready tasks');
+            logger.error({ error, userId }, 'Failed to get ready tasks');
             throw error;
         }
     }
@@ -370,5 +367,4 @@ class TaskRepository {
         return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.TaskRepository = TaskRepository;
 //# sourceMappingURL=task-repository.js.map

@@ -2,6 +2,6 @@
  * Core workflow engine exports
  */
 
-export * from './state-machine';
-export * from './dag-executor';
-export * from './compensation';
+export * from './state-machine.js';
+export * from './dag-executor.js';
+export * from './compensation.js';

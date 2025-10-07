@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PatternRepository = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Pattern Repository
  *
  * Handles persistence of user behaviors, detected patterns, and automation suggestions
  */
-class PatternRepository {
+export class PatternRepository {
     constructor(pool) {
         this.pool = pool;
     }
@@ -44,10 +41,10 @@ class PatternRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ action: behavior.action }, 'Behavior recorded');
+            logger.debug({ action: behavior.action }, 'Behavior recorded');
         }
         catch (error) {
-            logger_1.logger.error({ error, behavior }, 'Failed to record behavior');
+            logger.error({ error, behavior }, 'Failed to record behavior');
             throw error;
         }
     }
@@ -66,7 +63,7 @@ class PatternRepository {
             return result.rows.map(row => this.mapRowToBehavior(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get behaviors');
+            logger.error({ error, userId }, 'Failed to get behaviors');
             throw error;
         }
     }
@@ -106,10 +103,10 @@ class PatternRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.info({ patternId: pattern.id, type: pattern.type }, 'Pattern saved');
+            logger.info({ patternId: pattern.id, type: pattern.type }, 'Pattern saved');
         }
         catch (error) {
-            logger_1.logger.error({ error, patternId: pattern.id }, 'Failed to save pattern');
+            logger.error({ error, patternId: pattern.id }, 'Failed to save pattern');
             throw error;
         }
     }
@@ -132,7 +129,7 @@ class PatternRepository {
             return result.rows.map(row => this.mapRowToPattern(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get patterns');
+            logger.error({ error, userId }, 'Failed to get patterns');
             throw error;
         }
     }
@@ -147,10 +144,10 @@ class PatternRepository {
     `;
         try {
             await this.pool.query(query, [patternId, status]);
-            logger_1.logger.info({ patternId, status }, 'Pattern status updated');
+            logger.info({ patternId, status }, 'Pattern status updated');
         }
         catch (error) {
-            logger_1.logger.error({ error, patternId }, 'Failed to update pattern status');
+            logger.error({ error, patternId }, 'Failed to update pattern status');
             throw error;
         }
     }
@@ -182,10 +179,10 @@ class PatternRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.info({ suggestionId: suggestion.id }, 'Automation suggestion saved');
+            logger.info({ suggestionId: suggestion.id }, 'Automation suggestion saved');
         }
         catch (error) {
-            logger_1.logger.error({ error, suggestionId: suggestion.id }, 'Failed to save suggestion');
+            logger.error({ error, suggestionId: suggestion.id }, 'Failed to save suggestion');
             throw error;
         }
     }
@@ -208,7 +205,7 @@ class PatternRepository {
             return result.rows.map(row => this.mapRowToSuggestion(row));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get suggestions');
+            logger.error({ error, userId }, 'Failed to get suggestions');
             throw error;
         }
     }
@@ -232,10 +229,10 @@ class PatternRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ signature }, 'Sequence recorded');
+            logger.debug({ signature }, 'Sequence recorded');
         }
         catch (error) {
-            logger_1.logger.error({ error, signature }, 'Failed to record sequence');
+            logger.error({ error, signature }, 'Failed to record sequence');
             throw error;
         }
     }
@@ -260,7 +257,7 @@ class PatternRepository {
             }));
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get frequent sequences');
+            logger.error({ error, userId }, 'Failed to get frequent sequences');
             throw error;
         }
     }
@@ -341,5 +338,4 @@ class PatternRepository {
         return `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.PatternRepository = PatternRepository;
 //# sourceMappingURL=pattern-repository.js.map

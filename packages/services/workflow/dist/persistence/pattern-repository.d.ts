@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { UserId } from '@tide/types';
-import { DetectedPattern, PatternId, UserBehavior, AutomationSuggestion, PatternStatus } from '../types/pattern.types';
+import { DetectedPattern, PatternId, UserBehavior, AutomationSuggestion, PatternStatus } from '../types/pattern.types.js';
 /**
  * Pattern Repository
  *

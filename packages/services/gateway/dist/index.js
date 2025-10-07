@@ -1,29 +1,24 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const helmet_1 = __importDefault(require("helmet"));
-const server_1 = require("@apollo/server");
-const express4_1 = require("@apollo/server/express4");
-const gateway_1 = require("@apollo/gateway");
-const config_1 = require("@tide/config");
-const logger_1 = require("@tide/logger");
-const auth_1 = require("./middleware/auth");
-const app = (0, express_1.default)();
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { ApolloServer } from '@apollo/server';
+import { expressMiddleware } from '@apollo/server/express4';
+import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
+import { env } from '@tide/config';
+import { logger } from '@tide/logger';
+import { createAuthContext } from './middleware/auth.js';
+const app = express();
 // Security middleware
-app.use((0, helmet_1.default)({
+app.use(helmet({
     contentSecurityPolicy: false, // Disable for GraphQL Playground
     crossOriginEmbedderPolicy: false,
 }));
-app.use((0, cors_1.default)({
+app.use(cors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
 }));
 // Body parsing
-app.use(express_1.default.json());
+app.use(express.json());
 // Health check endpoint (available before GraphQL)
 app.get('/health', (req, res) => {
     res.json({
@@ -35,8 +30,8 @@ app.get('/health', (req, res) => {
     });
 });
 // Initialize Apollo Gateway
-const gateway = new gateway_1.ApolloGateway({
-    supergraphSdl: new gateway_1.IntrospectAndCompose({
+const gateway = new ApolloGateway({
+    supergraphSdl: new IntrospectAndCompose({
         subgraphs: [
         // Add your subgraph services here as they become available
         // Example:
@@ -51,16 +46,16 @@ const gateway = new gateway_1.ApolloGateway({
     serviceHealthCheck: true,
 });
 // Create Apollo Server
-const server = new server_1.ApolloServer({
+const server = new ApolloServer({
     gateway,
     // Enable introspection and playground in development
-    introspection: config_1.env.NODE_ENV === 'development',
+    introspection: env.NODE_ENV === 'development',
     plugins: [
         {
             async requestDidStart() {
                 return {
                     async didEncounterErrors(requestContext) {
-                        logger_1.logger.error({
+                        logger.error({
                             errors: requestContext.errors,
                             query: requestContext.request.query,
                             variables: requestContext.request.variables,
@@ -75,12 +70,12 @@ const server = new server_1.ApolloServer({
 async function startServer() {
     await server.start();
     // Apply GraphQL middleware
-    app.use('/graphql', (0, express4_1.expressMiddleware)(server, {
+    app.use('/graphql', expressMiddleware(server, {
         context: async ({ req }) => {
             // Verify JWT and create auth context
             // Set required=false to allow introspection queries without auth
             try {
-                const authContext = (0, auth_1.createAuthContext)(req.headers.authorization, false // Optional auth - allows introspection
+                const authContext = createAuthContext(req.headers.authorization, false // Optional auth - allows introspection
                 );
                 return {
                     ...authContext,
@@ -90,7 +85,7 @@ async function startServer() {
             }
             catch (error) {
                 // Log auth errors but still allow request (services can reject)
-                logger_1.logger.warn({ error, path: req.path }, 'Authentication failed');
+                logger.warn({ error, path: req.path }, 'Authentication failed');
                 return {
                     userId: '',
                     email: '',
@@ -102,7 +97,7 @@ async function startServer() {
     }));
     const PORT = process.env.GATEWAY_PORT ? parseInt(process.env.GATEWAY_PORT) : 4000;
     app.listen(PORT, () => {
-        logger_1.logger.info({
+        logger.info({
             port: PORT,
             service: 'gateway',
             graphqlPath: '/graphql',
@@ -110,19 +105,19 @@ async function startServer() {
     });
 }
 startServer().catch((error) => {
-    logger_1.logger.error({ error }, 'Failed to start API Gateway');
+    logger.error({ error }, 'Failed to start API Gateway');
     process.exit(1);
 });
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-    logger_1.logger.info('SIGTERM received, shutting down gracefully');
+    logger.info('SIGTERM received, shutting down gracefully');
     await server.stop();
     process.exit(0);
 });
 process.on('SIGINT', async () => {
-    logger_1.logger.info('SIGINT received, shutting down gracefully');
+    logger.info('SIGINT received, shutting down gracefully');
     await server.stop();
     process.exit(0);
 });
-exports.default = app;
+export default app;
 //# sourceMappingURL=index.js.map

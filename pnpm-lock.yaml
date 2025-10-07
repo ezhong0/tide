@@ -148,76 +148,6 @@ importers:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.19)
 
-  packages/services/auth:
-    dependencies:
-      '@tide/config':
-        specifier: workspace:*
-        version: link:../../shared/config
-      '@tide/database':
-        specifier: workspace:*
-        version: link:../../libraries/database
-      '@tide/errors':
-        specifier: workspace:*
-        version: link:../../shared/errors
-      '@tide/logger':
-        specifier: workspace:*
-        version: link:../../libraries/logger
-      '@tide/types':
-        specifier: workspace:*
-        version: link:../../shared/types
-      '@tide/validation':
-        specifier: workspace:*
-        version: link:../../shared/validation
-      bcryptjs:
-        specifier: ^2.4.3
-        version: 2.4.3
-      cors:
-        specifier: ^2.8.5
-        version: 2.8.5
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
-      express:
-        specifier: ^4.18.2
-        version: 4.21.2
-      express-rate-limit:
-        specifier: ^7.5.1
-        version: 7.5.1(express@4.21.2)
-      helmet:
-        specifier: ^7.1.0
-        version: 7.2.0
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.2
-    devDependencies:
-      '@types/bcryptjs':
-        specifier: ^2.4.6
-        version: 2.4.6
-      '@types/cors':
-        specifier: ^2.8.17
-        version: 2.8.19
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.23
-      '@types/jsonwebtoken':
-        specifier: ^9.0.5
-        version: 9.0.10
-      '@types/node':
-        specifier: ^20.10.6
-        version: 20.19.19
-      '@types/pg':
-        specifier: ^8.10.9
-        version: 8.15.5
-      tsx:
-        specifier: ^4.7.0
-        version: 4.20.6
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
-      vitest:
-        specifier: ^1.1.0
-        version: 1.6.1(@types/node@20.19.19)
-
   packages/services/calendar:
     dependencies:
       '@microsoft/microsoft-graph-client':
@@ -351,6 +281,9 @@ importers:
       '@apollo/server':
         specifier: ^4.9.5
         version: 4.12.2(graphql@16.11.0)
+      '@supabase/supabase-js':
+        specifier: ^2.39.1
+        version: 2.74.0
       '@tide/config':
         specifier: workspace:*
         version: link:../../shared/config
@@ -401,72 +334,11 @@ importers:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.19)
 
-  packages/services/realtime:
-    dependencies:
-      '@tide/config':
-        specifier: workspace:*
-        version: link:../../shared/config
-      '@tide/database':
-        specifier: workspace:*
-        version: link:../../libraries/database
-      '@tide/errors':
-        specifier: workspace:*
-        version: link:../../shared/errors
-      '@tide/logger':
-        specifier: workspace:*
-        version: link:../../libraries/logger
-      '@tide/types':
-        specifier: workspace:*
-        version: link:../../shared/types
-      cors:
-        specifier: ^2.8.5
-        version: 2.8.5
-      express:
-        specifier: ^4.18.2
-        version: 4.21.2
-      helmet:
-        specifier: ^7.1.0
-        version: 7.2.0
-      jsonwebtoken:
-        specifier: ^9.0.2
-        version: 9.0.2
-      uuid:
-        specifier: ^9.0.1
-        version: 9.0.1
-      ws:
-        specifier: ^8.16.0
-        version: 8.18.3
-    devDependencies:
-      '@types/cors':
-        specifier: ^2.8.17
-        version: 2.8.19
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.23
-      '@types/jsonwebtoken':
-        specifier: ^9.0.5
-        version: 9.0.10
-      '@types/node':
-        specifier: ^20.10.6
-        version: 20.19.19
-      '@types/uuid':
-        specifier: ^9.0.7
-        version: 9.0.8
-      '@types/ws':
-        specifier: ^8.5.10
-        version: 8.18.1
-      tsx:
-        specifier: ^4.7.0
-        version: 4.20.6
-      typescript:
-        specifier: ^5.3.0
-        version: 5.9.3
-      vitest:
-        specifier: ^1.1.0
-        version: 1.6.1(@types/node@20.19.19)
-
   packages/services/workflow:
     dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.39.1
+        version: 2.74.0
       '@tide/config':
         specifier: workspace:*
         version: link:../../shared/config
@@ -3199,10 +3071,6 @@ packages:
       '@babel/types': 7.28.4
     dev: true
 
-  /@types/bcryptjs@2.4.6:
-    resolution: {integrity: sha512-9xlo6R2qDs5uixm0bcIqCeMCE6HiQsIyel9KQySStiyqNl2tnj2mP3DX1Nf56MD6KMenNNlBBsy3LJ7gUEQPXQ==}
-    dev: true
-
   /@types/body-parser@1.19.6:
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
     dependencies:
@@ -3364,6 +3232,7 @@ packages:
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
     dependencies:
       '@types/node': 20.19.19
+    dev: false
 
   /@types/yargs-parser@21.0.3:
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -3640,10 +3509,6 @@ packages:
     resolution: {integrity: sha512-vAPMQdnyKCBtkmQA6FMCBvU9qFIppS3nzyXnEM+Lo2IAhG4Mpjv9cCxMudhgV3YdNNJv6TNqXy97dfRVL2LmaQ==}
     hasBin: true
     dev: true
-
-  /bcryptjs@2.4.3:
-    resolution: {integrity: sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ==}
-    dev: false
 
   /bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
@@ -4098,6 +3963,7 @@ packages:
   /dotenv@17.2.3:
     resolution: {integrity: sha512-JVUnt+DUIzu87TABbhPmNfVdBDt18BLOWjMUFJMSi/Qqg7NTYtabbvSNJGOJ7afbRuv9D/lngizHtP7QyLQ+9w==}
     engines: {node: '>=12'}
+    dev: true
 
   /dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -4373,15 +4239,6 @@ packages:
       jest-message-util: 29.7.0
       jest-util: 29.7.0
     dev: true
-
-  /express-rate-limit@7.5.1(express@4.21.2):
-    resolution: {integrity: sha512-7iN8iPMDzOMHPUYllBEsQdWVB6fPDMPqwjBaFrgr4Jgr/+okjvzAy+UHlYYL/Vs0OsOrMkwS6PJDkFlJwoxUnw==}
-    engines: {node: '>= 16'}
-    peerDependencies:
-      express: '>= 4.11'
-    dependencies:
-      express: 4.21.2
-    dev: false
 
   /express@4.21.2:
     resolution: {integrity: sha512-28HqgMZAmih1Czt9ny7qr6ek2qddF4FclbMzwhCREB6OFfH+rXAnuNCwo1/wFvrtbgsQDb4kSbX9de9lFbrXnA==}

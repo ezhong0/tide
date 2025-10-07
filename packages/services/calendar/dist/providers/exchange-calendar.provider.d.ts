@@ -1,5 +1,5 @@
 import type { UserId } from '@tide/types';
-import type { CalendarEvent, ICalendarProvider, OAuthTokens, Availability } from '../types';
+import type { CalendarEvent, ICalendarProvider, OAuthTokens, Availability } from '../types/index.js';
 /**
  * Exchange/Outlook Calendar provider implementation using Microsoft Graph API
  */

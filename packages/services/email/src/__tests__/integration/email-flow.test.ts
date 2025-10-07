@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { EmailTriage } from '../../triage/email-triage';
-import { SmartComposer } from '../../composer/smart-composer';
-import { EmailAutomation } from '../../automation/email-automation';
-import { RelationshipIntelligence } from '../../relationship/relationship-intelligence';
-import type { Email, TriagePriority } from '../../types';
+import { EmailTriage } from '../../triage/email-triage.js';
+import { SmartComposer } from '../../composer/smart-composer.js';
+import { EmailAutomation } from '../../automation/email-automation.js';
+import { RelationshipIntelligence } from '../../relationship/relationship-intelligence.js';
+import type { Email, TriagePriority } from '../../types/index.js';
 import { createUserId, createEmailId } from '@tide/types';
 
 /**

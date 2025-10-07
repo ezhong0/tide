@@ -5,8 +5,8 @@ import { Pool } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 import { logger } from '@tide/logger';
 import { supabaseConfig, databaseConfig, kafkaConfig } from '@tide/config';
-import { WorkflowEngine } from './engine';
-import { KafkaEventBus } from './events/kafka-event-bus';
+import { WorkflowEngine } from './engine/index.js';
+import { KafkaEventBus } from './events/kafka-event-bus.js';
 
 /**
  * Workflow Service

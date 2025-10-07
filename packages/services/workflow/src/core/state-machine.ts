@@ -15,7 +15,7 @@ import {
   WorkflowStep,
   StepConfig,
   RetryPolicy,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Workflow State Machine

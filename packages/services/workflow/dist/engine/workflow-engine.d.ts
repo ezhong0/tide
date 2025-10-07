@@ -1,9 +1,9 @@
 import { Pool } from 'pg';
 import { UserId } from '@tide/types';
-import { WorkflowDefinition, WorkflowState, WorkflowContext, StepHandler } from '../types';
-import { WorkflowRepository } from '../persistence/workflow-repository';
-import { TaskEngine } from '../tasks/task-engine';
-import { PatternDetector } from '../patterns/pattern-detector';
+import { WorkflowDefinition, WorkflowState, WorkflowContext, StepHandler } from '../types/index.js';
+import { WorkflowRepository } from '../persistence/workflow-repository.js';
+import { TaskEngine } from '../tasks/task-engine.js';
+import { PatternDetector } from '../patterns/pattern-detector.js';
 /**
  * Workflow Engine
  *

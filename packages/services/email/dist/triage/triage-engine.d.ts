@@ -1,4 +1,4 @@
-import type { Email, TriageResult } from '../types';
+import type { Email, TriageResult } from '../types/index.js';
 /**
  * Email triage engine that analyzes emails and determines handling strategy
  */
