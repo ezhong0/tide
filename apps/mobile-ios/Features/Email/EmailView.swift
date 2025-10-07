@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct EmailView: View {
-    @State private var emails: [Email] = Email.mockEmails
+    @State private var emails: [Email] = []
     @State private var filter: EmailFilter = .unread
     @State private var selectedEmail: Email?
     @State private var isComposing = false
     @State private var searchText = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
 
     var filteredEmails: [Email] {
         var filtered = emails
@@ -116,6 +118,12 @@ struct EmailView: View {
             .sheet(item: $selectedEmail) { email in
                 EmailDetailView(email: email)
             }
+            .onAppear {
+                // Load emails on first appear
+                Task {
+                    await refreshEmails()
+                }
+            }
         }
     }
 
@@ -136,8 +144,18 @@ struct EmailView: View {
     }
 
     private func refreshEmails() async {
-        // Simulate network refresh
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Fetch emails from live backend
+            emails = try await EmailService.shared.fetchEmails()
+        } catch {
+            errorMessage = "Failed to load emails: \(error.localizedDescription)"
+            print("❌ Error fetching emails: \(error)")
+        }
+
+        isLoading = false
     }
 }
 
