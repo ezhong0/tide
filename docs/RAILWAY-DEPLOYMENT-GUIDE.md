@@ -30,9 +30,12 @@ OPENAI_API_KEY=<from .env>
 SUPABASE_URL=https://ozrocykjomgcuphicqpg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<from .env>
 LOG_LEVEL=info
+KAFKA_ENABLED=false
 ENABLE_REASONING=true
 ENABLE_LEARNING=true
 ```
+
+**Note**: Kafka event-driven workflows disabled for Alpha. Core request-response AI works fine.
 
 **Deployment Command**:
 ```bash

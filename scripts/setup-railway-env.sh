@@ -101,6 +101,7 @@ set_service_vars "ai" \
     "SUPABASE_URL=$SUPABASE_URL" \
     "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" \
     "LOG_LEVEL=info" \
+    "KAFKA_ENABLED=false" \
     "ENABLE_REASONING=true" \
     "ENABLE_LEARNING=true"
 
