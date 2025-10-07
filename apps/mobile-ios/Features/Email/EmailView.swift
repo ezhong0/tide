@@ -8,6 +8,8 @@ struct EmailView: View {
     @State private var searchText = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var showConnectGmail = true
+    @StateObject private var oauthService = GoogleOAuthService.shared
 
     var filteredEmails: [Email] {
         var filtered = emails
@@ -43,8 +45,49 @@ struct EmailView: View {
     var body: some View {
         NavigationView {
             List {
+                // Connect Gmail button (shown when no emails)
+                if emails.isEmpty && !isLoading {
+                    Section {
+                        Button(action: {
+                            Task {
+                                await connectGmail()
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "envelope.badge")
+                                    .foregroundColor(.blue)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Connect Gmail")
+                                        .font(.headline)
+                                    Text("Access your emails with AI-powered triage")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                if oauthService.isAuthenticating {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(.vertical, 8)
+                        }
+                        .disabled(oauthService.isAuthenticating)
+                    }
+                }
+
+                // Error message if OAuth failed
+                if let error = oauthService.authError {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                    }
+                }
+
                 // Smart sections
-                if filter == .all || filter == .unread {
+                if !emails.isEmpty && (filter == .all || filter == .unread) {
                     Section("Needs Your Attention") {
                         ForEach(filteredEmails.filter { $0.priority == .high }) { email in
                             EmailRow(email: email)
@@ -141,6 +184,21 @@ struct EmailView: View {
 
     private func delegate(_ email: Email) {
         // TODO: Implement delegation
+    }
+
+    private func connectGmail() async {
+        do {
+            let testUserId = "00000000-0000-0000-0000-000000000001"
+            try await oauthService.connectGmail(userId: testUserId)
+
+            // After successful connection, fetch emails
+            await refreshEmails()
+
+            // Hide the connect button
+            showConnectGmail = false
+        } catch {
+            print("❌ Error connecting Gmail: \(error)")
+        }
     }
 
     private func refreshEmails() async {

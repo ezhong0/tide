@@ -19,6 +19,13 @@ enum Config {
     static let apiBaseURL = ProcessInfo.processInfo.environment["API_BASE_URL"]
         ?? "https://gateway-production-caf0.up.railway.app"
 
+    // MARK: - OAuth Configuration
+
+    /// Google iOS Client ID for OAuth
+    /// Get this from Google Cloud Console OAuth 2.0 Client IDs
+    static let googleIOSClientId = ProcessInfo.processInfo.environment["GOOGLE_IOS_CLIENT_ID"]
+        ?? "YOUR_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com"
+
     // MARK: - App Configuration
 
     /// App version
