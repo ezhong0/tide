@@ -15,6 +15,14 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "include": ["src/index.ts", "src/events/**/*", "src/types/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "src/engine/**/*",
+    "src/persistence/**/*",
+    "src/__tests__/**/*"
+  ]
 }
