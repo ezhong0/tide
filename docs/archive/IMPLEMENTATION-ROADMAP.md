@@ -1,25 +1,26 @@
-# 🗺️ Tide Implementation Roadmap (Revised)
+# 🗺️ Tide Implementation Roadmap (2025 Revision)
 
-**Status**: Week 3 Alpha - Foundation Complete
+**Status**: Week 3 Alpha - Railway Deployment Focus
 **Last Updated**: 2025-10-07
-**Timeline**: 12 weeks (Week 0 Foundation + Weeks 1-12 Feature Development)
+**Timeline**: 12 weeks (Week 0 Foundation ✅ + Weeks 1-12 Feature Development 🚧)
 
-> **⚠️ REVISION NOTICE**: This roadmap has been updated to reflect the **actual implementation strategy** based on the Week 0 foundation-first approach with Supabase for infrastructure.
+> **🚀 REVISION NOTICE**: This roadmap reflects **actual implementation progress** as of Week 3 Alpha, with focus on Railway deployment, Track 3 completion, and approved architecture improvements (ADR-012, ADR-013, ADR-014).
 
 ---
 
 ## Executive Overview
 
-Tide follows a **foundation-first implementation strategy** with **4 parallel feature tracks** building on top of a solid Week 0 infrastructure foundation.
+Tide follows a **Railway-first, Supabase-powered** strategy with **4 parallel feature tracks** building on solid Week 0 infrastructure.
 
-### Revised Philosophy
+### Current Reality (Week 3 Alpha)
 
-- **Foundation First** ✅ - Backend infrastructure (Auth, Database, Event Streaming) delivered upfront
-- **Feature Tracks** 🚧 - 4 parallel tracks build features on solid foundation
-- **Supabase-Powered** ✅ - Leverage managed services for speed and reliability
-- **Iterative MVP** 🚧 - Ship working features incrementally, not all at once
+- **Foundation Complete** ✅ - Supabase (Auth, DB, Realtime) + Railway deployment configured
+- **3 of 4 Tracks Alpha-Ready** ✅ - Mobile (65%), AI (75%), Workflow (80%)
+- **1 Track Needs Work** ⚠️ - Email/Calendar (52%, needs 60% for Alpha)
+- **Architecture Improvements Approved** 📋 - Cache invalidation, Mobile BFF, gRPC ready
+- **Railway Deployment** 🚧 - Configuration complete, services deploying incrementally
 
-**Key Change**: Instead of 6 parallel tracks starting simultaneously, we deliver Tracks 5-6 (Backend + Data) as **Week 0 Foundation**, then build **4 feature tracks** (Mobile, AI, Email/Calendar, Workflow) on top.
+**Critical Path**: Complete Track 3 (Email/Calendar) to 60%+ → Alpha Launch → Implement architecture improvements → Beta Launch
 
 ---
 
@@ -197,6 +198,98 @@ PHASE 2: FEATURE TRACKS (🚧 WEEKS 1-12)
 - Week 10: REST + GraphQL Federation
 - Week 11: Rate limiting, caching, monitoring
 - Week 12: Production configuration, load testing
+
+---
+
+## Architecture Improvements (Planned)
+
+Based on architecture review in Week 3, we've approved **3 key improvements** to enhance performance and scalability while maintaining Railway-first simplicity:
+
+### ADR-012: Event-Driven Cache Invalidation
+
+**Timeline**: Week 4-5 (Email/Calendar Track)
+**Impact**: Eliminates stale cache data
+
+**Implementation**:
+- Create `CacheInvalidationService` as Railway service
+- Define Kafka topic `cache.invalidate` for invalidation events
+- Implement tag-based cache keys (`user:{userId}`, `email:{emailId}`)
+- Update Email/Calendar services to publish invalidation events
+
+**Benefits**:
+- ✅ Eliminates stale data (no more deleted emails showing up)
+- ✅ Services don't manage cache complexity
+- ✅ Event log provides audit trail
+- ✅ Works with existing Railway Kafka infrastructure
+
+**Reference**: [ADR-012](../architecture/DECISIONS.md#adr-012-event-driven-cache-invalidation)
+
+---
+
+### ADR-013: Mobile BFF Pattern
+
+**Timeline**: Week 6-8 (Mobile Track)
+**Impact**: 10x faster mobile screen loading, 76% reduction in data usage
+
+**Implementation**:
+- Create `MobileBFFService` as Railway service
+- Implement `/mobile/v1/screen/{screenName}` endpoints
+- Single endpoint aggregates 7-15 backend calls
+- Add Redis caching with tag-based invalidation
+
+**Current Problem**:
+- Mobile apps make 7-15 separate API calls per screen
+- 2-5 seconds loading time
+- 500KB data usage per screen
+- Poor UX with progressive loading and flickering
+
+**Solution**:
+- Single API call per screen (500ms vs. 5s)
+- 118KB vs. 500KB (76% reduction)
+- Instant screen loading
+- Better battery life
+
+**Reference**: [ADR-013](../architecture/DECISIONS.md#adr-013-mobile-bff-pattern)
+
+---
+
+### ADR-014: gRPC for Service-to-Service Communication
+
+**Timeline**: Week 8-10 (AI Track)
+**Impact**: 5-10x faster internal service calls, type safety, streaming support
+
+**Implementation**:
+- Define `.proto` files for AI Service API
+- Generate TypeScript clients for Email/Calendar/Workflow services
+- Update AI Service to expose gRPC API
+- Update Email/Calendar/Workflow to use gRPC for AI calls
+
+**Use Cases**:
+- Email Service → AI Service (triage email)
+- Workflow Service → AI Service (execute AI step)
+- Calendar Service → AI Service (suggest meeting times)
+
+**Benefits**:
+- ✅ 5-10x faster than REST
+- ✅ Type-safe generated clients
+- ✅ 70% smaller payloads (Protobuf vs. JSON)
+- ✅ Streaming for long AI operations
+
+**Important**: gRPC is for **service-to-service only**, NOT mobile apps. Mobile apps continue using Supabase Realtime + REST.
+
+**Reference**: [ADR-014](../architecture/DECISIONS.md#adr-014-grpc-for-service-to-service-communication)
+
+---
+
+### Rejected Improvements
+
+We also evaluated and **rejected** these improvements as inappropriate for Railway-first architecture:
+
+- **❌ Service Mesh** (Istio/Linkerd): Railway provides built-in health checks, load balancing, TLS
+- **❌ CQRS Pattern**: Premature optimization for MVP scale (<100 users)
+- **❌ Full Event Sourcing**: Kafka events already provide audit trail
+
+**Reference**: [ADR-015](../architecture/DECISIONS.md#adr-015-reject-service-mesh-for-railway-environment), [ADR-016](../architecture/DECISIONS.md#adr-016-reject-cqrs-pattern-for-mvp)
 
 ---
 
@@ -480,16 +573,19 @@ Total: 7 people
 
 **Immediate Priorities**:
 1. ✅ Complete documentation refactor (this file)
-2. 🚧 Complete AI Service → PostgreSQL integration
-3. 🚧 Add AI Service → Redis caching
-4. 🚧 Implement AI Service → Kafka event publishing
-5. 🚧 Complete mobile UI screens (login, chat, profile)
-6. ⏳ Start Email/Calendar Service planning
+2. ✅ Architecture improvements approved (ADR-012, ADR-013, ADR-014)
+3. 🚧 Complete AI Service → PostgreSQL integration
+4. 🚧 Add AI Service → Redis caching
+5. 🚧 Implement AI Service → Kafka event publishing
+6. 🚧 Complete mobile UI screens (login, chat, profile)
+7. ⏳ Start Email/Calendar Service planning
+8. ⏳ Implement event-driven cache invalidation (ADR-012)
 
 **Week 4 Goals**:
 - AI Service 80% complete
 - Mobile UI 70% complete
 - Email/Calendar Service 20% complete
+- Cache invalidation service deployed (ADR-012)
 
 ---
 

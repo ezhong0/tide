@@ -726,6 +726,153 @@ See [DECISIONS.md](./DECISIONS.md) for detailed architectural decision records (
 
 ---
 
+## Planned Architecture Improvements
+
+Based on architecture review in Week 3, we've approved **3 key improvements** to enhance performance and scalability while maintaining Railway-first simplicity. See [DECISIONS.md](./DECISIONS.md) for detailed ADRs.
+
+### 1. Event-Driven Cache Invalidation (ADR-012)
+
+**Timeline**: Week 4-5 (Email/Calendar Track)
+**Status**: Approved, implementation planned
+
+**Problem**:
+- Manual cache invalidation leads to stale data
+- Deleted emails/tasks still showing up in UI
+- No coordination between services on cache updates
+
+**Solution**:
+- Kafka topic `cache.invalidate` for invalidation events
+- Tag-based cache keys: `user:{userId}`, `email:{emailId}`
+- `CacheInvalidationService` listens to events and invalidates cache
+- Railway Redis for cache storage
+
+**Benefits**:
+- ✅ Eliminates stale data (no more deleted emails showing up)
+- ✅ Services don't manage cache complexity
+- ✅ Event log provides audit trail
+
+**Implementation**:
+```typescript
+// Email service publishes event when email is deleted
+await kafka.publish('cache.invalidate', {
+  tags: ['user:123', 'email:456', 'inbox:123'],
+  reason: 'email_deleted'
+});
+
+// Cache invalidation service listens and invalidates
+await redis.del(
+  'emails:user:123',
+  'email:456',
+  'inbox:user:123:unread_count'
+);
+```
+
+**Reference**: [ADR-012](./DECISIONS.md#adr-012-event-driven-cache-invalidation)
+
+---
+
+### 2. Mobile BFF Pattern (ADR-013)
+
+**Timeline**: Week 6-8 (Mobile Track)
+**Status**: Approved, implementation planned
+
+**Problem**:
+- Mobile apps make 7-15 separate API calls per screen
+- 2-5 seconds loading time
+- 500KB data usage per screen
+- Poor UX with progressive loading and flickering
+
+**Solution**:
+- `MobileBFFService` deployed on Railway
+- Single endpoint per screen: `/mobile/v1/screen/{screenName}`
+- Aggregates 7-15 backend calls into one
+- Returns optimized payload (only needed fields)
+
+**Benefits**:
+- ✅ 10x faster screen loading (500ms vs. 5s)
+- ✅ 76% reduction in data usage (118KB vs. 500KB)
+- ✅ Better UX (instant loading, no flickering)
+- ✅ Lower battery consumption
+
+**Example**:
+```typescript
+GET /mobile/v1/screen/inbox
+Response (118KB vs. 500KB):
+{
+  user: { id, name, email },
+  inbox: {
+    unread_count: 12,
+    emails: [{ id, subject, from, snippet, time }]
+  },
+  tasks: { pending_count: 5, urgent: [...] },
+  calendar: { today_events: [...] }
+}
+```
+
+**Reference**: [ADR-013](./DECISIONS.md#adr-013-mobile-bff-pattern)
+
+---
+
+### 3. gRPC for Service-to-Service Communication (ADR-014)
+
+**Timeline**: Week 8-10 (AI Track)
+**Status**: Approved, implementation planned
+
+**Problem**:
+- REST/JSON is slower for internal service calls
+- No type safety across services
+- Larger payloads (JSON verbosity)
+- No streaming support
+
+**Solution**:
+- gRPC for **service-to-service only** (NOT mobile)
+- Protocol Buffers (`.proto` files) for API contracts
+- Generated TypeScript clients for type safety
+- Railway deployment with HTTP/2 support
+
+**Use Cases**:
+- Email Service → AI Service (triage email)
+- Workflow Service → AI Service (execute AI step)
+- Calendar Service → AI Service (suggest meeting times)
+
+**Benefits**:
+- ✅ 5-10x faster than REST for internal calls
+- ✅ Type safety across services (generated clients)
+- ✅ 70% smaller payloads (Protobuf vs. JSON)
+- ✅ Streaming support for long AI operations
+
+**Example**:
+```protobuf
+// ai.proto
+service AIService {
+  rpc TriageEmail(EmailTriageRequest) returns (EmailTriageResponse);
+  rpc SuggestMeetingTimes(MeetingRequest) returns (MeetingResponse);
+}
+```
+
+**Important**: Mobile apps continue using Supabase Realtime + REST (NOT gRPC). gRPC-Web adds unnecessary complexity for mobile.
+
+**Reference**: [ADR-014](./DECISIONS.md#adr-014-grpc-for-service-to-service-communication)
+
+---
+
+### Rejected Improvements
+
+We also evaluated and **rejected** these improvements as inappropriate for Railway-first architecture:
+
+**Service Mesh (Istio/Linkerd)** - [ADR-015](./DECISIONS.md#adr-015-reject-service-mesh-for-railway-environment):
+- Railway already provides health checks, load balancing, TLS
+- Service mesh requires Kubernetes (conflicts with Railway simplicity)
+- Overkill for 5 microservices
+
+**CQRS Pattern** - [ADR-016](./DECISIONS.md#adr-016-reject-cqrs-pattern-for-mvp):
+- Premature optimization for MVP scale (<100 users)
+- PostgreSQL handles 5000+ req/sec easily
+- Current queries are <50ms
+- Consider at >100k users if queries >200ms
+
+---
+
 ## Migration Path to Production
 
 See [FUTURE-ARCHITECTURE.md](./FUTURE-ARCHITECTURE.md) for the target production architecture.
