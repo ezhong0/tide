@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="22225" systemVersion="23A344" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="ConversationEntity" representedClassName="ConversationEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="createdAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="isActive" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="title" attributeType="String"/>
+        <attribute name="updatedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="MessageEntity" inverseName="conversation" inverseEntity="MessageEntity"/>
+    </entity>
+    <entity name="MessageEntity" representedClassName="MessageEntity" syncable="YES" codeGenerationType="class">
+        <attribute name="actionPreviewJSON" optional="YES" attributeType="Binary"/>
+        <attribute name="aiSummary" optional="YES" attributeType="String"/>
+        <attribute name="content" attributeType="String"/>
+        <attribute name="id" attributeType="String"/>
+        <attribute name="role" attributeType="String"/>
+        <attribute name="status" attributeType="String"/>
+        <attribute name="suggestionsJSON" optional="YES" attributeType="Binary"/>
+        <attribute name="timestamp" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="conversation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="ConversationEntity" inverseName="messages" inverseEntity="ConversationEntity"/>
+    </entity>
+</model>

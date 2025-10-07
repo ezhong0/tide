@@ -14,13 +14,52 @@ You're building native iOS/Android apps for Tide - an AI Chief of Staff ($150/mo
 
 **Philosophy**: Powerful by default • Beautiful motion (60fps) • Trustworthy (show reasoning) • Anticipatory (predictive UI)
 
-**Integration**: GraphQL `api.tide.ai/graphql` • WebSocket `wss://api.tide.ai/realtime` • Read `/redesign/WEEK-0-FOUNDATION.md` first
+**Integration**: GraphQL `api.tide.ai/graphql` • WebSocket `wss://api.tide.ai/realtime`
 
 **Success Metrics**: <1s launch • <100ms response • 60fps • <5% battery • 90% daily active • 4.8+ stars
 
 **Start**: Setup environment, build auth flow, then follow weekly plan below. Track all work with todos. Ship beautiful, fast, magical experiences.
 
 ---
+
+## 📦 Week 0 Foundation - READY FOR YOU
+
+The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+
+### ✅ What's Ready
+- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5, Monitoring (Prometheus, Grafana)
+- **Database**: 11 tables including users, conversations, messages, OAuth tokens
+- **Shared Packages**: @tide/config, @tide/types, @tide/errors, @tide/validation, @tide/contracts
+- **Libraries**: @tide/logger, @tide/database, @tide/mocks
+- **Auth Template**: Complete authentication service with JWT (`packages/services/auth/`)
+- **API Gateway Template**: GraphQL Federation setup (`packages/services/gateway/`)
+- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+
+### 📚 Essential Reading (Read These First!)
+1. **README.md** - Quick start and developer guide
+2. **WEEK-0-STATUS.md** - Complete foundation status and track readiness
+3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
+4. **packages/services/auth/README.md** - Reference for building services
+5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+
+### 🚀 Quick Start
+```bash
+# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
+pnpm dev:start
+
+# 2. Run migrations
+pnpm db:migrate
+
+# 3. Build all packages
+pnpm build
+
+# 4. You're ready! Zero infrastructure blockers.
+```
+
+### 🔗 Your Dependencies
+- **Auth Service**: You'll build this (use template in `packages/services/auth/`)
+- **WebSocket Service**: You'll build this for real-time updates
+- **GraphQL API**: Coordinate with Track 4 for API Gateway
 
 ---
 

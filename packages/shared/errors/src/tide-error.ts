@@ -44,6 +44,13 @@ export class TideError extends Error {
   }
 
   /**
+   * Alias for details (for compatibility)
+   */
+  get metadata(): any {
+    return this.details;
+  }
+
+  /**
    * Convert error to API response format
    */
   toJSON(): ErrorDetail {

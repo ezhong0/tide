@@ -171,3 +171,6 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
 }
+
+// AI Contracts
+export * from './ai.contract';

@@ -14,13 +14,58 @@ You're building an intelligent workflow automation platform that detects pattern
 
 **Philosophy**: Learn from patterns • Compensating transactions for failures • Visual workflow designer • Human-in-loop for approvals • Continuous optimization
 
-**Integration**: Consume events from Tracks 2, 3 • Publish `workflow.*` / `task.*` events • Use Kafka for async orchestration • Postgres for state • Read `/redesign/WEEK-0-FOUNDATION.md` first
+**Integration**: Consume events from Tracks 2, 3 • Publish `workflow.*` / `task.*` events • Use Kafka for async orchestration • Postgres for state
 
 **Success Metrics**: Detect patterns in 3 interactions • Execute 10+ step workflows • >98% completion rate • <5min avg execution • Suggest 5+ automations/user/week
 
 **Start**: Build workflow DAG executor, implement state machine with compensation, create pattern detector. Track all work with todos. Ship intelligent, reliable workflow automation.
 
 ---
+
+## 📦 Week 0 Foundation - READY FOR YOU
+
+The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+
+### ✅ What's Ready
+- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5 (perfect for event-driven workflows), Monitoring
+- **Database**: Event sourcing tables (events, outbox), transaction support for state management
+- **Event Bus**: Kafka ready for async workflow orchestration, workflow.* & task.* topics defined
+- **Shared Packages**: @tide/config (event types), @tide/types, @tide/errors, @tide/validation
+- **Libraries**: @tide/logger, @tide/database (with transaction support for state machines)
+- **Outbox Pattern**: Reliable event publishing for workflow steps
+- **API Gateway Template**: GraphQL Federation template ready (`packages/services/gateway/`)
+- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+
+### 📚 Essential Reading (Read These First!)
+1. **README.md** - Quick start and developer guide
+2. **WEEK-0-STATUS.md** - Complete foundation status (see Track 4 section)
+3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
+4. **packages/services/gateway/README.md** - API Gateway template (you'll own this!)
+5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+
+### 🚀 Quick Start
+```bash
+# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
+pnpm dev:start
+
+# 2. Run migrations
+pnpm db:migrate
+
+# 3. Build all packages
+pnpm build
+
+# 4. Database tables extensible (add workflow/task tables as needed)
+# 5. You're ready! Zero infrastructure blockers.
+```
+
+### 🔗 Your Responsibilities
+- **Workflow Service**: You'll build this (create in `packages/services/workflow/`)
+- **API Gateway**: You'll own this (template in `packages/services/gateway/`)
+- **GraphQL Federation**: Coordinate with other tracks to add their services as subgraphs
+- **Event Orchestration**: Use Kafka for async workflow step execution
+
+### 🎯 Special Note
+Track 4 is recommended to **own the API Gateway** since you're coordinating workflows across all services. The template is ready - add your workflow service as the first subgraph, then coordinate with other tracks to federate their services.
 
 ---
 
