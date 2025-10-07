@@ -1,6 +1,8 @@
 /**
  * Kafka Event Consumer
  * Listens to message.* events and processes them with AI
+ *
+ * Status: Not yet integrated (planned for Week 4-5)
  */
 
 import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
@@ -12,20 +14,25 @@ import { AIOrchestrator } from '../orchestration/ai-orchestrator';
 const logger = createLogger({ component: 'KafkaConsumer' });
 
 export class AIKafkaConsumer {
-  private kafka: Kafka;
-  private consumer: Consumer;
+  private kafka: Kafka | null = null;
+  private consumer: Consumer | null = null;
   private orchestrator: AIOrchestrator;
   private isRunning = false;
 
   constructor() {
-    this.kafka = new Kafka({
-      clientId: 'ai-service',
-      brokers: kafkaConfig.brokers,
-    });
+    // Only initialize Kafka if configured
+    if (kafkaConfig) {
+      this.kafka = new Kafka({
+        clientId: 'ai-service',
+        brokers: kafkaConfig.brokers,
+      });
 
-    this.consumer = this.kafka.consumer({
-      groupId: 'ai-service-group',
-    });
+      this.consumer = this.kafka.consumer({
+        groupId: 'ai-service-group',
+      });
+    } else {
+      logger.warn('Kafka not configured - event processing disabled (Week 4-5)');
+    }
 
     this.orchestrator = new AIOrchestrator();
   }
@@ -34,6 +41,11 @@ export class AIKafkaConsumer {
    * Start consuming events
    */
   async start(): Promise<void> {
+    if (!this.consumer) {
+      logger.info('Kafka not configured - skipping consumer start');
+      return;
+    }
+
     if (this.isRunning) {
       logger.warn('Consumer already running');
       return;
@@ -65,7 +77,7 @@ export class AIKafkaConsumer {
    * Stop consuming events
    */
   async stop(): Promise<void> {
-    if (!this.isRunning) {
+    if (!this.consumer || !this.isRunning) {
       return;
     }
 
@@ -136,6 +148,11 @@ export class AIKafkaConsumer {
    * Publish AI response to Kafka
    */
   private async publishResponse(response: any): Promise<void> {
+    if (!this.kafka) {
+      logger.debug('Kafka not configured - skipping response publish');
+      return;
+    }
+
     const producer = this.kafka.producer();
 
     try {

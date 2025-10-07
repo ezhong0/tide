@@ -214,11 +214,11 @@ export class RelationshipIntelligence {
     // Extract topics (simplified - would use NLP in production)
     const topicsDiscussed = await this.extractTopics(interactions);
 
-    // Determine if decision maker (simplified heuristic)
-    const decisionMaker = interactions.length > 10;
+    // Determine if decision maker (enhanced heuristic)
+    const decisionMaker = this.identifyDecisionMaker(interactions);
 
-    // Calculate influence
-    const influence = Math.min(interactions.length / 50, 1);
+    // Calculate influence with multiple factors
+    const influence = this.calculateInfluence(interactions);
 
     return {
       preferredChannel,
@@ -532,7 +532,7 @@ export class RelationshipIntelligence {
   }
 
   /**
-   * Extract topics from interactions (simplified)
+   * Extract topics from interactions (enhanced with better detection)
    */
   private async extractTopics(interactions: Email[]): Promise<string[]> {
     const topicCounts: Map<string, number> = new Map();
@@ -548,6 +548,14 @@ export class RelationshipIntelligence {
       'review',
       'contract',
       'partnership',
+      'collaboration',
+      'strategy',
+      'investment',
+      'product',
+      'launch',
+      'quarterly',
+      'annual',
+      'roadmap',
     ];
 
     for (const email of interactions) {
@@ -565,5 +573,231 @@ export class RelationshipIntelligence {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([topic]) => topic);
+  }
+
+  /**
+   * Identify if contact is a decision maker (enhanced algorithm)
+   */
+  private identifyDecisionMaker(interactions: Email[]): boolean {
+    let decisionMakerScore = 0;
+
+    // Factor 1: Email volume (minimum threshold)
+    if (interactions.length >= 10) {
+      decisionMakerScore += 0.2;
+    }
+
+    // Factor 2: Decision-making keywords
+    const decisionKeywords = [
+      'approve',
+      'authorized',
+      'budget',
+      'decision',
+      'executive',
+      'director',
+      'vp',
+      'ceo',
+      'cto',
+      'final call',
+      'green light',
+      'sign off',
+    ];
+
+    const hasDecisionKeywords = interactions.some((email) => {
+      const text = (email.subject + ' ' + email.body).toLowerCase();
+      return decisionKeywords.some((keyword) => text.includes(keyword));
+    });
+
+    if (hasDecisionKeywords) {
+      decisionMakerScore += 0.3;
+    }
+
+    // Factor 3: Email patterns (sends first email in thread)
+    const initiatedThreads = interactions.filter(
+      (email) => !email.inReplyTo && email.to.includes(email.userId.toString())
+    ).length;
+
+    if (initiatedThreads / interactions.length > 0.3) {
+      decisionMakerScore += 0.2;
+    }
+
+    // Factor 4: Response patterns (quick responses indicate importance/authority)
+    const avgResponseTime = this.calculateAverageResponseTime(interactions);
+    if (avgResponseTime > 0 && avgResponseTime < 4) {
+      // Responds within 4 hours
+      decisionMakerScore += 0.15;
+    }
+
+    // Factor 5: CC patterns (often CC'd suggests they need to be in loop)
+    const ccCount = interactions.filter((email) => {
+      const ccList = email.cc || [];
+      return ccList.length > 0;
+    }).length;
+
+    if (ccCount / interactions.length > 0.4) {
+      decisionMakerScore += 0.15;
+    }
+
+    return decisionMakerScore >= 0.5; // 50% threshold for decision maker
+  }
+
+  /**
+   * Calculate influence with multiple factors
+   */
+  private calculateInfluence(interactions: Email[]): number {
+    let influenceScore = 0;
+
+    // Factor 1: Volume (0-0.3)
+    const volumeScore = Math.min(interactions.length / 50, 1) * 0.3;
+    influenceScore += volumeScore;
+
+    // Factor 2: Seniority indicators (0-0.25)
+    const seniorityKeywords = [
+      'director',
+      'vp',
+      'vice president',
+      'ceo',
+      'cto',
+      'cfo',
+      'executive',
+      'head of',
+      'chief',
+      'senior',
+      'principal',
+    ];
+
+    const hasSeniorityIndicators = interactions.some((email) => {
+      const text = (email.subject + ' ' + email.body + ' ' + (email.from || '')).toLowerCase();
+      return seniorityKeywords.some((keyword) => text.includes(keyword));
+    });
+
+    if (hasSeniorityIndicators) {
+      influenceScore += 0.25;
+    }
+
+    // Factor 3: Network size (CC patterns) (0-0.2)
+    const avgCCCount =
+      interactions.reduce((sum, email) => sum + (email.cc?.length || 0), 0) / interactions.length;
+    const networkScore = Math.min(avgCCCount / 5, 1) * 0.2; // Normalize to 5 CCs
+    influenceScore += networkScore;
+
+    // Factor 4: Response rate (0-0.15)
+    const threadStarters = interactions.filter((email) => !email.inReplyTo).length;
+    const responseRate = threadStarters > 0 ?
+      interactions.filter((email) => email.inReplyTo).length / threadStarters : 0;
+    influenceScore += Math.min(responseRate, 1) * 0.15;
+
+    // Factor 5: Urgency indicators (0-0.1)
+    const urgencyKeywords = ['urgent', 'asap', 'priority', 'critical', 'important'];
+    const hasUrgency = interactions.some((email) => {
+      const text = (email.subject + ' ' + email.body).toLowerCase();
+      return urgencyKeywords.some((keyword) => text.includes(keyword));
+    });
+
+    if (hasUrgency) {
+      influenceScore += 0.1;
+    }
+
+    return Math.min(influenceScore, 1); // Cap at 1.0
+  }
+
+  /**
+   * Identify VIP contacts based on comprehensive criteria
+   */
+  async identifyVIPs(contacts: Contact[], allEmails: Email[]): Promise<Contact[]> {
+    logger.info({ userId: this.userId, contactCount: contacts.length }, 'Identifying VIP contacts');
+
+    const vipCandidates: Array<{ contact: Contact; score: number }> = [];
+
+    for (const contact of contacts) {
+      const interactions = allEmails.filter(
+        (email) => email.from === contact.email || email.to.includes(contact.email)
+      );
+
+      if (interactions.length === 0) continue;
+
+      const analysis = await this.analyzeRelationship(contact, interactions);
+
+      // Calculate VIP score
+      let vipScore = 0;
+
+      // High relationship strength
+      if (analysis.relationshipStrength > 0.7) vipScore += 0.3;
+
+      // Decision maker
+      if (analysis.patterns.decisionMaker) vipScore += 0.25;
+
+      // High influence
+      if (analysis.patterns.influence > 0.7) vipScore += 0.2;
+
+      // Frequent communication
+      if (analysis.metrics.frequency > 2) vipScore += 0.15;
+
+      // Recent activity
+      const daysSinceContact =
+        (Date.now() - analysis.metrics.recency.getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceContact < 7) vipScore += 0.1;
+
+      if (vipScore >= 0.6) {
+        vipCandidates.push({ contact, score: vipScore });
+      }
+    }
+
+    // Sort by VIP score and return top candidates
+    const vips = vipCandidates
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20) // Top 20 VIPs
+      .map((v) => v.contact);
+
+    logger.info({ userId: this.userId, vipCount: vips.length }, 'VIP contacts identified');
+
+    return vips;
+  }
+
+  /**
+   * Get contact recommendations for relationship building
+   */
+  async getRelationshipRecommendations(
+    contacts: Contact[],
+    allEmails: Email[]
+  ): Promise<{
+    reach_out_now: Contact[];
+    nurture: Contact[];
+    monitor: Contact[];
+    reasons: Map<string, string>;
+  }> {
+    logger.info({ userId: this.userId }, 'Generating relationship recommendations');
+
+    const reach_out_now: Contact[] = [];
+    const nurture: Contact[] = [];
+    const monitor: Contact[] = [];
+    const reasons = new Map<string, string>();
+
+    for (const contact of contacts) {
+      const interactions = allEmails.filter(
+        (email) => email.from === contact.email || email.to.includes(contact.email)
+      );
+
+      if (interactions.length === 0) continue;
+
+      const analysis = await this.analyzeRelationship(contact, interactions);
+
+      if (analysis.maintenanceNeeded.urgent) {
+        reach_out_now.push(contact);
+        reasons.set(contact.email, analysis.maintenanceNeeded.reason || 'Urgent follow-up needed');
+      } else if (analysis.maintenanceNeeded.soon) {
+        nurture.push(contact);
+        reasons.set(contact.email, analysis.maintenanceNeeded.reason || 'Regular touchpoint due');
+      } else if (analysis.relationshipStrength > 0.5) {
+        monitor.push(contact);
+        reasons.set(contact.email, 'Strong relationship - maintain current cadence');
+      }
+    }
+
+    return {
+      reach_out_now,
+      nurture,
+      monitor,
+      reasons,
+    };
   }
 }

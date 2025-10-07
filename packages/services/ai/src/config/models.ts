@@ -79,11 +79,11 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
   },
 };
 
-// Default model selections by use case
+// Default model selections by use case - GPT-5 ONLY
 export const DEFAULT_MODELS = {
-  fast: 'gpt-5-nano', // Fastest, optimized for speed and edge devices
-  balanced: 'gpt-5-mini', // Best cost/performance balance
-  advanced: 'gpt-5', // Full reasoning capabilities
-  analysis: 'claude-3-sonnet-20240229', // Claude for analysis tasks
-  reasoning: 'claude-3-opus-20240229', // Claude for deep reasoning
+  fast: 'gpt-5-nano', // Fastest, optimized for speed ($0.05/1M)
+  balanced: 'gpt-5-mini', // Best cost/performance balance ($0.25/1M)
+  advanced: 'gpt-5', // Full reasoning capabilities ($1.25/1M)
+  analysis: 'gpt-5-mini', // GPT-5 mini for analysis tasks
+  reasoning: 'gpt-5', // GPT-5 for deep reasoning
 };

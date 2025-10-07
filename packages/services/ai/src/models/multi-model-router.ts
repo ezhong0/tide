@@ -109,7 +109,7 @@ export class MultiModelRouter {
   private selectEnsemble(factors: RequestFactors): ModelSelection {
     return {
       primary: 'gpt-5' as ModelFamily,
-      validators: ['claude-3.5-opus' as ModelFamily],
+      validators: ['gpt-5-mini' as ModelFamily], // Use GPT-5 mini as validator
       aggregation: 'weighted_vote',
       reasoning: 'Critical decision requires multi-model validation',
     };
@@ -119,11 +119,11 @@ export class MultiModelRouter {
    * Select privacy-focused model
    */
   private selectPrivate(factors: RequestFactors): ModelSelection {
-    // For now, use Anthropic (future: local models)
+    // Use GPT-5 mini for privacy-sensitive content
     return {
-      primary: 'claude-3.5-sonnet' as ModelFamily,
+      primary: 'gpt-5-mini' as ModelFamily,
       aggregation: 'single',
-      reasoning: 'Privacy-sensitive content routed to trusted provider',
+      reasoning: 'Privacy-sensitive content using GPT-5 mini',
     };
   }
 
@@ -143,9 +143,9 @@ export class MultiModelRouter {
    */
   private selectAdvanced(factors: RequestFactors): ModelSelection {
     return {
-      primary: 'claude-3.5-opus' as ModelFamily,
+      primary: 'gpt-5' as ModelFamily,
       aggregation: 'single',
-      reasoning: 'Complex reasoning task requires advanced model',
+      reasoning: 'Complex reasoning task requires GPT-5 full model',
     };
   }
 

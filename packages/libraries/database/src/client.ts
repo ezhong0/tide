@@ -1,34 +1,62 @@
-import { Pool, PoolClient } from 'pg';
-import { databaseConfig } from '@tide/config';
+import { Pool, PoolClient, PoolConfig } from 'pg';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { databaseConfig, supabaseConfig } from '@tide/config';
 import { logger } from '@tide/logger';
 
 /**
- * PostgreSQL connection pool
+ * Database Client
+ *
+ * Week 3 Alpha: Services use Supabase client by default.
+ * Direct PostgreSQL connection is optional for advanced use cases.
  */
-export const pool = new Pool({
-  connectionString: databaseConfig.url,
-  ssl: databaseConfig.ssl ? { rejectUnauthorized: true } : false,
-  min: databaseConfig.pool.min,
-  max: databaseConfig.pool.max,
-  idleTimeoutMillis: databaseConfig.pool.idleTimeoutMillis,
-  connectionTimeoutMillis: databaseConfig.pool.connectionTimeoutMillis,
-  statement_timeout: databaseConfig.statement_timeout,
-  query_timeout: databaseConfig.query_timeout,
-});
-
-// Log pool events
-pool.on('connect', () => {
-  logger.debug('Database pool: new client connected');
-});
-
-pool.on('error', (err) => {
-  logger.error({ error: err }, 'Database pool error');
-});
 
 /**
- * Execute a query
+ * Create a Supabase client (recommended for Week 3)
+ */
+export function createSupabase(useServiceRole: boolean = true) {
+  const key = useServiceRole ? supabaseConfig.serviceRoleKey : supabaseConfig.anonKey;
+  return createSupabaseClient(supabaseConfig.url, key);
+}
+
+/**
+ * Create a PostgreSQL pool (optional - requires DATABASE_URL)
+ */
+export function createPool(config?: PoolConfig): Pool | null {
+  if (!databaseConfig && !config) {
+    logger.warn('No DATABASE_URL configured - use createSupabase() instead');
+    return null;
+  }
+
+  const poolConfig = config || {
+    connectionString: databaseConfig!.url,
+    ssl: databaseConfig!.ssl ? { rejectUnauthorized: true } : false,
+    min: databaseConfig!.pool.min,
+    max: databaseConfig!.pool.max,
+    idleTimeoutMillis: databaseConfig!.pool.idleTimeoutMillis,
+    connectionTimeoutMillis: databaseConfig!.pool.connectionTimeoutMillis,
+    statement_timeout: databaseConfig!.statement_timeout,
+    query_timeout: databaseConfig!.query_timeout,
+  };
+
+  const pool = new Pool(poolConfig);
+
+  // Log pool events
+  pool.on('connect', () => {
+    logger.debug('Database pool: new client connected');
+  });
+
+  pool.on('error', (err) => {
+    logger.error({ error: err }, 'Database pool error');
+  });
+
+  return pool;
+}
+
+/**
+ * Execute a query using a pool
  */
 export async function query<T = any>(
+  pool: Pool,
   text: string,
   params?: any[]
 ): Promise<T[]> {
@@ -48,10 +76,11 @@ export async function query<T = any>(
  * Execute a query and return the first row
  */
 export async function queryOne<T = any>(
+  pool: Pool,
   text: string,
   params?: any[]
 ): Promise<T | null> {
-  const rows = await query<T>(text, params);
+  const rows = await query<T>(pool, text, params);
   return rows[0] || null;
 }
 
@@ -59,6 +88,7 @@ export async function queryOne<T = any>(
  * Execute a transaction
  */
 export async function transaction<T>(
+  pool: Pool,
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
   const client = await pool.connect();
@@ -76,9 +106,9 @@ export async function transaction<T>(
 }
 
 /**
- * Close the database pool
+ * Close a database pool
  */
-export async function closePool(): Promise<void> {
+export async function closePool(pool: Pool): Promise<void> {
   await pool.end();
   logger.info('Database pool closed');
 }
@@ -86,9 +116,9 @@ export async function closePool(): Promise<void> {
 /**
  * Health check
  */
-export async function healthCheck(): Promise<boolean> {
+export async function healthCheck(pool: Pool): Promise<boolean> {
   try {
-    await query('SELECT 1');
+    await query(pool, 'SELECT 1');
     return true;
   } catch {
     return false;

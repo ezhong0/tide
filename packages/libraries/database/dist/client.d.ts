@@ -1,26 +1,36 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, PoolConfig } from 'pg';
 /**
- * PostgreSQL connection pool
+ * Database Client
+ *
+ * Week 3 Alpha: Services use Supabase client by default.
+ * Direct PostgreSQL connection is optional for advanced use cases.
  */
-export declare const pool: Pool;
 /**
- * Execute a query
+ * Create a Supabase client (recommended for Week 3)
  */
-export declare function query<T = any>(text: string, params?: any[]): Promise<T[]>;
+export declare function createSupabase(useServiceRole?: boolean): import("@supabase/supabase-js").SupabaseClient<any, "public", "public", any, any>;
+/**
+ * Create a PostgreSQL pool (optional - requires DATABASE_URL)
+ */
+export declare function createPool(config?: PoolConfig): Pool | null;
+/**
+ * Execute a query using a pool
+ */
+export declare function query<T = any>(pool: Pool, text: string, params?: any[]): Promise<T[]>;
 /**
  * Execute a query and return the first row
  */
-export declare function queryOne<T = any>(text: string, params?: any[]): Promise<T | null>;
+export declare function queryOne<T = any>(pool: Pool, text: string, params?: any[]): Promise<T | null>;
 /**
  * Execute a transaction
  */
-export declare function transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T>;
+export declare function transaction<T>(pool: Pool, callback: (client: PoolClient) => Promise<T>): Promise<T>;
 /**
- * Close the database pool
+ * Close a database pool
  */
-export declare function closePool(): Promise<void>;
+export declare function closePool(pool: Pool): Promise<void>;
 /**
  * Health check
  */
-export declare function healthCheck(): Promise<boolean>;
+export declare function healthCheck(pool: Pool): Promise<boolean>;
 //# sourceMappingURL=client.d.ts.map

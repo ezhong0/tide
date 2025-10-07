@@ -1,16 +1,17 @@
-import jwt from 'jsonwebtoken';
-import { jwtConfig } from '@tide/config';
+import { createClient } from '@supabase/supabase-js';
+import { supabaseConfig } from '@tide/config';
 import { AuthErrors } from '@tide/errors';
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
 
-export interface JWTPayload {
-  userId: UserId;
-  email: string;
-  type: 'access' | 'refresh';
-  iat?: number;
-  exp?: number;
-}
+/**
+ * Supabase Authentication Middleware
+ *
+ * Week 3 Alpha uses Supabase Auth - no custom JWT validation needed.
+ * This file verifies Supabase JWTs using the Supabase client.
+ */
+
+const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
 export interface AuthContext {
   userId: UserId;
@@ -19,51 +20,35 @@ export interface AuthContext {
 }
 
 /**
- * Verify JWT access token and extract user information
+ * Verify Supabase JWT token and extract user information
  *
  * @param token - JWT access token from Authorization header
  * @returns AuthContext with user information
  * @throws AuthError if token is invalid or expired
  */
-export function verifyAccessToken(token: string): AuthContext {
+export async function verifyAccessToken(token: string): Promise<AuthContext> {
   if (!token) {
     throw AuthErrors.invalidToken();
   }
 
   try {
-    // Verify token signature and expiration
-    const decoded = jwt.verify(token, jwtConfig.accessTokenSecret) as JWTPayload;
+    const { data, error } = await supabase.auth.getUser(token);
 
-    // Ensure it's an access token (not refresh token)
-    if (decoded.type !== 'access') {
-      logger.warn({ tokenType: decoded.type }, 'Invalid token type used for access');
+    if (error || !data.user) {
+      logger.warn({ error }, 'Invalid Supabase token');
       throw AuthErrors.invalidToken();
     }
 
-    // Return user context
     return {
-      userId: decoded.userId,
-      email: decoded.email,
+      userId: data.user.id as UserId,
+      email: data.user.email || '',
       isAuthenticated: true,
     };
   } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      logger.debug('Access token expired');
-      throw AuthErrors.tokenExpired();
-    }
-
-    if (error instanceof jwt.JsonWebTokenError) {
-      logger.warn({ error: error.message }, 'Invalid JWT token');
-      throw AuthErrors.invalidToken();
-    }
-
-    // Re-throw if it's already an AuthError
     if (error instanceof Error) {
-      throw error;
+      logger.warn({ error: error.message }, 'Failed to verify Supabase token');
     }
-
-    // Unknown error
-    throw new Error('Failed to verify token');
+    throw AuthErrors.invalidToken();
   }
 }
 
@@ -73,7 +58,7 @@ export function verifyAccessToken(token: string): AuthContext {
  * @param token - Optional JWT access token
  * @returns AuthContext (isAuthenticated = false if no token)
  */
-export function optionalAuth(token?: string): AuthContext {
+export async function optionalAuth(token?: string): Promise<AuthContext> {
   if (!token) {
     return {
       userId: '' as UserId,
@@ -83,9 +68,8 @@ export function optionalAuth(token?: string): AuthContext {
   }
 
   try {
-    return verifyAccessToken(token);
+    return await verifyAccessToken(token);
   } catch (error) {
-    // Log but don't throw for optional auth
     logger.debug({ error }, 'Optional auth failed');
     return {
       userId: '' as UserId,
@@ -122,18 +106,18 @@ export function extractToken(authHeader?: string): string | undefined {
  * @returns AuthContext
  * @throws AuthError if required and token is missing/invalid
  */
-export function createAuthContext(
+export async function createAuthContext(
   authHeader?: string,
   required: boolean = true
-): AuthContext {
+): Promise<AuthContext> {
   const token = extractToken(authHeader);
 
   if (required) {
     if (!token) {
       throw AuthErrors.missingToken();
     }
-    return verifyAccessToken(token);
+    return await verifyAccessToken(token);
   }
 
-  return optionalAuth(token);
+  return await optionalAuth(token);
 }
