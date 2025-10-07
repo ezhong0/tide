@@ -1,8 +1,8 @@
-# 🌊 Tide Platform - Developer Guide
+# 🌊 Tide Platform
 
 **An AI-powered productivity platform** that unifies messaging, email, calendar, tasks, and workflows into a seamless experience.
 
-> **For Product Information:** See [`docs/PRODUCT-README.md`](docs/PRODUCT-README.md)
+**Current Status:** Week 3 Alpha - Supabase-First Architecture
 
 ---
 
@@ -272,10 +272,16 @@ Each track can now develop independently:
 
 ## 📚 Documentation
 
-- **Planning:** `docs/planning/` - Product vision, roadmaps, execution plans
-- **Architecture:** `docs/architecture/` - System architecture
-- **Guides:** `docs/guides/` - Implementation guides, foundation setup
-- **Tracks:** `docs/tracks/` - Track-specific requirements and plans
+Complete docs at **[docs/](docs/)**:
+- **[Current Architecture](docs/architecture/CURRENT-ARCHITECTURE.md)** - Week 3 Alpha system design
+- **[Deployment Guide](docs/RAILWAY-DEPLOYMENT-GUIDE.md)** - Deploy to Railway
+- **[Current Status](docs/current/)** - Services, stack, integration status
+- **[Development Guides](docs/guides/)** - Testing and integration guides
+- **[Planning & Roadmap](docs/tracks/)** - Track milestones and implementation plans
+
+**Dashboards:**
+- [Supabase Dashboard](https://app.supabase.com) - Auth, Database, Realtime
+- [Railway Dashboard](https://railway.app/dashboard) - AI Service deployment
 
 ---
 
@@ -361,9 +367,8 @@ MIT
 
 ## 🆘 Support
 
-- **Documentation:** See `docs/` folder
-- **Implementation Guides:** `docs/guides/`
-- **Track Guides:** `docs/tracks/`
+- **Documentation:** [docs/](docs/) - Complete documentation index
+- **Architecture:** [docs/architecture/CURRENT-ARCHITECTURE.md](docs/architecture/CURRENT-ARCHITECTURE.md) - System design
 - **Issues:** Create a GitHub issue
 
 ---
