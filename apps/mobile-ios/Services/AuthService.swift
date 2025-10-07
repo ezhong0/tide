@@ -37,7 +37,7 @@ struct AuthService {
 
     // MARK: - Authentication Methods
 
-    func register(email: String, password: String, name: String) async throws -> User {
+    func register(email: String, password: String, name: String) async throws -> Session {
         let request = RegisterRequest(email: email, password: password, name: name)
 
         let response: RegisterResponse = try await apiClient.post(
@@ -45,7 +45,18 @@ struct AuthService {
             body: request
         )
 
-        return response.user
+        // Save tokens to Keychain
+        try KeychainService.shared.saveAccessToken(response.accessToken)
+        try KeychainService.shared.saveRefreshToken(response.refreshToken)
+
+        // Connect to WebSocket
+        await TideCore.shared.connectWebSocket(token: response.accessToken)
+
+        return Session(
+            user: response.user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken
+        )
     }
 
     func login(email: String, password: String) async throws -> Session {
@@ -55,6 +66,13 @@ struct AuthService {
             endpoint: "/auth/login",
             body: request
         )
+
+        // Save tokens to Keychain
+        try KeychainService.shared.saveAccessToken(response.accessToken)
+        try KeychainService.shared.saveRefreshToken(response.refreshToken)
+
+        // Connect to WebSocket
+        await TideCore.shared.connectWebSocket(token: response.accessToken)
 
         return Session(
             user: response.user,
@@ -83,6 +101,9 @@ struct AuthService {
     }
 
     func logout() async throws {
+        // Disconnect WebSocket
+        await TideCore.shared.disconnectWebSocket()
+
         // Clear local tokens
         KeychainService.shared.deleteTokens()
 

@@ -38,6 +38,9 @@ export declare class MultiModelRouter {
     private selectBalanced;
     /**
      * Get actual model ID from ModelFamily
+     *
+     * NOTE: GPT-5 models were released August 7, 2025
+     * API model names: gpt-5, gpt-5-mini, gpt-5-nano
      */
     getModelId(family: ModelFamily): string;
 }

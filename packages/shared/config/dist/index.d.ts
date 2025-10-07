@@ -2,8 +2,8 @@ export { env, isProduction, isDevelopment, isTest, getKafkaBrokers, getAllowedOr
 export type { Env } from './env';
 export { databaseConfig, redisConfig, kafkaConfig } from './database';
 export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
-export { jwtConfig, passwordConfig, bcryptConfig, gmailOAuthConfig, exchangeOAuthConfig, googleCalendarOAuthConfig } from './auth';
-export type { JWTConfig, OAuthProviderConfig } from './auth';
+export { jwtConfig, passwordConfig, bcryptConfig, googleOAuthConfig, gmailOAuthConfig, exchangeOAuthConfig, googleCalendarOAuthConfig } from './auth';
+export type { JWTConfig, OAuthProviderConfig, GoogleOAuthConfig } from './auth';
 export { aiServiceConfig, vectorDBConfig, emailServiceConfig, monitoringConfig } from './services';
 export type { AIServiceConfig, VectorDBConfig } from './services';
 export { features, isFeatureEnabled, requireFeature } from './features';

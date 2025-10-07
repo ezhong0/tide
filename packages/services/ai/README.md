@@ -2,11 +2,15 @@
 
 Multi-model AI orchestration service that coordinates 30+ models and 20+ specialized agents to deliver intelligent, contextual responses.
 
+> **📘 GPT-5 Models**: This service uses OpenAI's GPT-5 (released August 2025). See [GPT-5-MODELS.md](./GPT-5-MODELS.md) for complete documentation on model variants, pricing, and usage.
+
 ## Features
 
-- **Multi-Model Router**: Intelligently routes requests to optimal AI models (OpenAI, Anthropic, Google)
-- **Agent Swarm**: 5+ specialized agents for email, calendar, tasks, and intelligence
+- **Multi-Model Router**: Intelligently routes requests to optimal AI models (GPT-5, Claude, Gemini)
+- **Agent Swarm**: 18 specialized agents for email, calendar, tasks, decisions, and intelligence
 - **Intent Detection**: Rule-based + ML-based intent classification
+- **Reasoning Engine**: Multi-step reasoning with verification and hallucination detection
+- **Learning System**: Continuous improvement from user interactions
 - **Event-Driven**: Kafka integration for asynchronous processing
 - **HTTP API**: Direct REST endpoints for synchronous requests
 

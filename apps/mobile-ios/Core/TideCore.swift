@@ -11,15 +11,101 @@ class TideCore: ObservableObject {
     @Published var currentConversation: Conversation?
     @Published var isProcessing: Bool = false
     @Published var errorMessage: String?
+    @Published var isConnected: Bool = false
+    @Published var connectionStatus: String = "Disconnected"
 
     // MARK: - Services
     private let apiClient = APIClient.shared
     private let dataManager = DataManager.shared
+    private let webSocketManager = WebSocketManager.shared
     private var cancellables = Set<AnyCancellable>()
+    private var accessToken: String?
 
     // MARK: - Initialization
     init() {
         loadConversations()
+        setupWebSocketHandlers()
+    }
+
+    // MARK: - WebSocket Setup
+
+    private func setupWebSocketHandlers() {
+        // Listen for connection status
+        webSocketManager.$isConnected
+            .sink { [weak self] connected in
+                self?.isConnected = connected
+                self?.connectionStatus = connected ? "Connected" : "Disconnected"
+            }
+            .store(in: &cancellables)
+
+        // Handle incoming messages
+        webSocketManager.onMessageReceived = { [weak self] wsMessage in
+            Task { @MainActor in
+                self?.handleWebSocketMessage(wsMessage)
+            }
+        }
+
+        // Handle connection events
+        webSocketManager.onConnected = { [weak self] in
+            Task { @MainActor in
+                self?.connectionStatus = "Connected"
+                self?.errorMessage = nil
+            }
+        }
+
+        webSocketManager.onDisconnected = { [weak self] in
+            Task { @MainActor in
+                self?.connectionStatus = "Disconnected"
+            }
+        }
+    }
+
+    /// Connect to WebSocket with access token
+    func connectWebSocket(token: String) {
+        self.accessToken = token
+        webSocketManager.connect(token: token)
+        connectionStatus = "Connecting..."
+    }
+
+    /// Disconnect WebSocket
+    func disconnectWebSocket() {
+        webSocketManager.disconnect()
+    }
+
+    /// Handle incoming WebSocket messages
+    private func handleWebSocketMessage(_ wsMessage: WebSocketMessage) {
+        guard wsMessage.type == "message",
+              let payload = wsMessage.payload?.value as? [String: Any],
+              let content = payload["content"] as? String,
+              let roleString = payload["role"] as? String,
+              let conversationId = payload["conversationId"] as? String else {
+            return
+        }
+
+        // Find or create conversation
+        var conversation: Conversation
+        if let existing = conversations.first(where: { $0.id == conversationId }) {
+            conversation = existing
+        } else {
+            // Message for unknown conversation, use current or create new
+            conversation = currentConversation ?? createConversation(title: "Chat with Tide")
+        }
+
+        // Create message from WebSocket data
+        let role: MessageRole = roleString == "user" ? .user : .assistant
+        let message = Message(
+            content: content,
+            role: role,
+            status: .delivered,
+            suggestions: payload["suggestions"] as? [String]
+        )
+
+        // Add message to conversation
+        conversation.messages.append(message)
+        conversation.updatedAt = Date()
+        updateConversation(conversation)
+
+        isProcessing = false
     }
 
     // MARK: - Conversation Management
@@ -113,7 +199,28 @@ class TideCore: ObservableObject {
             role: .user,
             status: .sent
         )
-        return await process(userMessage)
+
+        guard var conversation = currentConversation else {
+            return createErrorMessage("No active conversation")
+        }
+
+        // Add user message to conversation immediately
+        conversation.messages.append(userMessage)
+        updateConversation(conversation)
+
+        // If WebSocket is connected, send via WebSocket
+        if isConnected {
+            isProcessing = true
+            webSocketManager.sendChatMessage(
+                conversationId: conversation.id,
+                content: content
+            )
+            // AI response will come via WebSocket callback
+            return userMessage
+        } else {
+            // Fallback to simulated response if not connected
+            return await process(userMessage)
+        }
     }
 
     // MARK: - Private Helpers

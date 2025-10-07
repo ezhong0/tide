@@ -2,6 +2,9 @@ package ai.tide.app.core
 
 import ai.tide.app.data.models.*
 import ai.tide.app.data.repository.ConversationRepository
+import ai.tide.app.services.WebSocketManager
+import ai.tide.app.services.WebSocketMessage
+import kotlinx.coroutines.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,8 +26,94 @@ class TideCore(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _isConnected = MutableStateFlow(false)
+    val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
+
+    private val _connectionStatus = MutableStateFlow("Disconnected")
+    val connectionStatus: StateFlow<String> = _connectionStatus.asStateFlow()
+
+    private val webSocketManager = WebSocketManager.getInstance()
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var accessToken: String? = null
+
     init {
         loadConversations()
+        setupWebSocketHandlers()
+    }
+
+    // MARK: - WebSocket Setup
+
+    private fun setupWebSocketHandlers() {
+        // Observe connection status
+        scope.launch {
+            webSocketManager.isConnected.collect { connected ->
+                _isConnected.value = connected
+                _connectionStatus.value = if (connected) "Connected" else "Disconnected"
+            }
+        }
+
+        // Handle incoming messages
+        webSocketManager.onMessageReceived = { wsMessage ->
+            scope.launch {
+                handleWebSocketMessage(wsMessage)
+            }
+        }
+
+        // Handle connection events
+        webSocketManager.onConnected = {
+            scope.launch {
+                _connectionStatus.value = "Connected"
+                _errorMessage.value = null
+            }
+        }
+
+        webSocketManager.onDisconnected = {
+            scope.launch {
+                _connectionStatus.value = "Disconnected"
+            }
+        }
+    }
+
+    fun connectWebSocket(token: String) {
+        accessToken = token
+        webSocketManager.connect(token)
+        _connectionStatus.value = "Connecting..."
+    }
+
+    fun disconnectWebSocket() {
+        webSocketManager.disconnect()
+    }
+
+    private suspend fun handleWebSocketMessage(wsMessage: WebSocketMessage) {
+        if (wsMessage.type != "message") return
+
+        val payload = wsMessage.payload ?: return
+        val content = payload["content"]?.toString() ?: return
+        val roleString = payload["role"]?.toString() ?: return
+        val conversationId = payload["conversationId"]?.toString() ?: return
+
+        // Find or create conversation
+        var conversation = _conversations.value.firstOrNull { it.id == conversationId }
+            ?: _currentConversation.value
+            ?: createConversation("Chat with Tide")
+
+        // Create message from WebSocket data
+        val role = if (roleString == "user") MessageRole.USER else MessageRole.ASSISTANT
+        val suggestions = (payload["suggestions"] as? List<*>)?.mapNotNull { it?.toString() }
+
+        val message = Message(
+            content = content,
+            role = role,
+            status = MessageStatus.DELIVERED,
+            suggestions = suggestions
+        )
+
+        // Add message to conversation
+        conversation.messages.add(message)
+        conversation.updatedAt = java.util.Date()
+        updateConversation(conversation)
+
+        _isProcessing.value = false
     }
 
     // MARK: - Conversation Management
@@ -122,7 +211,26 @@ class TideCore(
             role = MessageRole.USER,
             status = MessageStatus.SENT
         )
-        return process(userMessage)
+
+        val conversation = _currentConversation.value ?: return createErrorMessage("No active conversation")
+
+        // Add user message to conversation immediately
+        conversation.messages.add(userMessage)
+        updateConversation(conversation)
+
+        // If WebSocket is connected, send via WebSocket
+        return if (_isConnected.value) {
+            _isProcessing.value = true
+            webSocketManager.sendChatMessage(
+                conversationId = conversation.id,
+                content = content
+            )
+            // AI response will come via WebSocket callback
+            userMessage
+        } else {
+            // Fallback to simulated response if not connected
+            process(userMessage)
+        }
     }
 
     // MARK: - Private Helpers
@@ -208,6 +316,11 @@ class TideCore(
             actionPreview = actionPreview,
             suggestions = suggestions
         )
+    }
+
+    fun cleanup() {
+        webSocketManager.cleanup()
+        scope.cancel()
     }
 
     companion object {

@@ -35,19 +35,16 @@ const EnvSchema = zod_1.z.object({
     OPENAI_API_KEY: zod_1.z.string().optional(),
     OPENAI_ORG_ID: zod_1.z.string().optional(),
     ANTHROPIC_API_KEY: zod_1.z.string().optional(),
-    // OAuth - Gmail
-    GMAIL_CLIENT_ID: zod_1.z.string().optional(),
-    GMAIL_CLIENT_SECRET: zod_1.z.string().optional(),
-    GMAIL_REDIRECT_URI: zod_1.z.string().url().optional(),
-    // OAuth - Microsoft Exchange
+    // OAuth - Google (unified for Gmail, Calendar, Drive, etc.)
+    GOOGLE_CLIENT_ID: zod_1.z.string().optional(),
+    GOOGLE_CLIENT_SECRET: zod_1.z.string().optional(),
+    GOOGLE_REDIRECT_URI: zod_1.z.string().url().optional(),
+    GOOGLE_IOS_CLIENT_ID: zod_1.z.string().optional(), // For iOS mobile app
+    // OAuth - Microsoft Exchange (unified for Outlook, Calendar, OneDrive, etc.)
     EXCHANGE_CLIENT_ID: zod_1.z.string().optional(),
     EXCHANGE_CLIENT_SECRET: zod_1.z.string().optional(),
     EXCHANGE_TENANT_ID: zod_1.z.string().optional(),
     EXCHANGE_REDIRECT_URI: zod_1.z.string().url().optional(),
-    // OAuth - Google Calendar
-    GOOGLE_CALENDAR_CLIENT_ID: zod_1.z.string().optional(),
-    GOOGLE_CALENDAR_CLIENT_SECRET: zod_1.z.string().optional(),
-    GOOGLE_CALENDAR_REDIRECT_URI: zod_1.z.string().url().optional(),
     // Vector Database
     PINECONE_API_KEY: zod_1.z.string().optional(),
     PINECONE_ENVIRONMENT: zod_1.z.string().optional(),
