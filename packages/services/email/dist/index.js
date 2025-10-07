@@ -92,6 +92,39 @@ class EmailService {
             try {
                 const { userId, provider } = req.params;
                 const { limit, unreadOnly } = req.query;
+                // Try to fetch from database first
+                const { data: dbEmails, error: dbError } = await this.db
+                    .from('email_messages')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .eq('provider', provider === 'gmail' ? 'google' : 'microsoft')
+                    .order('received_at', { ascending: false })
+                    .limit(limit ? parseInt(limit) : 50);
+                // If we have emails in database, return them
+                if (!dbError && dbEmails && dbEmails.length > 0) {
+                    // Convert database emails to API format
+                    const emails = dbEmails.map(dbEmail => ({
+                        id: dbEmail.external_message_id,
+                        userId: dbEmail.user_id,
+                        provider: dbEmail.provider,
+                        messageId: dbEmail.external_message_id,
+                        threadId: dbEmail.thread_id,
+                        from: dbEmail.from_address,
+                        to: dbEmail.to_addresses,
+                        cc: dbEmail.cc_addresses,
+                        subject: dbEmail.subject,
+                        body: dbEmail.body_text,
+                        htmlBody: dbEmail.body_html,
+                        timestamp: new Date(dbEmail.received_at),
+                        isRead: dbEmail.is_read,
+                        isStarred: false,
+                        hasAttachments: false,
+                    }));
+                    logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
+                    return res.json({ emails, count: emails.length });
+                }
+                // No emails in database - try to fetch from provider
+                logger.info({ userId, provider }, 'No emails in database, fetching from provider');
                 // Try to get provider from cache
                 let emailProvider = this.providers.get(`${userId}-${provider}`);
                 // If not in cache, retrieve from database and initialize
@@ -104,7 +137,10 @@ class EmailService {
                         .eq('service', 'email')
                         .single();
                     if (tokenError || !tokenData) {
-                        return res.status(404).json({ error: 'Provider not connected. Please connect your account first.' });
+                        return res.status(404).json({
+                            error: 'No emails found and provider not connected.',
+                            message: 'Please connect your Gmail account or insert test data.'
+                        });
                     }
                     // Initialize provider with tokens from database
                     emailProvider = this.getProvider(provider);
