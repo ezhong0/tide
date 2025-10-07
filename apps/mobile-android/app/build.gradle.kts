@@ -2,8 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
-    id("com.apollographql.apollo3")
     kotlin("kapt")
+    kotlin("plugin.serialization") version "1.9.21"
 }
 
 android {
@@ -22,16 +22,16 @@ android {
             useSupportLibrary = true
         }
 
-        // Build config fields
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:4001\"")
-        buildConfigField("String", "GRAPHQL_ENDPOINT", "\"http://10.0.2.2:4001/graphql\"")
-        buildConfigField("String", "WEBSOCKET_ENDPOINT", "\"ws://10.0.2.2:4001/realtime\"")
+        // Build config fields - Supabase
+        buildConfigField("String", "SUPABASE_URL", "\"https://ozrocykjomgcuphicqpg.supabase.co\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"YOUR_ANON_KEY_HERE\"") // Replace with actual key
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:4001\"")
+            buildConfigField("String", "SUPABASE_URL", "\"https://ozrocykjomgcuphicqpg.supabase.co\"")
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"YOUR_ANON_KEY_HERE\"")
         }
         release {
             isMinifyEnabled = true
@@ -39,9 +39,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "API_BASE_URL", "\"https://api.tide.ai\"")
-            buildConfigField("String", "GRAPHQL_ENDPOINT", "\"https://api.tide.ai/graphql\"")
-            buildConfigField("String", "WEBSOCKET_ENDPOINT", "\"wss://api.tide.ai/realtime\"")
+            buildConfigField("String", "SUPABASE_URL", "\"https://ozrocykjomgcuphicqpg.supabase.co\"")
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"YOUR_ANON_KEY_HERE\"")
         }
     }
 
@@ -90,13 +89,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
-    // Networking - Apollo GraphQL
-    implementation("com.apollographql.apollo3:apollo-runtime:3.8.2")
+    // Supabase Kotlin SDK (replaces Apollo + Ktor WebSocket)
+    implementation(platform("io.github.jan-tennert.supabase:bom:2.1.0"))
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:gotrue-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
+    implementation("io.github.jan-tennert.supabase:storage-kt")
 
-    // Networking - OkHttp & WebSocket
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // Ktor (required by Supabase)
     implementation("io.ktor:ktor-client-android:2.3.7")
-    implementation("io.ktor:ktor-client-websockets:2.3.7")
     implementation("io.ktor:ktor-client-logging:2.3.7")
 
     // Room (offline storage)
