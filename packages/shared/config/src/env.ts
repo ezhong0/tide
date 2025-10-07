@@ -9,49 +9,42 @@ const EnvSchema = z.object({
   PORT: z.string().transform(Number).pipe(z.number().int().positive()).default('4000'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
-  // Database
-  DATABASE_URL: z.string().url(),
+  // Supabase (Core Infrastructure)
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string(), // For mobile apps
+  SUPABASE_SERVICE_ROLE_KEY: z.string(), // For backend services (bypasses RLS)
+  SUPABASE_JWT_SECRET: z.string().optional(),
+
+  // Database (Optional - services use Supabase client)
+  DATABASE_URL: z.string().url().optional(),
   DATABASE_POOL_MIN: z.string().transform(Number).pipe(z.number().int().nonnegative()).default('2'),
   DATABASE_POOL_MAX: z.string().transform(Number).pipe(z.number().int().positive()).default('10'),
   DATABASE_SSL: z.string().transform(val => val === 'true').default('false'),
 
-  // Redis
-  REDIS_URL: z.string().url(),
+  // Redis (Infrastructure ready, not yet used)
+  REDIS_URL: z.string().optional(),
   REDIS_MAX_RETRIES: z.string().transform(Number).pipe(z.number().int().positive()).default('3'),
 
-  // Kafka
-  KAFKA_BROKERS: z.string(), // Comma-separated list
+  // Kafka (Infrastructure ready, not yet used)
+  KAFKA_BROKERS: z.string().optional(),
   KAFKA_CLIENT_ID: z.string().default('tide-platform'),
   KAFKA_GROUP_ID: z.string().default('tide-consumers'),
-
-  // Authentication
-  JWT_ACCESS_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32),
-  JWT_ACCESS_EXPIRES_IN: z.string().default('15m'),
-  JWT_REFRESH_EXPIRES_IN: z.string().default('30d'),
-  BCRYPT_ROUNDS: z.string().transform(Number).pipe(z.number().int().min(10).max(15)).default('12'),
 
   // External Services
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_ORG_ID: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // OAuth - Google (unified for Gmail, Calendar, Drive, etc.)
+  // OAuth - Google (configured in Supabase Dashboard)
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  GOOGLE_REDIRECT_URI: z.string().optional(),
   GOOGLE_IOS_CLIENT_ID: z.string().optional(), // For iOS mobile app
 
-  // OAuth - Microsoft Exchange (unified for Outlook, Calendar, OneDrive, etc.)
-  EXCHANGE_CLIENT_ID: z.string().optional(),
-  EXCHANGE_CLIENT_SECRET: z.string().optional(),
-  EXCHANGE_TENANT_ID: z.string().optional(),
-  EXCHANGE_REDIRECT_URI: z.string().url().optional(),
-
-  // Vector Database
-  PINECONE_API_KEY: z.string().optional(),
-  PINECONE_ENVIRONMENT: z.string().optional(),
-  PINECONE_INDEX_NAME: z.string().default('tide-embeddings'),
+  // OAuth - Microsoft (configured in Supabase Dashboard)
+  AZURE_CLIENT_ID: z.string().optional(),
+  AZURE_CLIENT_SECRET: z.string().optional(),
+  AZURE_TENANT_ID: z.string().optional(),
 
   // Monitoring
   SENTRY_DSN: z.string().url().optional(),
@@ -69,17 +62,6 @@ const EnvSchema = z.object({
   // Rate Limiting
   RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
   RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
-
-  // WebSocket
-  WEBSOCKET_PORT: z.string().transform(Number).pipe(z.number().int().positive()).default('4003'),
-  WEBSOCKET_CORS_ORIGINS: z.string().default('http://localhost:3000'),
-
-  // Email
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
-  SMTP_FROM: z.string().email().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -126,6 +108,9 @@ export const isTest = env.NODE_ENV === 'test';
  * Get Kafka brokers as array
  */
 export function getKafkaBrokers(): string[] {
+  if (!env.KAFKA_BROKERS) {
+    return [];
+  }
   return env.KAFKA_BROKERS.split(',').map(b => b.trim());
 }
 
@@ -134,11 +119,4 @@ export function getKafkaBrokers(): string[] {
  */
 export function getAllowedOrigins(): string[] {
   return env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
-}
-
-/**
- * Get WebSocket CORS origins as array
- */
-export function getWebSocketOrigins(): string[] {
-  return env.WEBSOCKET_CORS_ORIGINS.split(',').map(o => o.trim());
 }

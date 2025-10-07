@@ -1,102 +1,35 @@
 import { env } from './env';
 
-export interface JWTConfig {
-  accessSecret: string;
-  refreshSecret: string;
-  accessExpiresIn: string;
-  refreshExpiresIn: string;
-  // Aliases for compatibility
-  accessTokenSecret: string;
-  refreshTokenSecret: string;
-  accessTokenExpiry: string;
-  refreshTokenExpiry: string;
-}
-
 /**
- * JWT token configuration
+ * Supabase Authentication Configuration
+ *
+ * Week 3 Alpha uses Supabase Auth for all authentication.
+ * OAuth is configured in the Supabase Dashboard, not here.
  */
-export const jwtConfig: JWTConfig = {
-  accessSecret: env.JWT_ACCESS_SECRET,
-  refreshSecret: env.JWT_REFRESH_SECRET,
-  accessExpiresIn: env.JWT_ACCESS_EXPIRES_IN,
-  refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN,
-  // Aliases for compatibility
-  accessTokenSecret: env.JWT_ACCESS_SECRET,
-  refreshTokenSecret: env.JWT_REFRESH_SECRET,
-  accessTokenExpiry: env.JWT_ACCESS_EXPIRES_IN,
-  refreshTokenExpiry: env.JWT_REFRESH_EXPIRES_IN,
+export const supabaseConfig = {
+  url: env.SUPABASE_URL,
+  anonKey: env.SUPABASE_ANON_KEY,
+  serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY,
+  jwtSecret: env.SUPABASE_JWT_SECRET,
 };
 
 /**
- * Password hashing configuration
+ * Google OAuth Configuration
+ * Used for configuring OAuth in Supabase Dashboard
  */
-export const passwordConfig = {
-  bcryptRounds: env.BCRYPT_ROUNDS,
+export const googleOAuthConfig = {
+  clientId: env.GOOGLE_CLIENT_ID,
+  clientSecret: env.GOOGLE_CLIENT_SECRET,
+  redirectUri: env.GOOGLE_REDIRECT_URI,
+  iosClientId: env.GOOGLE_IOS_CLIENT_ID,
 };
 
 /**
- * Bcrypt configuration (alias for passwordConfig for compatibility)
+ * Microsoft Azure OAuth Configuration
+ * Used for configuring OAuth in Supabase Dashboard
  */
-export const bcryptConfig = {
-  saltRounds: env.BCRYPT_ROUNDS,
+export const azureOAuthConfig = {
+  clientId: env.AZURE_CLIENT_ID,
+  clientSecret: env.AZURE_CLIENT_SECRET,
+  tenantId: env.AZURE_TENANT_ID,
 };
-
-export interface OAuthProviderConfig {
-  clientId: string;
-  clientSecret: string;
-  redirectUri: string;
-}
-
-export interface GoogleOAuthConfig extends OAuthProviderConfig {
-  iosClientId?: string; // For iOS mobile app
-}
-
-/**
- * Google OAuth configuration (unified for Gmail, Calendar, Drive, etc.)
- * Single OAuth client handles all Google services with different scopes
- */
-export const googleOAuthConfig: GoogleOAuthConfig | null = env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET && env.GOOGLE_REDIRECT_URI
-  ? {
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-      redirectUri: env.GOOGLE_REDIRECT_URI,
-      iosClientId: env.GOOGLE_IOS_CLIENT_ID,
-    }
-  : null;
-
-/**
- * Gmail OAuth configuration (uses unified Google OAuth)
- * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
- */
-export const gmailOAuthConfig: OAuthProviderConfig | null = googleOAuthConfig
-  ? {
-      clientId: googleOAuthConfig.clientId,
-      clientSecret: googleOAuthConfig.clientSecret,
-      redirectUri: googleOAuthConfig.redirectUri,
-    }
-  : null;
-
-/**
- * Google Calendar OAuth configuration (uses unified Google OAuth)
- * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
- */
-export const googleCalendarOAuthConfig: OAuthProviderConfig | null = googleOAuthConfig
-  ? {
-      clientId: googleOAuthConfig.clientId,
-      clientSecret: googleOAuthConfig.clientSecret,
-      redirectUri: googleOAuthConfig.redirectUri,
-    }
-  : null;
-
-/**
- * Microsoft Exchange OAuth configuration (unified for Outlook, Calendar, OneDrive, etc.)
- */
-export const exchangeOAuthConfig: OAuthProviderConfig & { tenantId: string } | null =
-  env.EXCHANGE_CLIENT_ID && env.EXCHANGE_CLIENT_SECRET && env.EXCHANGE_REDIRECT_URI && env.EXCHANGE_TENANT_ID
-    ? {
-        clientId: env.EXCHANGE_CLIENT_ID,
-        clientSecret: env.EXCHANGE_CLIENT_SECRET,
-        redirectUri: env.EXCHANGE_REDIRECT_URI,
-        tenantId: env.EXCHANGE_TENANT_ID,
-      }
-    : null;

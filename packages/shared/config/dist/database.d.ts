@@ -11,9 +11,9 @@ export interface DatabaseConfig {
     query_timeout: number;
 }
 /**
- * PostgreSQL database configuration
+ * PostgreSQL database configuration (optional - services use Supabase client)
  */
-export declare const databaseConfig: DatabaseConfig;
+export declare const databaseConfig: DatabaseConfig | null;
 export interface RedisConfig {
     url: string;
     maxRetriesPerRequest: number;
@@ -23,9 +23,9 @@ export interface RedisConfig {
     connectTimeout: number;
 }
 /**
- * Redis cache configuration
+ * Redis cache configuration (infrastructure ready, not yet used)
  */
-export declare const redisConfig: RedisConfig;
+export declare const redisConfig: RedisConfig | null;
 export interface KafkaConfig {
     brokers: string[];
     clientId: string;
@@ -39,6 +39,6 @@ export interface KafkaConfig {
     };
 }
 /**
- * Kafka event bus configuration
+ * Kafka event bus configuration (infrastructure ready, not yet used)
  */
-export declare const kafkaConfig: KafkaConfig;
+export declare const kafkaConfig: KafkaConfig | null;

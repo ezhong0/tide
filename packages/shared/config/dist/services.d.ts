@@ -16,28 +16,15 @@ export interface AIServiceConfig {
  * AI service configuration
  */
 export declare const aiServiceConfig: AIServiceConfig;
-export interface VectorDBConfig {
-    apiKey: string;
-    environment: string;
-    indexName: string;
+/**
+ * Vector Embeddings Configuration
+ *
+ * Week 3 Alpha uses pgvector (PostgreSQL extension) instead of Pinecone.
+ * Embeddings are stored directly in PostgreSQL via Supabase.
+ */
+export declare const vectorConfig: {
     dimension: number;
     metric: string;
-}
-/**
- * Pinecone vector database configuration
- */
-export declare const vectorDBConfig: VectorDBConfig | null;
-/**
- * Email service configuration
- */
-export declare const emailServiceConfig: {
-    smtp: {
-        host: string;
-        port: number;
-        user: string;
-        password: string;
-        from: string;
-    } | null;
 };
 /**
  * Monitoring configuration

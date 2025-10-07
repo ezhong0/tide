@@ -1,4 +1,4 @@
-import { env, getAllowedOrigins, getWebSocketOrigins } from './env';
+import { env, getAllowedOrigins } from './env';
 
 /**
  * HTTP server configuration
@@ -18,16 +18,8 @@ export const serverConfig = {
 };
 
 /**
- * WebSocket server configuration
+ * WebSocket configuration
+ *
+ * Week 3 Alpha uses Supabase Realtime for WebSocket connections.
+ * No custom WebSocket server is needed.
  */
-export const websocketConfig = {
-  port: env.WEBSOCKET_PORT,
-  cors: {
-    origins: getWebSocketOrigins(),
-    credentials: true,
-  },
-  pingTimeout: 60000, // 60 seconds
-  pingInterval: 25000, // 25 seconds
-  maxHttpBufferSize: 1e6, // 1MB
-  transports: ['websocket', 'polling'],
-};
