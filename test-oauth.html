@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tide OAuth Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .google {
+            background: #4285f4;
+            color: white;
+        }
+        .google:hover {
+            background: #357ae8;
+        }
+        .microsoft {
+            background: #00a4ef;
+            color: white;
+        }
+        .microsoft:hover {
+            background: #0078d4;
+        }
+        .check {
+            background: #34a853;
+            color: white;
+        }
+        .check:hover {
+            background: #2d8e47;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        #result.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        #result.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        #result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .user-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 5px;
+            display: none;
+        }
+        .user-info.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 Tide OAuth Test</h1>
+        <p class="subtitle">Test Google & Microsoft OAuth integration</p>
+
+        <button class="google" onclick="signInWithGoogle()">
+            Sign in with Google
+        </button>
+
+        <button class="microsoft" onclick="signInWithMicrosoft()">
+            Sign in with Microsoft
+        </button>
+
+        <button class="check" onclick="checkSession()">
+            Check Current Session
+        </button>
+
+        <div id="result"></div>
+        <div id="userInfo" class="user-info"></div>
+    </div>
+
+    <script>
+        // REPLACE THIS with your actual anon key from:
+        // https://supabase.com/dashboard/project/ozrocykjomgcuphicqpg/settings/api
+        const SUPABASE_ANON_KEY = 'PASTE_YOUR_ANON_KEY_HERE';
+
+        const supabase = window.supabase.createClient(
+            'https://ozrocykjomgcuphicqpg.supabase.co',
+            SUPABASE_ANON_KEY
+        );
+
+        // Check if we just came back from OAuth
+        window.addEventListener('load', async () => {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            if (hashParams.has('access_token')) {
+                showResult('OAuth callback received! Checking session...', 'info');
+                await checkSession();
+            }
+        });
+
+        async function signInWithGoogle() {
+            showResult('Redirecting to Google...', 'info');
+
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent',
+                        },
+                        scopes: 'email profile https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar',
+                        redirectTo: window.location.href
+                    }
+                });
+
+                if (error) {
+                    showResult(`Error: ${error.message}`, 'error');
+                    console.error('OAuth error:', error);
+                }
+            } catch (err) {
+                showResult(`Error: ${err.message}`, 'error');
+                console.error('Exception:', err);
+            }
+        }
+
+        async function signInWithMicrosoft() {
+            showResult('Redirecting to Microsoft...', 'info');
+
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'azure',
+                    options: {
+                        scopes: 'email profile User.Read Mail.ReadWrite Calendars.ReadWrite offline_access',
+                        redirectTo: window.location.href
+                    }
+                });
+
+                if (error) {
+                    showResult(`Error: ${error.message}`, 'error');
+                    console.error('OAuth error:', error);
+                }
+            } catch (err) {
+                showResult(`Error: ${err.message}`, 'error');
+                console.error('Exception:', err);
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    showResult(`Error checking session: ${error.message}`, 'error');
+                    return;
+                }
+
+                if (session) {
+                    showResult('✅ Authenticated!', 'success');
+                    showUserInfo(session.user);
+                } else {
+                    showResult('No active session. Please sign in.', 'info');
+                    document.getElementById('userInfo').classList.remove('show');
+                }
+            } catch (err) {
+                showResult(`Error: ${err.message}`, 'error');
+                console.error('Exception:', err);
+            }
+        }
+
+        function showResult(message, type) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = message;
+            resultDiv.className = type;
+        }
+
+        function showUserInfo(user) {
+            const userInfoDiv = document.getElementById('userInfo');
+            userInfoDiv.innerHTML = `
+                <h3>User Information:</h3>
+                <pre>${JSON.stringify({
+                    id: user.id,
+                    email: user.email,
+                    provider: user.app_metadata.provider,
+                    created_at: user.created_at
+                }, null, 2)}</pre>
+                <p><strong>Next step:</strong> Check Supabase dashboard to verify user was created in database.</p>
+            `;
+            userInfoDiv.classList.add('show');
+        }
+
+        // Log any errors to console
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+        });
+    </script>
+</body>
+</html>
