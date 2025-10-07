@@ -18,7 +18,9 @@ const types_1 = require("@tide/types");
  */
 async function register(req, res, next) {
     try {
-        const { email, password, name, timezone = 'UTC' } = req.body;
+        const { email, password, firstName, lastName, timezone = 'UTC' } = req.body;
+        // Combine firstName and lastName into name
+        const name = `${firstName} ${lastName}`.trim();
         // Check if user already exists
         const existingUser = await (0, database_1.queryOne)('SELECT id FROM tide.users WHERE email = $1', [email.toLowerCase()]);
         if (existingUser) {

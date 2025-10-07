@@ -6,6 +6,7 @@ import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
+import { createAuthContext } from './middleware/auth';
 
 const app: Express = express();
 
@@ -82,13 +83,30 @@ async function startServer() {
     '/graphql',
     expressMiddleware(server, {
       context: async ({ req }) => {
-        // Extract user from JWT if present
-        const token = req.headers.authorization?.replace('Bearer ', '');
+        // Verify JWT and create auth context
+        // Set required=false to allow introspection queries without auth
+        try {
+          const authContext = createAuthContext(
+            req.headers.authorization,
+            false // Optional auth - allows introspection
+          );
 
-        return {
-          token,
-          // Add more context as needed (user, permissions, etc.)
-        };
+          return {
+            ...authContext,
+            // Services can check isAuthenticated to enforce auth
+            requestId: req.headers['x-request-id'] || `req_${Date.now()}`,
+          };
+        } catch (error) {
+          // Log auth errors but still allow request (services can reject)
+          logger.warn({ error, path: req.path }, 'Authentication failed');
+
+          return {
+            userId: '' as any,
+            email: '',
+            isAuthenticated: false,
+            requestId: req.headers['x-request-id'] || `req_${Date.now()}`,
+          };
+        }
       },
     })
   );

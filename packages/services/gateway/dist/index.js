@@ -11,6 +11,7 @@ const express4_1 = require("@apollo/server/express4");
 const gateway_1 = require("@apollo/gateway");
 const config_1 = require("@tide/config");
 const logger_1 = require("@tide/logger");
+const auth_1 = require("./middleware/auth");
 const app = (0, express_1.default)();
 // Security middleware
 app.use((0, helmet_1.default)({
@@ -76,12 +77,27 @@ async function startServer() {
     // Apply GraphQL middleware
     app.use('/graphql', (0, express4_1.expressMiddleware)(server, {
         context: async ({ req }) => {
-            // Extract user from JWT if present
-            const token = req.headers.authorization?.replace('Bearer ', '');
-            return {
-                token,
-                // Add more context as needed (user, permissions, etc.)
-            };
+            // Verify JWT and create auth context
+            // Set required=false to allow introspection queries without auth
+            try {
+                const authContext = (0, auth_1.createAuthContext)(req.headers.authorization, false // Optional auth - allows introspection
+                );
+                return {
+                    ...authContext,
+                    // Services can check isAuthenticated to enforce auth
+                    requestId: req.headers['x-request-id'] || `req_${Date.now()}`,
+                };
+            }
+            catch (error) {
+                // Log auth errors but still allow request (services can reject)
+                logger_1.logger.warn({ error, path: req.path }, 'Authentication failed');
+                return {
+                    userId: '',
+                    email: '',
+                    isAuthenticated: false,
+                    requestId: req.headers['x-request-id'] || `req_${Date.now()}`,
+                };
+            }
         },
     }));
     const PORT = process.env.GATEWAY_PORT ? parseInt(process.env.GATEWAY_PORT) : 4000;

@@ -1,80 +1,51 @@
-# Supabase Local Development Configuration
-# https://supabase.com/docs/guides/cli/config
+# Supabase Project Configuration
+# This config is for linking to your remote Supabase project
+# OAuth providers are configured in the Supabase Dashboard, not here
+
+project_id = "ozrocykjomgcuphicqpg"
 
 [api]
+enabled = true
 port = 54321
-schemas = ["public", "storage", "auth"]
+schemas = ["public", "storage"]
 extra_search_path = ["public"]
 max_rows = 1000
 
-[auth]
-enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["exp://localhost:19000", "com.tide.app://", "tideapp://"]
-jwt_expiry = 900  # 15 minutes for access tokens
-enable_signup = true
-enable_anonymous_sign_ins = false
-
-# Email auth disabled - OAuth only
-[auth.email]
-enable_signup = false
-double_confirm_changes = true
-enable_confirmations = true
-
-# External OAuth providers
-[auth.external.google]
-enabled = true
-client_id = "env(GOOGLE_CLIENT_ID)"
-secret = "env(GOOGLE_CLIENT_SECRET)"
-redirect_uri = "http://localhost:54321/auth/v1/callback"
-# Scopes needed for Gmail + Calendar + Profile
-url = "https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/userinfo.email+https://www.googleapis.com/auth/userinfo.profile+https://www.googleapis.com/auth/gmail.modify+https://www.googleapis.com/auth/calendar"
-
-[auth.external.azure]
-enabled = true
-client_id = "env(AZURE_CLIENT_ID)"
-secret = "env(AZURE_CLIENT_SECRET)"
-redirect_uri = "http://localhost:54321/auth/v1/callback"
-# Microsoft Graph scopes for Outlook + Calendar + Profile
-url = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?scope=User.Read+Mail.ReadWrite+Calendars.ReadWrite+offline_access"
-
 [db]
 port = 54322
+shadow_port = 54320
 major_version = 15
-
-[db.pooler]
-enabled = false
-port = 54329
-pool_mode = "transaction"
-default_pool_size = 20
-max_client_conn = 100
-
-[realtime]
-enabled = true
-port = 54323
-ip_version = "ipv4"
 
 [studio]
 enabled = true
 port = 54324
-api_url = "http://localhost"
+api_url = "http://127.0.0.1"
+
+[inbucket]
+enabled = true
+port = 54325
+smtp_port = 54326
+pop3_port = 54327
 
 [storage]
 enabled = true
 file_size_limit = "50MiB"
 
-[storage.buckets.avatars]
-public = true
-file_size_limit = "5MiB"
-allowed_mime_types = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-
-[storage.buckets.attachments]
-public = false
-file_size_limit = "50MiB"
-allowed_mime_types = ["image/*", "application/pdf", "text/*"]
-
-[functions]
+[auth]
 enabled = true
+site_url = "https://ozrocykjomgcuphicqpg.supabase.co"
+additional_redirect_urls = ["exp://localhost:19000", "com.tide.app://", "tideapp://", "http://localhost:3000"]
+jwt_expiry = 900
+enable_signup = true
 
-[analytics]
-enabled = false
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+
+# Note: OAuth providers (Google, Microsoft) are configured in Supabase Dashboard
+# Go to: Authentication > Providers
+
+[realtime]
+enabled = true
+ip_version = "IPv4"

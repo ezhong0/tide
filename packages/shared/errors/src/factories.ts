@@ -65,6 +65,13 @@ export class AuthErrors {
     );
   }
 
+  static missingToken(): TideError {
+    return new TideError(
+      ErrorCode.AUTH_TOKEN_INVALID,
+      'Authentication token is required'
+    );
+  }
+
   // Aliases for compatibility
   static invalidToken(): TideError {
     return this.tokenInvalid();
