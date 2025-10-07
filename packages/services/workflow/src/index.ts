@@ -45,8 +45,9 @@ const supabase = !pool ? createClient(supabaseConfig.url, supabaseConfig.service
 // Initialize workflow engine (only if database is configured)
 const workflowEngine = pool ? new WorkflowEngine(pool) : null;
 
-// Initialize Kafka event bus (only if Kafka is configured)
-const eventBus = kafkaConfig
+// Initialize Kafka event bus (only if Kafka is configured AND enabled)
+const kafkaEnabled = process.env.KAFKA_ENABLED !== 'false';
+const eventBus = kafkaConfig && kafkaEnabled
   ? new KafkaEventBus({
       brokers: kafkaConfig.brokers,
       clientId: 'workflow-service',
@@ -237,10 +238,12 @@ async function start() {
       logger.warn('No DATABASE_URL configured - service not ready (Week 9-12)');
     }
 
-    // Connect to Kafka (if configured)
+    // Connect to Kafka (if configured and enabled)
     if (eventBus) {
       await eventBus.connect();
       logger.info('Kafka connected');
+    } else if (!kafkaEnabled) {
+      logger.info('Kafka disabled - event publishing disabled');
     } else {
       logger.warn('No KAFKA_BROKERS configured - event publishing disabled');
     }
