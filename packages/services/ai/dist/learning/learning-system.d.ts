@@ -3,9 +3,9 @@
  * Continuous improvement engine that learns from user interactions
  */
 import type { AIRequest } from '@tide/contracts';
-import { PatternDatabase } from './pattern-database';
-import { UserPreferenceModel } from './user-preference-model';
-import { FeedbackProcessor } from './feedback-processor';
+import { PatternDatabase } from './pattern-database.js';
+import { UserPreferenceModel } from './user-preference-model.js';
+import { FeedbackProcessor } from './feedback-processor.js';
 export declare class LearningSystem {
     private patterns;
     private preferences;

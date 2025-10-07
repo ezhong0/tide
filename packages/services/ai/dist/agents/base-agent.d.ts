@@ -4,7 +4,7 @@
  */
 import { createLogger } from '@tide/logger';
 import type { AgentConfig, AgentTask, AgentResult } from '@tide/contracts';
-import type { AgentExecutionContext } from '../types';
+import type { AgentExecutionContext } from '../types/index.js';
 export declare abstract class BaseAgent {
     protected config: AgentConfig;
     protected logger: ReturnType<typeof createLogger>;

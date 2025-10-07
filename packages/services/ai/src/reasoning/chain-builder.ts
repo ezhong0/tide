@@ -9,7 +9,7 @@ import type {
   Intent,
   AgentTask,
 } from '@tide/contracts';
-import type { BaseAgent } from '../agents/base-agent';
+import type { BaseAgent } from '../agents/base-agent.js';
 
 const logger = createLogger({ component: 'ChainBuilder' });
 

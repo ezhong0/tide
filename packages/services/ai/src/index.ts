@@ -4,16 +4,16 @@
  */
 
 import { createLogger } from '@tide/logger';
-import { AIServer } from './server';
-import { AIKafkaConsumer } from './events/kafka-consumer';
+import { AIServer } from './server.js';
+import { AIKafkaConsumer } from './events/kafka-consumer.js';
 
 const logger = createLogger({ component: 'AIService' });
 
 // Export main components
-export { AIOrchestrator } from './orchestration/ai-orchestrator';
-export { MultiModelRouter } from './models/multi-model-router';
-export { SwarmCoordinator } from './agents/swarm-coordinator';
-export { IntentDetector } from './intelligence/intent-detector';
+export { AIOrchestrator } from './orchestration/ai-orchestrator.js';
+export { MultiModelRouter } from './models/multi-model-router.js';
+export { SwarmCoordinator } from './agents/swarm-coordinator.js';
+export { IntentDetector } from './intelligence/intent-detector.js';
 
 /**
  * Start the AI service

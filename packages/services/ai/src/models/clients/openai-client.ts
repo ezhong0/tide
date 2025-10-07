@@ -4,7 +4,7 @@
 
 import OpenAI from 'openai';
 import { createLogger } from '@tide/logger';
-import type { ModelClient, CompletionOptions, CompletionResult } from '../../types';
+import type { ModelClient, CompletionOptions, CompletionResult } from '../../types/index.js';
 
 const logger = createLogger({ component: 'OpenAIClient' });
 

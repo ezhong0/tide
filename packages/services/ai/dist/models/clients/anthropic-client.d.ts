@@ -1,7 +1,7 @@
 /**
  * Anthropic Model Client
  */
-import type { ModelClient, CompletionOptions, CompletionResult } from '../../types';
+import type { ModelClient, CompletionOptions, CompletionResult } from '../../types/index.js';
 export declare class AnthropicClient implements ModelClient {
     provider: string;
     private client;

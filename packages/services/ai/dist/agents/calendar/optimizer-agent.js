@@ -2,7 +2,7 @@
  * Calendar Optimizer Agent
  * Optimizes calendar schedules for focus time and efficiency
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class CalendarOptimizerAgent extends BaseAgent {
     constructor() {
         const config = {

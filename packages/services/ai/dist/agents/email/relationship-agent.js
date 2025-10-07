@@ -2,7 +2,7 @@
  * Relationship Agent
  * Tracks and analyzes professional relationships
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class RelationshipAgent extends BaseAgent {
     constructor() {
         const config = {

@@ -1,28 +1,42 @@
 /**
  * Kafka Event Consumer
  * Listens to message.* events and processes them with AI
+ *
+ * Status: Not yet integrated (planned for Week 4-5)
  */
 import { Kafka } from 'kafkajs';
 import { createLogger } from '@tide/logger';
 import { kafkaConfig } from '@tide/config';
-import { AIOrchestrator } from '../orchestration/ai-orchestrator';
+import { AIOrchestrator } from '../orchestration/ai-orchestrator.js';
 const logger = createLogger({ component: 'KafkaConsumer' });
 export class AIKafkaConsumer {
     constructor() {
+        this.kafka = null;
+        this.consumer = null;
         this.isRunning = false;
-        this.kafka = new Kafka({
-            clientId: 'ai-service',
-            brokers: kafkaConfig.brokers,
-        });
-        this.consumer = this.kafka.consumer({
-            groupId: 'ai-service-group',
-        });
+        // Only initialize Kafka if configured
+        if (kafkaConfig) {
+            this.kafka = new Kafka({
+                clientId: 'ai-service',
+                brokers: kafkaConfig.brokers,
+            });
+            this.consumer = this.kafka.consumer({
+                groupId: 'ai-service-group',
+            });
+        }
+        else {
+            logger.warn('Kafka not configured - event processing disabled (Week 4-5)');
+        }
         this.orchestrator = new AIOrchestrator();
     }
     /**
      * Start consuming events
      */
     async start() {
+        if (!this.consumer) {
+            logger.info('Kafka not configured - skipping consumer start');
+            return;
+        }
         if (this.isRunning) {
             logger.warn('Consumer already running');
             return;
@@ -50,7 +64,7 @@ export class AIKafkaConsumer {
      * Stop consuming events
      */
     async stop() {
-        if (!this.isRunning) {
+        if (!this.consumer || !this.isRunning) {
             return;
         }
         try {
@@ -113,6 +127,10 @@ export class AIKafkaConsumer {
      * Publish AI response to Kafka
      */
     async publishResponse(response) {
+        if (!this.kafka) {
+            logger.debug('Kafka not configured - skipping response publish');
+            return;
+        }
         const producer = this.kafka.producer();
         try {
             await producer.connect();

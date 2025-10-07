@@ -11,7 +11,7 @@ import type {
   EntityExtraction,
   EntityType,
 } from '@tide/contracts';
-import type { ModelClient } from '../types';
+import type { ModelClient } from '../types/index.js';
 
 const logger = createLogger({ component: 'IntentDetector' });
 

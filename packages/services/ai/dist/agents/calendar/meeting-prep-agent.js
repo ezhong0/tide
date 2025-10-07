@@ -2,7 +2,7 @@
  * Meeting Prep Agent
  * Generates meeting briefs, attendee insights, and talking points
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class MeetingPrepAgent extends BaseAgent {
     constructor() {
         const config = {

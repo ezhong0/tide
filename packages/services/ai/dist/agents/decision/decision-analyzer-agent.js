@@ -2,7 +2,7 @@
  * Decision Analyzer Agent
  * Analyzes complex decisions with pros/cons and impact assessment
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class DecisionAnalyzerAgent extends BaseAgent {
     constructor() {
         const config = {

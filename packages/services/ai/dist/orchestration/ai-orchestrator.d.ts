@@ -35,7 +35,7 @@ export declare class AIOrchestrator {
      */
     private calculateOverallConfidence;
     /**
-     * Calculate cost based on tokens and model
+     * Calculate cost based on tokens and model (GPT-5 only)
      */
     private calculateCost;
 }

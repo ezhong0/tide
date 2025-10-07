@@ -23,8 +23,8 @@ export class MultiModelRouter {
         if (factors.urgency > 0.8) {
             return this.selectFastest(factors);
         }
-        // Complex reasoning: advanced model
-        if (factors.requiresReasoning || factors.complexity > 0.7) {
+        // Complex reasoning: use mini (not full gpt-5)
+        if (factors.requiresReasoning || factors.complexity > 0.8) {
             return this.selectAdvanced(factors);
         }
         // Default: optimal cost/quality balance
@@ -84,8 +84,8 @@ export class MultiModelRouter {
      */
     selectEnsemble(factors) {
         return {
-            primary: 'gpt-5',
-            validators: ['claude-3.5-opus'],
+            primary: 'gpt-5-mini',
+            validators: ['gpt-5-nano'], // Use nano as validator for speed
             aggregation: 'weighted_vote',
             reasoning: 'Critical decision requires multi-model validation',
         };
@@ -94,11 +94,11 @@ export class MultiModelRouter {
      * Select privacy-focused model
      */
     selectPrivate(factors) {
-        // For now, use Anthropic (future: local models)
+        // Use GPT-5 nano for privacy-sensitive content (local-first in future)
         return {
-            primary: 'claude-3.5-sonnet',
+            primary: 'gpt-5-nano',
             aggregation: 'single',
-            reasoning: 'Privacy-sensitive content routed to trusted provider',
+            reasoning: 'Privacy-sensitive content using fast GPT-5 nano',
         };
     }
     /**
@@ -116,19 +116,23 @@ export class MultiModelRouter {
      */
     selectAdvanced(factors) {
         return {
-            primary: 'claude-3.5-opus',
+            primary: 'gpt-5-mini',
             aggregation: 'single',
-            reasoning: 'Complex reasoning task requires advanced model',
+            reasoning: 'Complex reasoning task uses GPT-5 mini (cost optimized)',
         };
     }
     /**
-     * Select balanced model
+     * Select balanced model (default for most requests)
      */
     selectBalanced(factors) {
+        // Use nano by default unless request is moderately complex
+        const useNano = factors.complexity < 0.5 && factors.expectedTokens < 1000;
         return {
-            primary: 'gpt-5-mini',
+            primary: useNano ? 'gpt-5-nano' : 'gpt-5-mini',
             aggregation: 'single',
-            reasoning: 'Standard request using balanced cost/quality model',
+            reasoning: useNano
+                ? 'Simple request using fast GPT-5 nano'
+                : 'Standard request using GPT-5 mini',
         };
     }
     /**
@@ -139,8 +143,8 @@ export class MultiModelRouter {
      */
     getModelId(family) {
         switch (family) {
-            case 'gpt-5':
-                return 'gpt-5'; // GPT-5 standard (released Aug 2025)
+            // case 'gpt-5':
+            //   return 'gpt-5'; // NOT USED - too expensive for Alpha
             case 'gpt-5-mini':
                 return 'gpt-5-mini'; // GPT-5 mini (released Aug 2025)
             case 'gpt-5-nano':
@@ -152,7 +156,7 @@ export class MultiModelRouter {
             case 'gemini-pro':
                 return 'gemini-pro';
             default:
-                return 'gpt-5-mini'; // Default to balanced model
+                return 'gpt-5-nano'; // Default to fastest, cheapest model
         }
     }
 }

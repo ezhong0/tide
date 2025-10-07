@@ -2,7 +2,7 @@
  * Email Triage Agent
  * Analyzes emails and determines priority, urgency, and classification
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class EmailTriageAgent extends BaseAgent {
     constructor() {
         const config = {

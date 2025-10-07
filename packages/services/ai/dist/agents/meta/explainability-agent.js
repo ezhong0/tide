@@ -2,7 +2,7 @@
  * Explainability Agent
  * Generates clear explanations for AI decisions and reasoning
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class ExplainabilityAgent extends BaseAgent {
     constructor() {
         const config = {

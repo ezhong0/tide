@@ -3,8 +3,8 @@
  * Manages the lifecycle and coordination of all agents
  */
 import type { AgentType, AgentTask, AgentResult, Intent } from '@tide/contracts';
-import type { AgentExecutionContext } from '../types';
-import { BaseAgent } from './base-agent';
+import type { AgentExecutionContext } from '../types/index.js';
+import { BaseAgent } from './base-agent.js';
 export declare class SwarmCoordinator {
     private agents;
     constructor();

@@ -3,7 +3,7 @@
  * Constructs multi-step reasoning chains from requests
  */
 import type { AIRequest, Intent } from '@tide/contracts';
-import type { BaseAgent } from '../agents/base-agent';
+import type { BaseAgent } from '../agents/base-agent.js';
 export interface ReasoningLink {
     id: string;
     step: number;

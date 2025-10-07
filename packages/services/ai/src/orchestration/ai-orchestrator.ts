@@ -11,13 +11,13 @@ import type {
   Intent,
   AgentTask,
 } from '@tide/contracts';
-import { MultiModelRouter } from '../models/multi-model-router';
-import { ModelClientFactory } from '../models/clients';
-import { SwarmCoordinator } from '../agents/swarm-coordinator';
-import { IntentDetector } from '../intelligence/intent-detector';
-import { ReasoningEngine } from '../reasoning/reasoning-engine';
-import { LearningSystem } from '../learning/learning-system';
-import type { AgentExecutionContext } from '../types';
+import { MultiModelRouter } from '../models/multi-model-router.js';
+import { ModelClientFactory } from '../models/clients/index.js';
+import { SwarmCoordinator } from '../agents/swarm-coordinator.js';
+import { IntentDetector } from '../intelligence/intent-detector.js';
+import { ReasoningEngine } from '../reasoning/reasoning-engine.js';
+import { LearningSystem } from '../learning/learning-system.js';
+import type { AgentExecutionContext } from '../types/index.js';
 
 const logger = createLogger({ component: 'AIOrchestrator' });
 

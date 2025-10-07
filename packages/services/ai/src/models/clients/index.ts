@@ -4,9 +4,9 @@
 
 import { createLogger } from '@tide/logger';
 import { aiServiceConfig } from '@tide/config';
-import type { ModelClient } from '../../types';
-import { OpenAIClient } from './openai-client';
-import { AnthropicClient } from './anthropic-client';
+import type { ModelClient } from '../../types/index.js';
+import { OpenAIClient } from './openai-client.js';
+import { AnthropicClient } from './anthropic-client.js';
 
 const logger = createLogger({ component: 'ModelClientFactory' });
 
@@ -61,5 +61,5 @@ export class ModelClientFactory {
   }
 }
 
-export { OpenAIClient } from './openai-client';
-export { AnthropicClient } from './anthropic-client';
+export { OpenAIClient } from './openai-client.js';
+export { AnthropicClient } from './anthropic-client.js';

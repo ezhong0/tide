@@ -4,12 +4,12 @@
  */
 import { createLogger } from '@tide/logger';
 import { v4 as uuidv4 } from 'uuid';
-import { MultiModelRouter } from '../models/multi-model-router';
-import { ModelClientFactory } from '../models/clients';
-import { SwarmCoordinator } from '../agents/swarm-coordinator';
-import { IntentDetector } from '../intelligence/intent-detector';
-import { ReasoningEngine } from '../reasoning/reasoning-engine';
-import { LearningSystem } from '../learning/learning-system';
+import { MultiModelRouter } from '../models/multi-model-router.js';
+import { ModelClientFactory } from '../models/clients/index.js';
+import { SwarmCoordinator } from '../agents/swarm-coordinator.js';
+import { IntentDetector } from '../intelligence/intent-detector.js';
+import { ReasoningEngine } from '../reasoning/reasoning-engine.js';
+import { LearningSystem } from '../learning/learning-system.js';
 const logger = createLogger({ component: 'AIOrchestrator' });
 export class AIOrchestrator {
     constructor() {
@@ -203,17 +203,15 @@ Generate a clear, actionable response.`;
         return avgConfidence;
     }
     /**
-     * Calculate cost based on tokens and model
+     * Calculate cost based on tokens and model (GPT-5 only)
      */
     calculateCost(tokens, model) {
         const costPer1M = {
-            'gpt-5': 0.00125,
-            'gpt-5-mini': 0.00025,
-            'gpt-5-nano': 0.00005,
-            'claude-3.5-opus': 0.006,
-            'claude-3.5-sonnet': 0.0006,
+            'gpt-5': 0.00125, // $1.25/1M input, $10/1M output (averaged)
+            'gpt-5-mini': 0.00025, // $0.25/1M input, $2.00/1M output (averaged)
+            'gpt-5-nano': 0.00005, // $0.05/1M input, $0.40/1M output (averaged)
         };
-        const cost = costPer1M[model] || 0.0005;
+        const cost = costPer1M[model] || 0.00025; // Default to gpt-5-mini cost
         return (tokens / 1000000) * cost;
     }
 }

@@ -3,8 +3,8 @@
  * Prioritizes tasks based on importance, urgency, and impact
  */
 import type { AgentTask } from '@tide/contracts';
-import type { AgentExecutionContext } from '../../types';
-import { BaseAgent } from '../base-agent';
+import type { AgentExecutionContext } from '../../types/index.js';
+import { BaseAgent } from '../base-agent.js';
 export declare class TaskPrioritizerAgent extends BaseAgent {
     constructor();
     protected run(task: AgentTask, context: AgentExecutionContext): Promise<any>;

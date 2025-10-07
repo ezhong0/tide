@@ -4,7 +4,7 @@
  */
 import * as http from 'http';
 import { createLogger } from '@tide/logger';
-import { AIOrchestrator } from './orchestration/ai-orchestrator';
+import { AIOrchestrator } from './orchestration/ai-orchestrator.js';
 const logger = createLogger({ component: 'AIServer' });
 export class AIServer {
     constructor(port = 3003) {

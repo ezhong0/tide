@@ -2,7 +2,7 @@
  * Workflow Orchestrator Agent
  * Designs and manages complex multi-step workflows
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class WorkflowOrchestratorAgent extends BaseAgent {
     constructor() {
         const config = {

@@ -2,7 +2,7 @@
  * Email Analyzer Agent
  * Deep analysis of email content for sentiment, requests, and commitments
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class EmailAnalyzerAgent extends BaseAgent {
     constructor() {
         const config = {

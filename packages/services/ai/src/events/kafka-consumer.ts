@@ -9,7 +9,7 @@ import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
 import { createLogger } from '@tide/logger';
 import { kafkaConfig } from '@tide/config';
 import type { AIRequest } from '@tide/contracts';
-import { AIOrchestrator } from '../orchestration/ai-orchestrator';
+import { AIOrchestrator } from '../orchestration/ai-orchestrator.js';
 
 const logger = createLogger({ component: 'KafkaConsumer' });
 

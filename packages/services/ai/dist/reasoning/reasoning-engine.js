@@ -3,8 +3,8 @@
  * Executes multi-step reasoning chains with verification
  */
 import { createLogger } from '@tide/logger';
-import { ChainBuilder } from './chain-builder';
-import { ReasoningVerifier } from './reasoning-verifier';
+import { ChainBuilder } from './chain-builder.js';
+import { ReasoningVerifier } from './reasoning-verifier.js';
 const logger = createLogger({ component: 'ReasoningEngine' });
 export class ReasoningEngine {
     constructor() {

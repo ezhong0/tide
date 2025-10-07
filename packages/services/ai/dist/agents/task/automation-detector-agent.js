@@ -2,7 +2,7 @@
  * Automation Detector Agent
  * Identifies patterns and suggests automation opportunities
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class AutomationDetectorAgent extends BaseAgent {
     constructor() {
         const config = {

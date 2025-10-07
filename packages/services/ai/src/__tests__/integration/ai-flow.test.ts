@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { IntelligenceOrchestrator } from '../../orchestration/intelligence-orchestrator';
-import { ContextBuilder } from '../../intelligence/context-builder';
-import { IntentClassifier } from '../../intelligence/intent-classifier';
-import { ModelRouter } from '../../models/model-router';
-import type { IntelligenceRequest, UserContext } from '../../types';
+import { IntelligenceOrchestrator } from '../../orchestration/intelligence-orchestrator.js';
+import { ContextBuilder } from '../../intelligence/context-builder.js';
+import { IntentClassifier } from '../../intelligence/intent-classifier.js';
+import { ModelRouter } from '../../models/model-router.js';
+import type { IntelligenceRequest, UserContext } from '../../types/index.js';
 import { createUserId } from '@tide/types';
 
 /**

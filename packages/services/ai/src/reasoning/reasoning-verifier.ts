@@ -5,7 +5,7 @@
 
 import { createLogger } from '@tide/logger';
 import type { VerificationResult, VerificationIssue, VerificationCheck } from '@tide/contracts';
-import type { ModelClient } from '../types';
+import type { ModelClient } from '../types/index.js';
 
 const logger = createLogger({ component: 'ReasoningVerifier' });
 
