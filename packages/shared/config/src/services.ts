@@ -37,40 +37,16 @@ export const aiServiceConfig: AIServiceConfig = {
     : undefined,
 };
 
-export interface VectorDBConfig {
-  apiKey: string;
-  environment: string;
-  indexName: string;
-  dimension: number;
-  metric: string;
-}
-
 /**
- * Pinecone vector database configuration
+ * Vector Embeddings Configuration
+ *
+ * Week 3 Alpha uses pgvector (PostgreSQL extension) instead of Pinecone.
+ * Embeddings are stored directly in PostgreSQL via Supabase.
  */
-export const vectorDBConfig: VectorDBConfig | null = env.PINECONE_API_KEY && env.PINECONE_ENVIRONMENT
-  ? {
-      apiKey: env.PINECONE_API_KEY,
-      environment: env.PINECONE_ENVIRONMENT,
-      indexName: env.PINECONE_INDEX_NAME,
-      dimension: 1536, // OpenAI embedding dimension
-      metric: 'cosine',
-    }
-  : null;
-
-/**
- * Email service configuration
- */
-export const emailServiceConfig = {
-  smtp: env.SMTP_HOST && env.SMTP_PORT && env.SMTP_USER && env.SMTP_PASSWORD
-    ? {
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        user: env.SMTP_USER,
-        password: env.SMTP_PASSWORD,
-        from: env.SMTP_FROM || 'noreply@tide.ai',
-      }
-    : null,
+export const vectorConfig = {
+  dimension: 1536, // OpenAI embedding dimension
+  metric: 'cosine',
+  // pgvector is available via Supabase PostgreSQL
 };
 
 /**

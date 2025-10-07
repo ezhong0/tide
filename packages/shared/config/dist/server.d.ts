@@ -15,16 +15,8 @@ export declare const serverConfig: {
     };
 };
 /**
- * WebSocket server configuration
+ * WebSocket configuration
+ *
+ * Week 3 Alpha uses Supabase Realtime for WebSocket connections.
+ * No custom WebSocket server is needed.
  */
-export declare const websocketConfig: {
-    port: number;
-    cors: {
-        origins: string[];
-        credentials: boolean;
-    };
-    pingTimeout: number;
-    pingInterval: number;
-    maxHttpBufferSize: number;
-    transports: string[];
-};

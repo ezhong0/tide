@@ -1,75 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.exchangeOAuthConfig = exports.googleCalendarOAuthConfig = exports.gmailOAuthConfig = exports.googleOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = void 0;
+exports.azureOAuthConfig = exports.googleOAuthConfig = exports.supabaseConfig = void 0;
 const env_1 = require("./env");
 /**
- * JWT token configuration
+ * Supabase Authentication Configuration
+ *
+ * Week 3 Alpha uses Supabase Auth for all authentication.
+ * OAuth is configured in the Supabase Dashboard, not here.
  */
-exports.jwtConfig = {
-    accessSecret: env_1.env.JWT_ACCESS_SECRET,
-    refreshSecret: env_1.env.JWT_REFRESH_SECRET,
-    accessExpiresIn: env_1.env.JWT_ACCESS_EXPIRES_IN,
-    refreshExpiresIn: env_1.env.JWT_REFRESH_EXPIRES_IN,
-    // Aliases for compatibility
-    accessTokenSecret: env_1.env.JWT_ACCESS_SECRET,
-    refreshTokenSecret: env_1.env.JWT_REFRESH_SECRET,
-    accessTokenExpiry: env_1.env.JWT_ACCESS_EXPIRES_IN,
-    refreshTokenExpiry: env_1.env.JWT_REFRESH_EXPIRES_IN,
+exports.supabaseConfig = {
+    url: env_1.env.SUPABASE_URL,
+    anonKey: env_1.env.SUPABASE_ANON_KEY,
+    serviceRoleKey: env_1.env.SUPABASE_SERVICE_ROLE_KEY,
+    jwtSecret: env_1.env.SUPABASE_JWT_SECRET,
 };
 /**
- * Password hashing configuration
+ * Google OAuth Configuration
+ * Used for configuring OAuth in Supabase Dashboard
  */
-exports.passwordConfig = {
-    bcryptRounds: env_1.env.BCRYPT_ROUNDS,
+exports.googleOAuthConfig = {
+    clientId: env_1.env.GOOGLE_CLIENT_ID,
+    clientSecret: env_1.env.GOOGLE_CLIENT_SECRET,
+    redirectUri: env_1.env.GOOGLE_REDIRECT_URI,
+    iosClientId: env_1.env.GOOGLE_IOS_CLIENT_ID,
 };
 /**
- * Bcrypt configuration (alias for passwordConfig for compatibility)
+ * Microsoft Azure OAuth Configuration
+ * Used for configuring OAuth in Supabase Dashboard
  */
-exports.bcryptConfig = {
-    saltRounds: env_1.env.BCRYPT_ROUNDS,
+exports.azureOAuthConfig = {
+    clientId: env_1.env.AZURE_CLIENT_ID,
+    clientSecret: env_1.env.AZURE_CLIENT_SECRET,
+    tenantId: env_1.env.AZURE_TENANT_ID,
 };
-/**
- * Google OAuth configuration (unified for Gmail, Calendar, Drive, etc.)
- * Single OAuth client handles all Google services with different scopes
- */
-exports.googleOAuthConfig = env_1.env.GOOGLE_CLIENT_ID && env_1.env.GOOGLE_CLIENT_SECRET && env_1.env.GOOGLE_REDIRECT_URI
-    ? {
-        clientId: env_1.env.GOOGLE_CLIENT_ID,
-        clientSecret: env_1.env.GOOGLE_CLIENT_SECRET,
-        redirectUri: env_1.env.GOOGLE_REDIRECT_URI,
-        iosClientId: env_1.env.GOOGLE_IOS_CLIENT_ID,
-    }
-    : null;
-/**
- * Gmail OAuth configuration (uses unified Google OAuth)
- * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
- */
-exports.gmailOAuthConfig = exports.googleOAuthConfig
-    ? {
-        clientId: exports.googleOAuthConfig.clientId,
-        clientSecret: exports.googleOAuthConfig.clientSecret,
-        redirectUri: exports.googleOAuthConfig.redirectUri,
-    }
-    : null;
-/**
- * Google Calendar OAuth configuration (uses unified Google OAuth)
- * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
- */
-exports.googleCalendarOAuthConfig = exports.googleOAuthConfig
-    ? {
-        clientId: exports.googleOAuthConfig.clientId,
-        clientSecret: exports.googleOAuthConfig.clientSecret,
-        redirectUri: exports.googleOAuthConfig.redirectUri,
-    }
-    : null;
-/**
- * Microsoft Exchange OAuth configuration (unified for Outlook, Calendar, OneDrive, etc.)
- */
-exports.exchangeOAuthConfig = env_1.env.EXCHANGE_CLIENT_ID && env_1.env.EXCHANGE_CLIENT_SECRET && env_1.env.EXCHANGE_REDIRECT_URI && env_1.env.EXCHANGE_TENANT_ID
-    ? {
-        clientId: env_1.env.EXCHANGE_CLIENT_ID,
-        clientSecret: env_1.env.EXCHANGE_CLIENT_SECRET,
-        redirectUri: env_1.env.EXCHANGE_REDIRECT_URI,
-        tenantId: env_1.env.EXCHANGE_TENANT_ID,
-    }
-    : null;

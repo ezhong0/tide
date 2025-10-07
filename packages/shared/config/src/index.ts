@@ -1,24 +1,23 @@
 // Export environment configuration
-export { env, isProduction, isDevelopment, isTest, getKafkaBrokers, getAllowedOrigins, getWebSocketOrigins } from './env';
+export { env, isProduction, isDevelopment, isTest, getKafkaBrokers, getAllowedOrigins } from './env';
 export type { Env } from './env';
 
 // Export database configuration
 export { databaseConfig, redisConfig, kafkaConfig } from './database';
 export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
 
-// Export authentication configuration
-export { jwtConfig, passwordConfig, bcryptConfig, googleOAuthConfig, gmailOAuthConfig, exchangeOAuthConfig, googleCalendarOAuthConfig } from './auth';
-export type { JWTConfig, OAuthProviderConfig, GoogleOAuthConfig } from './auth';
+// Export authentication configuration (Supabase-first)
+export { supabaseConfig, googleOAuthConfig, azureOAuthConfig } from './auth';
 
 // Export service configuration
-export { aiServiceConfig, vectorDBConfig, emailServiceConfig, monitoringConfig } from './services';
-export type { AIServiceConfig, VectorDBConfig } from './services';
+export { aiServiceConfig, vectorConfig, monitoringConfig } from './services';
+export type { AIServiceConfig } from './services';
 
 // Export feature flags
 export { features, isFeatureEnabled, requireFeature } from './features';
 
 // Export server configuration
-export { serverConfig, websocketConfig } from './server';
+export { serverConfig } from './server';
 
 // Export cache configuration
 export { cacheTTL, cacheKeys } from './cache';
