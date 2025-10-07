@@ -31,6 +31,9 @@ class AuthErrors {
     static accountLocked(reason) {
         return new tide_error_1.TideError(codes_1.ErrorCode.AUTH_ACCOUNT_LOCKED, 'Account has been locked', { reason });
     }
+    static missingToken() {
+        return new tide_error_1.TideError(codes_1.ErrorCode.AUTH_TOKEN_INVALID, 'Authentication token is required');
+    }
     // Aliases for compatibility
     static invalidToken() {
         return this.tokenInvalid();
