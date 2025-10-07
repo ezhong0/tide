@@ -21,14 +21,24 @@ async function main() {
         const port = parseInt(process.env.AI_SERVICE_PORT || '3003', 10);
         const server = new AIServer(port);
         await server.start();
-        // Start Kafka consumer
-        const consumer = new AIKafkaConsumer();
-        await consumer.start();
+        // Start Kafka consumer (optional - disabled for Alpha)
+        const kafkaEnabled = process.env.KAFKA_ENABLED !== 'false';
+        let consumer = null;
+        if (kafkaEnabled) {
+            logger.info('Kafka enabled - starting consumer...');
+            consumer = new AIKafkaConsumer();
+            await consumer.start();
+        }
+        else {
+            logger.info('Kafka disabled - running in request-response mode only');
+        }
         logger.info('AI Service started successfully');
         // Graceful shutdown
         const shutdown = async () => {
             logger.info('Shutting down AI Service...');
-            await consumer.stop();
+            if (consumer) {
+                await consumer.stop();
+            }
             await server.stop();
             logger.info('AI Service stopped');
             process.exit(0);
