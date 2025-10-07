@@ -1,7 +1,7 @@
 /**
  * Model Client Factory
  */
-import type { ModelClient } from '../../types';
+import type { ModelClient } from '../../types/index.js';
 export declare class ModelClientFactory {
     private static clients;
     /**
@@ -17,6 +17,6 @@ export declare class ModelClientFactory {
      */
     static clearCache(): void;
 }
-export { OpenAIClient } from './openai-client';
-export { AnthropicClient } from './anthropic-client';
+export { OpenAIClient } from './openai-client.js';
+export { AnthropicClient } from './anthropic-client.js';
 //# sourceMappingURL=index.d.ts.map

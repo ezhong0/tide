@@ -2,7 +2,7 @@
  * Scheduling Agent
  * Finds optimal meeting times and resolves conflicts
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class SchedulingAgent extends BaseAgent {
     constructor() {
         const config = {

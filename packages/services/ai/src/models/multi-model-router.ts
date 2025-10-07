@@ -10,7 +10,7 @@ import type {
   RequestFactors,
   ModelFamily,
 } from '@tide/contracts';
-import { MODEL_CONFIGS, DEFAULT_MODELS } from '../config/models';
+import { MODEL_CONFIGS, DEFAULT_MODELS } from '../config/models.js';
 
 const logger = createLogger({ component: 'MultiModelRouter' });
 
@@ -37,8 +37,8 @@ export class MultiModelRouter {
       return this.selectFastest(factors);
     }
 
-    // Complex reasoning: advanced model
-    if (factors.requiresReasoning || factors.complexity > 0.7) {
+    // Complex reasoning: use mini (not full gpt-5)
+    if (factors.requiresReasoning || factors.complexity > 0.8) {
       return this.selectAdvanced(factors);
     }
 
@@ -108,8 +108,8 @@ export class MultiModelRouter {
    */
   private selectEnsemble(factors: RequestFactors): ModelSelection {
     return {
-      primary: 'gpt-5' as ModelFamily,
-      validators: ['gpt-5-mini' as ModelFamily], // Use GPT-5 mini as validator
+      primary: 'gpt-5-mini' as ModelFamily,
+      validators: ['gpt-5-nano' as ModelFamily], // Use nano as validator for speed
       aggregation: 'weighted_vote',
       reasoning: 'Critical decision requires multi-model validation',
     };
@@ -119,11 +119,11 @@ export class MultiModelRouter {
    * Select privacy-focused model
    */
   private selectPrivate(factors: RequestFactors): ModelSelection {
-    // Use GPT-5 mini for privacy-sensitive content
+    // Use GPT-5 nano for privacy-sensitive content (local-first in future)
     return {
-      primary: 'gpt-5-mini' as ModelFamily,
+      primary: 'gpt-5-nano' as ModelFamily,
       aggregation: 'single',
-      reasoning: 'Privacy-sensitive content using GPT-5 mini',
+      reasoning: 'Privacy-sensitive content using fast GPT-5 nano',
     };
   }
 
@@ -143,20 +143,25 @@ export class MultiModelRouter {
    */
   private selectAdvanced(factors: RequestFactors): ModelSelection {
     return {
-      primary: 'gpt-5' as ModelFamily,
+      primary: 'gpt-5-mini' as ModelFamily,
       aggregation: 'single',
-      reasoning: 'Complex reasoning task requires GPT-5 full model',
+      reasoning: 'Complex reasoning task uses GPT-5 mini (cost optimized)',
     };
   }
 
   /**
-   * Select balanced model
+   * Select balanced model (default for most requests)
    */
   private selectBalanced(factors: RequestFactors): ModelSelection {
+    // Use nano by default unless request is moderately complex
+    const useNano = factors.complexity < 0.5 && factors.expectedTokens < 1000;
+
     return {
-      primary: 'gpt-5-mini' as ModelFamily,
+      primary: useNano ? 'gpt-5-nano' as ModelFamily : 'gpt-5-mini' as ModelFamily,
       aggregation: 'single',
-      reasoning: 'Standard request using balanced cost/quality model',
+      reasoning: useNano
+        ? 'Simple request using fast GPT-5 nano'
+        : 'Standard request using GPT-5 mini',
     };
   }
 
@@ -168,8 +173,8 @@ export class MultiModelRouter {
    */
   getModelId(family: ModelFamily): string {
     switch (family) {
-      case 'gpt-5':
-        return 'gpt-5'; // GPT-5 standard (released Aug 2025)
+      // case 'gpt-5':
+      //   return 'gpt-5'; // NOT USED - too expensive for Alpha
       case 'gpt-5-mini':
         return 'gpt-5-mini'; // GPT-5 mini (released Aug 2025)
       case 'gpt-5-nano':
@@ -181,7 +186,7 @@ export class MultiModelRouter {
       case 'gemini-pro':
         return 'gemini-pro';
       default:
-        return 'gpt-5-mini'; // Default to balanced model
+        return 'gpt-5-nano'; // Default to fastest, cheapest model
     }
   }
 }

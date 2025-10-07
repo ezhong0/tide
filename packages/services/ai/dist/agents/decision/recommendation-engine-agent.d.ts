@@ -3,8 +3,8 @@
  * Generates personalized recommendations based on context and history
  */
 import type { AgentTask } from '@tide/contracts';
-import type { AgentExecutionContext } from '../../types';
-import { BaseAgent } from '../base-agent';
+import type { AgentExecutionContext } from '../../types/index.js';
+import { BaseAgent } from '../base-agent.js';
 export declare class RecommendationEngineAgent extends BaseAgent {
     constructor();
     protected run(task: AgentTask, context: AgentExecutionContext): Promise<any>;

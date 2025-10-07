@@ -3,8 +3,8 @@
  * Executes multi-step reasoning chains with verification
  */
 import type { AIRequest, Intent, ReasoningChain } from '@tide/contracts';
-import type { ModelClient } from '../types';
-import type { BaseAgent } from '../agents/base-agent';
+import type { ModelClient } from '../types/index.js';
+import type { BaseAgent } from '../agents/base-agent.js';
 export declare class ReasoningEngine {
     private chainBuilder;
     private verifier;

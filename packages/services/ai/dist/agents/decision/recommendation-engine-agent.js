@@ -2,7 +2,7 @@
  * Recommendation Engine Agent
  * Generates personalized recommendations based on context and history
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class RecommendationEngineAgent extends BaseAgent {
     constructor() {
         const config = {

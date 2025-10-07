@@ -1,7 +1,7 @@
 /**
  * OpenAI Model Client
  */
-import type { ModelClient, CompletionOptions, CompletionResult } from '../../types';
+import type { ModelClient, CompletionOptions, CompletionResult } from '../../types/index.js';
 export declare class OpenAIClient implements ModelClient {
     provider: string;
     private client;

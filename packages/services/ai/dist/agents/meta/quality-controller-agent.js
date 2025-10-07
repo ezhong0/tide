@@ -2,7 +2,7 @@
  * Quality Controller Agent
  * Validates responses for accuracy, completeness, and quality
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class QualityControllerAgent extends BaseAgent {
     constructor() {
         const config = {

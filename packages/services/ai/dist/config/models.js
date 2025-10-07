@@ -40,45 +40,45 @@ export const MODEL_CONFIGS = {
         contextWindow: 272000, // Input: 272K tokens
         maxTokens: 128000, // Output: 128K tokens
     },
-    // Anthropic Models
-    'claude-3-opus-20240229': {
-        provider: 'anthropic',
-        model: 'claude-3.5-opus',
-        cost: 0.006,
-        latency: 1200,
-        accuracy: 0.97,
-        capabilities: ['analysis', 'writing', 'coding', 'reasoning'],
-        contextWindow: 200000,
-        maxTokens: 4096,
-    },
-    'claude-3-sonnet-20240229': {
-        provider: 'anthropic',
-        model: 'claude-3.5-sonnet',
-        cost: 0.0006,
-        latency: 250,
-        accuracy: 0.94,
-        capabilities: ['conversation', 'summarization', 'analysis'],
-        contextWindow: 200000,
-        maxTokens: 4096,
-    },
-    // Google Models
-    'gemini-pro': {
-        provider: 'google',
-        model: 'gemini-pro',
-        cost: 0.0005,
-        latency: 180,
-        accuracy: 0.91,
-        capabilities: ['conversation', 'analysis', 'multimodal'],
-        contextWindow: 32768,
-        maxTokens: 2048,
-    },
+    // NOTE: Anthropic and Google models kept for future use but NOT USED in Alpha
+    // Alpha uses GPT-5 models exclusively
+    // 'claude-3-opus-20240229': {
+    //   provider: 'anthropic',
+    //   model: 'claude-3.5-opus',
+    //   cost: 0.006,
+    //   latency: 1200,
+    //   accuracy: 0.97,
+    //   capabilities: ['analysis', 'writing', 'coding', 'reasoning'],
+    //   contextWindow: 200000,
+    //   maxTokens: 4096,
+    // },
+    // 'claude-3-sonnet-20240229': {
+    //   provider: 'anthropic',
+    //   model: 'claude-3.5-sonnet',
+    //   cost: 0.0006,
+    //   latency: 250,
+    //   accuracy: 0.94,
+    //   capabilities: ['conversation', 'summarization', 'analysis'],
+    //   contextWindow: 200000,
+    //   maxTokens: 4096,
+    // },
+    // 'gemini-pro': {
+    //   provider: 'google',
+    //   model: 'gemini-pro',
+    //   cost: 0.0005,
+    //   latency: 180,
+    //   accuracy: 0.91,
+    //   capabilities: ['conversation', 'analysis', 'multimodal'],
+    //   contextWindow: 32768,
+    //   maxTokens: 2048,
+    // },
 };
-// Default model selections by use case
+// Default model selections by use case - OPTIMIZED FOR COST
 export const DEFAULT_MODELS = {
-    fast: 'gpt-5-nano', // Fastest, optimized for speed and edge devices
-    balanced: 'gpt-5-mini', // Best cost/performance balance
-    advanced: 'gpt-5', // Full reasoning capabilities
-    analysis: 'claude-3-sonnet-20240229', // Claude for analysis tasks
-    reasoning: 'claude-3-opus-20240229', // Claude for deep reasoning
+    fast: 'gpt-5-nano', // Fastest, most requests use this ($0.05/1M)
+    balanced: 'gpt-5-mini', // For complex tasks ($0.25/1M)
+    advanced: 'gpt-5-mini', // Use mini instead of full gpt-5 ($0.25/1M)
+    analysis: 'gpt-5-nano', // Use nano for analysis (faster, cheaper)
+    reasoning: 'gpt-5-mini', // Use mini for reasoning (good enough)
 };
 //# sourceMappingURL=models.js.map

@@ -33,7 +33,7 @@ export declare class MultiModelRouter {
      */
     private selectAdvanced;
     /**
-     * Select balanced model
+     * Select balanced model (default for most requests)
      */
     private selectBalanced;
     /**

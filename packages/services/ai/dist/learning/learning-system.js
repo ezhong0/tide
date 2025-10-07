@@ -3,9 +3,9 @@
  * Continuous improvement engine that learns from user interactions
  */
 import { createLogger } from '@tide/logger';
-import { PatternDatabase } from './pattern-database';
-import { UserPreferenceModel } from './user-preference-model';
-import { FeedbackProcessor } from './feedback-processor';
+import { PatternDatabase } from './pattern-database.js';
+import { UserPreferenceModel } from './user-preference-model.js';
+import { FeedbackProcessor } from './feedback-processor.js';
 import { v4 as uuidv4 } from 'uuid';
 const logger = createLogger({ component: 'LearningSystem' });
 export class LearningSystem {

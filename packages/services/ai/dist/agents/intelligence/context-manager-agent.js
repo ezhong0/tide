@@ -2,7 +2,7 @@
  * Context Manager Agent
  * Loads and manages contextual information for AI requests
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class ContextManagerAgent extends BaseAgent {
     constructor() {
         const config = {

@@ -3,7 +3,7 @@
  * Verifies reasoning steps for logical consistency and hallucination
  */
 import type { VerificationResult } from '@tide/contracts';
-import type { ModelClient } from '../types';
+import type { ModelClient } from '../types/index.js';
 export interface StepResult {
     step: number;
     description: string;

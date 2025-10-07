@@ -2,7 +2,7 @@
  * Predictive Analyzer Agent
  * Predicts next actions and proactively suggests assistance
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class PredictiveAnalyzerAgent extends BaseAgent {
     constructor() {
         const config = {

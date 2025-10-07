@@ -3,7 +3,7 @@
  * Analyzes user requests to detect intents and entities
  */
 import type { AIRequest, Intent } from '@tide/contracts';
-import type { ModelClient } from '../types';
+import type { ModelClient } from '../types/index.js';
 export declare class IntentDetector {
     /**
      * Detect intents from user request

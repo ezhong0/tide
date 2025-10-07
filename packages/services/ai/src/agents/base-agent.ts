@@ -11,7 +11,7 @@ import type {
   AgentResult,
   ModelFamily,
 } from '@tide/contracts';
-import type { ModelClient, AgentExecutionContext } from '../types';
+import type { ModelClient, AgentExecutionContext } from '../types/index.js';
 
 const logger = createLogger({ component: 'BaseAgent' });
 

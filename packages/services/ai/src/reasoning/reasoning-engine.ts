@@ -11,10 +11,10 @@ import type {
   ReasoningStep,
   AlternativeReasoning,
 } from '@tide/contracts';
-import { ChainBuilder, type ReasoningChainPlan } from './chain-builder';
-import { ReasoningVerifier, type StepResult } from './reasoning-verifier';
-import type { ModelClient } from '../types';
-import type { BaseAgent } from '../agents/base-agent';
+import { ChainBuilder, type ReasoningChainPlan } from './chain-builder.js';
+import { ReasoningVerifier, type StepResult } from './reasoning-verifier.js';
+import type { ModelClient } from '../types/index.js';
+import type { BaseAgent } from '../agents/base-agent.js';
 
 const logger = createLogger({ component: 'ReasoningEngine' });
 

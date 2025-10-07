@@ -2,7 +2,7 @@
  * Pattern Learner Agent
  * Detects and learns behavioral patterns from user interactions
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class PatternLearnerAgent extends BaseAgent {
     constructor() {
         const config = {

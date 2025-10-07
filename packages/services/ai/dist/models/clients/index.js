@@ -3,8 +3,8 @@
  */
 import { createLogger } from '@tide/logger';
 import { aiServiceConfig } from '@tide/config';
-import { OpenAIClient } from './openai-client';
-import { AnthropicClient } from './anthropic-client';
+import { OpenAIClient } from './openai-client.js';
+import { AnthropicClient } from './anthropic-client.js';
 const logger = createLogger({ component: 'ModelClientFactory' });
 export class ModelClientFactory {
     /**
@@ -50,6 +50,6 @@ export class ModelClientFactory {
     }
 }
 ModelClientFactory.clients = new Map();
-export { OpenAIClient } from './openai-client';
-export { AnthropicClient } from './anthropic-client';
+export { OpenAIClient } from './openai-client.js';
+export { AnthropicClient } from './anthropic-client.js';
 //# sourceMappingURL=index.js.map

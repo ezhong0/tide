@@ -5,7 +5,7 @@
 
 import * as http from 'http';
 import { createLogger } from '@tide/logger';
-import { AIOrchestrator } from './orchestration/ai-orchestrator';
+import { AIOrchestrator } from './orchestration/ai-orchestrator.js';
 import type { AIRequest } from '@tide/contracts';
 
 const logger = createLogger({ component: 'AIServer' });

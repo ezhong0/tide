@@ -1,6 +1,8 @@
 /**
  * Kafka Event Consumer
  * Listens to message.* events and processes them with AI
+ *
+ * Status: Not yet integrated (planned for Week 4-5)
  */
 export declare class AIKafkaConsumer {
     private kafka;

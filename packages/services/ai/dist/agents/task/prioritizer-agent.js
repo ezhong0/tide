@@ -2,7 +2,7 @@
  * Task Prioritizer Agent
  * Prioritizes tasks based on importance, urgency, and impact
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class TaskPrioritizerAgent extends BaseAgent {
     constructor() {
         const config = {

@@ -2,7 +2,7 @@
  * Email Composer Agent
  * Drafts emails with tone matching and context awareness
  */
-import { BaseAgent } from '../base-agent';
+import { BaseAgent } from '../base-agent.js';
 export class EmailComposerAgent extends BaseAgent {
     constructor() {
         const config = {

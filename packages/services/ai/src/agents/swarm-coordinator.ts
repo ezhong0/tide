@@ -10,29 +10,29 @@ import type {
   AgentResult,
   Intent,
 } from '@tide/contracts';
-import type { AgentExecutionContext } from '../types';
-import { BaseAgent } from './base-agent';
+import type { AgentExecutionContext } from '../types/index.js';
+import { BaseAgent } from './base-agent.js';
 
 // Import agents - Week 0
-import { EmailTriageAgent } from './email/triage-agent';
-import { EmailComposerAgent } from './email/composer-agent';
-import { CalendarOptimizerAgent } from './calendar/optimizer-agent';
-import { TaskPrioritizerAgent } from './task/prioritizer-agent';
-import { ContextManagerAgent } from './intelligence/context-manager-agent';
+import { EmailTriageAgent } from './email/triage-agent.js';
+import { EmailComposerAgent } from './email/composer-agent.js';
+import { CalendarOptimizerAgent } from './calendar/optimizer-agent.js';
+import { TaskPrioritizerAgent } from './task/prioritizer-agent.js';
+import { ContextManagerAgent } from './intelligence/context-manager-agent.js';
 
 // Import agents - Week 1
-import { SchedulingAgent } from './calendar/scheduler-agent';
-import { MeetingPrepAgent } from './calendar/meeting-prep-agent';
-import { RelationshipAgent } from './email/relationship-agent';
-import { EmailAnalyzerAgent } from './email/analyzer-agent';
-import { WorkflowOrchestratorAgent } from './task/workflow-orchestrator-agent';
-import { AutomationDetectorAgent } from './task/automation-detector-agent';
-import { PatternLearnerAgent } from './intelligence/pattern-learner-agent';
-import { PredictiveAnalyzerAgent } from './intelligence/predictive-analyzer-agent';
-import { DecisionAnalyzerAgent } from './decision/decision-analyzer-agent';
-import { RecommendationEngineAgent } from './decision/recommendation-engine-agent';
-import { QualityControllerAgent } from './meta/quality-controller-agent';
-import { ExplainabilityAgent } from './meta/explainability-agent';
+import { SchedulingAgent } from './calendar/scheduler-agent.js';
+import { MeetingPrepAgent } from './calendar/meeting-prep-agent.js';
+import { RelationshipAgent } from './email/relationship-agent.js';
+import { EmailAnalyzerAgent } from './email/analyzer-agent.js';
+import { WorkflowOrchestratorAgent } from './task/workflow-orchestrator-agent.js';
+import { AutomationDetectorAgent } from './task/automation-detector-agent.js';
+import { PatternLearnerAgent } from './intelligence/pattern-learner-agent.js';
+import { PredictiveAnalyzerAgent } from './intelligence/predictive-analyzer-agent.js';
+import { DecisionAnalyzerAgent } from './decision/decision-analyzer-agent.js';
+import { RecommendationEngineAgent } from './decision/recommendation-engine-agent.js';
+import { QualityControllerAgent } from './meta/quality-controller-agent.js';
+import { ExplainabilityAgent } from './meta/explainability-agent.js';
 
 const logger = createLogger({ component: 'SwarmCoordinator' });
 
