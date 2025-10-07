@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GoogleCalendarProvider = void 0;
-const googleapis_1 = require("googleapis");
-const logger_1 = require("@tide/logger");
+import { google } from 'googleapis';
+import { logger } from '@tide/logger';
 /**
  * Google Calendar provider implementation
  */
-class GoogleCalendarProvider {
+export class GoogleCalendarProvider {
     constructor() {
         this.calendar = null;
         this.userId = null;
@@ -18,18 +15,18 @@ class GoogleCalendarProvider {
         try {
             this.userId = userId;
             // Create OAuth2 client
-            this.auth = new googleapis_1.google.auth.OAuth2();
+            this.auth = new google.auth.OAuth2();
             this.auth.setCredentials({
                 access_token: tokens.accessToken,
                 refresh_token: tokens.refreshToken,
                 expiry_date: tokens.expiresAt.getTime(),
             });
             // Initialize Calendar API client
-            this.calendar = googleapis_1.google.calendar({ version: 'v3', auth: this.auth });
-            logger_1.logger.info({ userId }, 'Google Calendar provider initialized');
+            this.calendar = google.calendar({ version: 'v3', auth: this.auth });
+            logger.info({ userId }, 'Google Calendar provider initialized');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to initialize Google Calendar provider');
+            logger.error({ userId, error }, 'Failed to initialize Google Calendar provider');
             throw error;
         }
     }
@@ -57,7 +54,7 @@ class GoogleCalendarProvider {
                 .filter((event) => event !== null);
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to fetch calendar events');
+            logger.error({ userId: this.userId, error }, 'Failed to fetch calendar events');
             throw error;
         }
     }
@@ -165,11 +162,11 @@ class GoogleCalendarProvider {
             if (!created) {
                 throw new Error('Failed to create event');
             }
-            logger_1.logger.info({ userId: this.userId, eventId: created.id, title: created.title }, 'Calendar event created');
+            logger.info({ userId: this.userId, eventId: created.id, title: created.title }, 'Calendar event created');
             return created;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to create calendar event');
+            logger.error({ userId: this.userId, error }, 'Failed to create calendar event');
             throw error;
         }
     }
@@ -212,11 +209,11 @@ class GoogleCalendarProvider {
             if (!updated) {
                 throw new Error('Failed to update event');
             }
-            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event updated');
+            logger.info({ userId: this.userId, eventId }, 'Calendar event updated');
             return updated;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to update event');
+            logger.error({ userId: this.userId, eventId, error }, 'Failed to update event');
             throw error;
         }
     }
@@ -232,10 +229,10 @@ class GoogleCalendarProvider {
                 calendarId: 'primary',
                 eventId,
             });
-            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event deleted');
+            logger.info({ userId: this.userId, eventId }, 'Calendar event deleted');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to delete event');
+            logger.error({ userId: this.userId, eventId, error }, 'Failed to delete event');
             throw error;
         }
     }
@@ -276,7 +273,7 @@ class GoogleCalendarProvider {
             };
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to get availability');
+            logger.error({ userId: this.userId, error }, 'Failed to get availability');
             throw error;
         }
     }
@@ -311,5 +308,4 @@ class GoogleCalendarProvider {
         return freeSlots;
     }
 }
-exports.GoogleCalendarProvider = GoogleCalendarProvider;
 //# sourceMappingURL=google-calendar.provider.js.map

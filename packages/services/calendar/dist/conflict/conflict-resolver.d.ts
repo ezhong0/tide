@@ -1,5 +1,5 @@
 import type { UserId } from '@tide/types';
-import type { CalendarEvent, TimeSlot } from '../types';
+import type { CalendarEvent, TimeSlot } from '../types/index.js';
 export interface CalendarConflict {
     timeSlot: TimeSlot;
     events: CalendarEvent[];

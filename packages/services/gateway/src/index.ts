@@ -6,7 +6,7 @@ import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloGateway, IntrospectAndCompose } from '@apollo/gateway';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
-import { createAuthContext } from './middleware/auth';
+import { createAuthContext } from './middleware/auth.js';
 
 const app: Express = express();
 

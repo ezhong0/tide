@@ -9,7 +9,7 @@ import {
   PatternStatus,
   TemporalPattern,
   SequentialPattern,
-} from '../types/pattern.types';
+} from '../types/pattern.types.js';
 
 /**
  * Pattern Repository

@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ExchangeCalendarProvider = void 0;
-const microsoft_graph_client_1 = require("@microsoft/microsoft-graph-client");
-const logger_1 = require("@tide/logger");
+import { Client } from '@microsoft/microsoft-graph-client';
+import { logger } from '@tide/logger';
 /**
  * Exchange/Outlook Calendar provider implementation using Microsoft Graph API
  */
-class ExchangeCalendarProvider {
+export class ExchangeCalendarProvider {
     constructor() {
         this.client = null;
         this.userId = null;
@@ -18,15 +15,15 @@ class ExchangeCalendarProvider {
         try {
             this.userId = userId;
             // Create Microsoft Graph client with auth
-            this.client = microsoft_graph_client_1.Client.init({
+            this.client = Client.init({
                 authProvider: (done) => {
                     done(null, tokens.accessToken);
                 },
             });
-            logger_1.logger.info({ userId }, 'Exchange Calendar provider initialized');
+            logger.info({ userId }, 'Exchange Calendar provider initialized');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to initialize Exchange Calendar provider');
+            logger.error({ userId, error }, 'Failed to initialize Exchange Calendar provider');
             throw error;
         }
     }
@@ -70,7 +67,7 @@ class ExchangeCalendarProvider {
                 .filter((event) => event !== null);
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to fetch calendar events');
+            logger.error({ userId: this.userId, error }, 'Failed to fetch calendar events');
             throw error;
         }
     }
@@ -193,11 +190,11 @@ class ExchangeCalendarProvider {
             if (!created) {
                 throw new Error('Failed to create event');
             }
-            logger_1.logger.info({ userId: this.userId, eventId: created.id, title: created.title }, 'Calendar event created');
+            logger.info({ userId: this.userId, eventId: created.id, title: created.title }, 'Calendar event created');
             return created;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to create calendar event');
+            logger.error({ userId: this.userId, error }, 'Failed to create calendar event');
             throw error;
         }
     }
@@ -252,11 +249,11 @@ class ExchangeCalendarProvider {
             if (!updated) {
                 throw new Error('Failed to update event');
             }
-            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event updated');
+            logger.info({ userId: this.userId, eventId }, 'Calendar event updated');
             return updated;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to update event');
+            logger.error({ userId: this.userId, eventId, error }, 'Failed to update event');
             throw error;
         }
     }
@@ -269,10 +266,10 @@ class ExchangeCalendarProvider {
         }
         try {
             await this.client.api(`/me/calendar/events/${eventId}`).delete();
-            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event deleted');
+            logger.info({ userId: this.userId, eventId }, 'Calendar event deleted');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to delete event');
+            logger.error({ userId: this.userId, eventId, error }, 'Failed to delete event');
             throw error;
         }
     }
@@ -317,7 +314,7 @@ class ExchangeCalendarProvider {
             };
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to get availability');
+            logger.error({ userId: this.userId, error }, 'Failed to get availability');
             throw error;
         }
     }
@@ -352,5 +349,4 @@ class ExchangeCalendarProvider {
         return freeSlots;
     }
 }
-exports.ExchangeCalendarProvider = ExchangeCalendarProvider;
 //# sourceMappingURL=exchange-calendar.provider.js.map

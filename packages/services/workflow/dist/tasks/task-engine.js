@@ -1,14 +1,11 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.TaskDecomposer = exports.TaskPrioritizer = exports.TaskEngine = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Task Management Engine
  *
  * Intelligent task engine with smart prioritization, auto-decomposition,
  * and dependency management
  */
-class TaskEngine {
+export class TaskEngine {
     constructor(repository, prioritizer, decomposer) {
         this.repository = repository;
         this.prioritizer = prioritizer;
@@ -65,7 +62,7 @@ class TaskEngine {
                 });
             }
         }
-        logger_1.logger.info({ taskId: task.id, priority, complexity }, 'Task created');
+        logger.info({ taskId: task.id, priority, complexity }, 'Task created');
         return task;
     }
     /**
@@ -76,7 +73,7 @@ class TaskEngine {
         for (const subtask of subtasks) {
             await this.repository.createSubtask(subtask);
         }
-        logger_1.logger.info({ taskId: task.id, subtaskCount: subtasks.length }, 'Task decomposed');
+        logger.info({ taskId: task.id, subtaskCount: subtasks.length }, 'Task decomposed');
         return subtasks;
     }
     /**
@@ -231,13 +228,12 @@ class TaskEngine {
         return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.TaskEngine = TaskEngine;
 /**
  * Task Prioritizer
  *
  * Implements smart priority calculation using multiple factors
  */
-class TaskPrioritizer {
+export class TaskPrioritizer {
     /**
      * Calculate initial priority for new task
      */
@@ -350,13 +346,12 @@ class TaskPrioritizer {
         return Math.min(depCount * 0.2, 1.0);
     }
 }
-exports.TaskPrioritizer = TaskPrioritizer;
 /**
  * Task Decomposer
  *
  * Breaks down complex tasks into smaller subtasks
  */
-class TaskDecomposer {
+export class TaskDecomposer {
     /**
      * Decompose task into subtasks
      */
@@ -411,5 +406,4 @@ class TaskDecomposer {
         return steps;
     }
 }
-exports.TaskDecomposer = TaskDecomposer;
 //# sourceMappingURL=task-engine.js.map

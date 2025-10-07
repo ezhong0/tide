@@ -1,4 +1,4 @@
-import { WorkflowDefinition, WorkflowState, StepHandler } from '../types';
+import { WorkflowDefinition, WorkflowState, StepHandler } from '../types/index.js';
 /**
  * Workflow State Machine
  *

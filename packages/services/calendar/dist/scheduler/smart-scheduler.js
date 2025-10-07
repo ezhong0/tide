@@ -1,16 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SmartScheduler = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Smart scheduler that finds optimal meeting times
  */
-class SmartScheduler {
+export class SmartScheduler {
     /**
      * Schedule a meeting by finding optimal time slots
      */
     async scheduleMeeting(request, availability) {
-        logger_1.logger.info({
+        logger.info({
             userId: request.userId,
             title: request.title,
             participants: request.participants.length,
@@ -42,7 +39,7 @@ class SmartScheduler {
             };
         }
         catch (error) {
-            logger_1.logger.error({ userId: request.userId, error }, 'Failed to schedule meeting');
+            logger.error({ userId: request.userId, error }, 'Failed to schedule meeting');
             throw error;
         }
     }
@@ -270,5 +267,4 @@ class SmartScheduler {
         return slots;
     }
 }
-exports.SmartScheduler = SmartScheduler;
 //# sourceMappingURL=smart-scheduler.js.map

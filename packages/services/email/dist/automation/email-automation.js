@@ -1,11 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailAutomation = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Email automation system that handles emails autonomously based on triage results
  */
-class EmailAutomation {
+export class EmailAutomation {
     constructor(composer, emailProvider) {
         this.composer = composer;
         this.emailProvider = emailProvider;
@@ -14,7 +11,7 @@ class EmailAutomation {
      * Handle email based on triage result
      */
     async handle(email, triage) {
-        logger_1.logger.info({
+        logger.info({
             emailId: email.id,
             userId: email.userId,
             strategy: triage.strategy.type,
@@ -45,7 +42,7 @@ class EmailAutomation {
             }
         }
         catch (error) {
-            logger_1.logger.error({ emailId: email.id, error }, 'Failed to handle email automatically');
+            logger.error({ emailId: email.id, error }, 'Failed to handle email automatically');
             throw error;
         }
     }
@@ -55,7 +52,7 @@ class EmailAutomation {
     async autoArchive(email, triage) {
         // Archive email by removing INBOX label
         await this.emailProvider.modifyLabels(email.id, [], ['INBOX', 'UNREAD']);
-        logger_1.logger.info({ emailId: email.id, category: triage.category }, 'Email auto-archived');
+        logger.info({ emailId: email.id, category: triage.category }, 'Email auto-archived');
         return {
             type: 'archive',
             confidence: 0.95,
@@ -262,5 +259,4 @@ class EmailAutomation {
         return slots;
     }
 }
-exports.EmailAutomation = EmailAutomation;
 //# sourceMappingURL=email-automation.js.map

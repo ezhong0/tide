@@ -10,7 +10,7 @@ import {
   WorkflowContext,
   StepResult,
   StepHandler,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * DAG Executor

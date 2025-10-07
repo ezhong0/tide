@@ -7,7 +7,7 @@ import {
   WorkflowExecutionId,
   WorkflowStatus,
   WorkflowState,
-} from '../types';
+} from '../types/index.js';
 import { UserId } from '@tide/types';
 
 /**

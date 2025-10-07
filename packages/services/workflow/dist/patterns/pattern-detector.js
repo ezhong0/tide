@@ -1,14 +1,11 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BehaviorAnalyzer = exports.PatternDetector = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Pattern Detector
  *
  * Detects behavioral patterns from user actions
  * Supports temporal, sequential, conditional, and collaborative patterns
  */
-class PatternDetector {
+export class PatternDetector {
     constructor(repository, analyzer) {
         this.repository = repository;
         this.analyzer = analyzer;
@@ -20,7 +17,7 @@ class PatternDetector {
         // Collect user behaviors
         const behaviors = await this.repository.getBehaviors(userId, days);
         if (behaviors.length < 3) {
-            logger_1.logger.info({ userId }, 'Not enough behaviors to detect patterns');
+            logger.info({ userId }, 'Not enough behaviors to detect patterns');
             return [];
         }
         // Detect different pattern types in parallel
@@ -38,7 +35,7 @@ class PatternDetector {
         for (const pattern of validPatterns) {
             await this.repository.savePattern(pattern);
         }
-        logger_1.logger.info({ userId, patternCount: validPatterns.length }, 'Patterns detected');
+        logger.info({ userId, patternCount: validPatterns.length }, 'Patterns detected');
         return validPatterns;
     }
     /**
@@ -276,13 +273,12 @@ class PatternDetector {
         return `pattern_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.PatternDetector = PatternDetector;
 /**
  * Behavior Analyzer
  *
  * Analyzes user behaviors to extract insights
  */
-class BehaviorAnalyzer {
+export class BehaviorAnalyzer {
     /**
      * Analyze user behaviors
      */
@@ -354,5 +350,4 @@ class BehaviorAnalyzer {
         return frequency;
     }
 }
-exports.BehaviorAnalyzer = BehaviorAnalyzer;
 //# sourceMappingURL=pattern-detector.js.map

@@ -1,13 +1,14 @@
 import express from 'express';
-import { WorkflowEngine } from './engine';
-import { KafkaEventBus } from './events/kafka-event-bus';
+import { WorkflowEngine } from './engine/index.js';
+import { KafkaEventBus } from './events/kafka-event-bus.js';
 /**
  * Workflow Service
  *
- * Main entry point for the workflow automation service
+ * Status: Not started (planned for Weeks 9-12)
+ * This service is scaffolded but not yet operational.
  */
 declare const app: express.Application;
-declare const workflowEngine: WorkflowEngine;
-declare const eventBus: KafkaEventBus;
+declare const workflowEngine: WorkflowEngine | null;
+declare const eventBus: KafkaEventBus | null;
 export { app, workflowEngine, eventBus };
 //# sourceMappingURL=index.d.ts.map

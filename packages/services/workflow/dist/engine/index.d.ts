@@ -1,2 +1,2 @@
-export * from './workflow-engine';
+export * from './workflow-engine.js';
 //# sourceMappingURL=index.d.ts.map

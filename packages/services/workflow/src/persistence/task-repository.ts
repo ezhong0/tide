@@ -9,7 +9,7 @@ import {
   SubtaskId,
   TaskDependency,
   TaskMetrics,
-} from '../types/task.types';
+} from '../types/task.types.js';
 
 /**
  * Task Repository

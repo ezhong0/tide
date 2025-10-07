@@ -4,11 +4,11 @@ import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import { GmailProvider } from './providers/gmail.provider';
-import { ExchangeProvider } from './providers/exchange.provider';
-import { EmailTriageEngine } from './triage/triage-engine';
-import { SmartComposer } from './composer/smart-composer';
-import type { EmailProvider, OAuthTokens, ComposeRequest } from './types';
+import { GmailProvider } from './providers/gmail.provider.js';
+import { ExchangeProvider } from './providers/exchange.provider.js';
+import { EmailTriageEngine } from './triage/triage-engine.js';
+import { SmartComposer } from './composer/smart-composer.js';
+import type { EmailProvider, OAuthTokens, ComposeRequest } from './types/index.js';
 
 /**
  * Email service main application
@@ -217,7 +217,7 @@ class EmailService {
 }
 
 // Start the service
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const service = new EmailService();
   service.start().catch((error) => {
     logger.error({ error }, 'Failed to start email service');

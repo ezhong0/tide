@@ -1,11 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.MeetingPreparation = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Meeting Preparation system that generates comprehensive briefs for meetings
  */
-class MeetingPreparation {
+export class MeetingPreparation {
     constructor(userId) {
         this.userId = userId;
     }
@@ -13,7 +10,7 @@ class MeetingPreparation {
      * Prepare comprehensive brief for a meeting
      */
     async prepareMeeting(meeting) {
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             meetingId: meeting.id,
             title: meeting.title,
@@ -59,7 +56,7 @@ class MeetingPreparation {
                 successMetrics,
                 preparationTime,
             };
-            logger_1.logger.info({
+            logger.info({
                 userId: this.userId,
                 meetingId: meeting.id,
                 agendaItems: agenda.length,
@@ -68,7 +65,7 @@ class MeetingPreparation {
             return brief;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, meetingId: meeting.id, error }, 'Failed to prepare meeting');
+            logger.error({ userId: this.userId, meetingId: meeting.id, error }, 'Failed to prepare meeting');
             throw error;
         }
     }
@@ -341,5 +338,4 @@ class MeetingPreparation {
         };
     }
 }
-exports.MeetingPreparation = MeetingPreparation;
 //# sourceMappingURL=meeting-preparation.js.map

@@ -1,6 +1,6 @@
 import { UserId } from '@tide/types';
-import { Task, TaskId, TaskRequest, Subtask } from '../types/task.types';
-import { TaskRepository } from '../persistence/task-repository';
+import { Task, TaskId, TaskRequest, Subtask } from '../types/task.types.js';
+import { TaskRepository } from '../persistence/task-repository.js';
 /**
  * Task Management Engine
  *

@@ -1,26 +1,20 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.EmailService = void 0;
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const helmet_1 = __importDefault(require("helmet"));
-const config_1 = require("@tide/config");
-const logger_1 = require("@tide/logger");
-const gmail_provider_1 = require("./providers/gmail.provider");
-const exchange_provider_1 = require("./providers/exchange.provider");
-const triage_engine_1 = require("./triage/triage-engine");
-const smart_composer_1 = require("./composer/smart-composer");
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { env } from '@tide/config';
+import { logger } from '@tide/logger';
+import { GmailProvider } from './providers/gmail.provider.js';
+import { ExchangeProvider } from './providers/exchange.provider.js';
+import { EmailTriageEngine } from './triage/triage-engine.js';
+import { SmartComposer } from './composer/smart-composer.js';
 /**
  * Email service main application
  */
 class EmailService {
     constructor() {
-        this.app = (0, express_1.default)();
-        this.triageEngine = new triage_engine_1.EmailTriageEngine();
-        this.composer = new smart_composer_1.SmartComposer();
+        this.app = express();
+        this.triageEngine = new EmailTriageEngine();
+        this.composer = new SmartComposer();
         this.providers = new Map();
         this.setupMiddleware();
         this.setupRoutes();
@@ -29,12 +23,12 @@ class EmailService {
      * Setup Express middleware
      */
     setupMiddleware() {
-        this.app.use((0, helmet_1.default)());
-        this.app.use((0, cors_1.default)());
-        this.app.use(express_1.default.json());
+        this.app.use(helmet());
+        this.app.use(cors());
+        this.app.use(express.json());
         // Request logging
         this.app.use((req, res, next) => {
-            logger_1.logger.info({
+            logger.info({
                 method: req.method,
                 path: req.path,
                 ip: req.ip,
@@ -65,11 +59,11 @@ class EmailService {
                 const emailProvider = this.getProvider(provider);
                 await emailProvider.initialize(userId, tokens);
                 this.providers.set(`${userId}-${provider}`, emailProvider);
-                logger_1.logger.info({ userId, provider }, 'Email provider connected');
+                logger.info({ userId, provider }, 'Email provider connected');
                 res.json({ success: true, provider });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to connect email provider');
+                logger.error({ error }, 'Failed to connect email provider');
                 res.status(500).json({ error: 'Failed to connect email provider' });
             }
         });
@@ -89,7 +83,7 @@ class EmailService {
                 res.json({ emails, count: emails.length });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to fetch emails');
+                logger.error({ error }, 'Failed to fetch emails');
                 res.status(500).json({ error: 'Failed to fetch emails' });
             }
         });
@@ -104,7 +98,7 @@ class EmailService {
                 res.json({ triage: triageResult });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to triage email');
+                logger.error({ error }, 'Failed to triage email');
                 res.status(500).json({ error: 'Failed to triage email' });
             }
         });
@@ -119,7 +113,7 @@ class EmailService {
                 res.json({ drafts, count: drafts.length });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to compose email');
+                logger.error({ error }, 'Failed to compose email');
                 res.status(500).json({ error: 'Failed to compose email' });
             }
         });
@@ -139,7 +133,7 @@ class EmailService {
                 res.json({ success: true });
             }
             catch (error) {
-                logger_1.logger.error({ error }, 'Failed to send email');
+                logger.error({ error }, 'Failed to send email');
                 res.status(500).json({ error: 'Failed to send email' });
             }
         });
@@ -149,7 +143,7 @@ class EmailService {
         });
         // Error handler
         this.app.use((err, req, res, next) => {
-            logger_1.logger.error({ error: err }, 'Unhandled error');
+            logger.error({ error: err }, 'Unhandled error');
             res.status(500).json({ error: 'Internal server error' });
         });
     }
@@ -159,9 +153,9 @@ class EmailService {
     getProvider(provider) {
         switch (provider) {
             case 'gmail':
-                return new gmail_provider_1.GmailProvider();
+                return new GmailProvider();
             case 'exchange':
-                return new exchange_provider_1.ExchangeProvider();
+                return new ExchangeProvider();
             default:
                 throw new Error(`Unsupported provider: ${provider}`);
         }
@@ -170,19 +164,19 @@ class EmailService {
      * Start the email service
      */
     async start() {
-        const port = config_1.env.PORT || 3003;
+        const port = env.PORT || 3003;
         this.app.listen(port, () => {
-            logger_1.logger.info({ port, service: 'email' }, 'Email service started');
+            logger.info({ port, service: 'email' }, 'Email service started');
         });
     }
 }
-exports.EmailService = EmailService;
 // Start the service
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
     const service = new EmailService();
     service.start().catch((error) => {
-        logger_1.logger.error({ error }, 'Failed to start email service');
+        logger.error({ error }, 'Failed to start email service');
         process.exit(1);
     });
 }
+export { EmailService };
 //# sourceMappingURL=index.js.map

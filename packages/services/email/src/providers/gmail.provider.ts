@@ -8,7 +8,7 @@ import type {
   OAuthTokens,
   FetchOptions,
   EmailAttachment,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Gmail provider implementation

@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.PostgreSQLStatePersistence = exports.WorkflowRepository = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Workflow Repository
  *
  * Handles persistence of workflow definitions and executions to PostgreSQL
  */
-class WorkflowRepository {
+export class WorkflowRepository {
     constructor(pool) {
         this.pool = pool;
     }
@@ -41,10 +38,10 @@ class WorkflowRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.info({ workflowId: workflow.id }, 'Workflow saved');
+            logger.info({ workflowId: workflow.id }, 'Workflow saved');
         }
         catch (error) {
-            logger_1.logger.error({ error, workflowId: workflow.id }, 'Failed to save workflow');
+            logger.error({ error, workflowId: workflow.id }, 'Failed to save workflow');
             throw error;
         }
     }
@@ -68,7 +65,7 @@ class WorkflowRepository {
             return workflow;
         }
         catch (error) {
-            logger_1.logger.error({ error, workflowId: id }, 'Failed to get workflow');
+            logger.error({ error, workflowId: id }, 'Failed to get workflow');
             throw error;
         }
     }
@@ -91,7 +88,7 @@ class WorkflowRepository {
             });
         }
         catch (error) {
-            logger_1.logger.error({ error, userId }, 'Failed to get workflows by user');
+            logger.error({ error, userId }, 'Failed to get workflows by user');
             throw error;
         }
     }
@@ -143,10 +140,10 @@ class WorkflowRepository {
         ];
         try {
             await this.pool.query(query, values);
-            logger_1.logger.debug({ executionId: execution.id }, 'Execution saved');
+            logger.debug({ executionId: execution.id }, 'Execution saved');
         }
         catch (error) {
-            logger_1.logger.error({ error, executionId: execution.id }, 'Failed to save execution');
+            logger.error({ error, executionId: execution.id }, 'Failed to save execution');
             throw error;
         }
     }
@@ -186,7 +183,7 @@ class WorkflowRepository {
             return state;
         }
         catch (error) {
-            logger_1.logger.error({ error, executionId: id }, 'Failed to load execution');
+            logger.error({ error, executionId: id }, 'Failed to load execution');
             throw error;
         }
     }
@@ -206,10 +203,10 @@ class WorkflowRepository {
     `;
         try {
             await this.pool.query(query, [id]);
-            logger_1.logger.info({ executionId: id }, 'Execution deleted');
+            logger.info({ executionId: id }, 'Execution deleted');
         }
         catch (error) {
-            logger_1.logger.error({ error, executionId: id }, 'Failed to delete execution');
+            logger.error({ error, executionId: id }, 'Failed to delete execution');
             throw error;
         }
     }
@@ -237,7 +234,7 @@ class WorkflowRepository {
             }));
         }
         catch (error) {
-            logger_1.logger.error({ error, workflowId }, 'Failed to get executions by workflow');
+            logger.error({ error, workflowId }, 'Failed to get executions by workflow');
             throw error;
         }
     }
@@ -264,16 +261,15 @@ class WorkflowRepository {
             }));
         }
         catch (error) {
-            logger_1.logger.error({ error }, 'Failed to get active executions');
+            logger.error({ error }, 'Failed to get active executions');
             throw error;
         }
     }
 }
-exports.WorkflowRepository = WorkflowRepository;
 /**
  * PostgreSQL State Persistence for WorkflowStateMachine
  */
-class PostgreSQLStatePersistence {
+export class PostgreSQLStatePersistence {
     constructor(repository) {
         this.repository = repository;
     }
@@ -290,5 +286,4 @@ class PostgreSQLStatePersistence {
         await this.repository.deleteExecution(id);
     }
 }
-exports.PostgreSQLStatePersistence = PostgreSQLStatePersistence;
 //# sourceMappingURL=workflow-repository.js.map

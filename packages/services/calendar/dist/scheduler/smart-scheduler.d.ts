@@ -1,4 +1,4 @@
-import type { MeetingRequest, ScheduleResult, TimeSlot, CalendarEvent, Availability } from '../types';
+import type { MeetingRequest, ScheduleResult, TimeSlot, CalendarEvent, Availability } from '../types/index.js';
 /**
  * Smart scheduler that finds optimal meeting times
  */

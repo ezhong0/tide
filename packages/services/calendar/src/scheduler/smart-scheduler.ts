@@ -6,7 +6,7 @@ import type {
   CalendarEvent,
   Availability,
   SlotScoreFactors,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Smart scheduler that finds optimal meeting times

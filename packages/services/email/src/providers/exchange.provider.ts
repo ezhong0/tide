@@ -8,7 +8,7 @@ import type {
   OAuthTokens,
   FetchOptions,
   EmailAttachment,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Exchange/Outlook provider implementation using Microsoft Graph API

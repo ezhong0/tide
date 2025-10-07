@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ExchangeProvider = void 0;
-const microsoft_graph_client_1 = require("@microsoft/microsoft-graph-client");
-const logger_1 = require("@tide/logger");
+import { Client } from '@microsoft/microsoft-graph-client';
+import { logger } from '@tide/logger';
 /**
  * Exchange/Outlook provider implementation using Microsoft Graph API
  */
-class ExchangeProvider {
+export class ExchangeProvider {
     constructor() {
         this.client = null;
         this.userId = null;
@@ -18,15 +15,15 @@ class ExchangeProvider {
         try {
             this.userId = userId;
             // Create Microsoft Graph client with auth
-            this.client = microsoft_graph_client_1.Client.init({
+            this.client = Client.init({
                 authProvider: (done) => {
                     done(null, tokens.accessToken);
                 },
             });
-            logger_1.logger.info({ userId }, 'Exchange provider initialized');
+            logger.info({ userId }, 'Exchange provider initialized');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to initialize Exchange provider');
+            logger.error({ userId, error }, 'Failed to initialize Exchange provider');
             throw error;
         }
     }
@@ -75,7 +72,7 @@ class ExchangeProvider {
             return response.value.map((msg) => this.transformToEmail(msg));
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to fetch emails');
+            logger.error({ userId: this.userId, error }, 'Failed to fetch emails');
             throw error;
         }
     }
@@ -128,10 +125,10 @@ class ExchangeProvider {
                 message,
                 saveToSentItems: true,
             });
-            logger_1.logger.info({ userId: this.userId, to, subject: draft.subject }, 'Email sent');
+            logger.info({ userId: this.userId, to, subject: draft.subject }, 'Email sent');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to send email');
+            logger.error({ userId: this.userId, error }, 'Failed to send email');
             throw error;
         }
     }
@@ -146,10 +143,10 @@ class ExchangeProvider {
             await this.client.api(`/me/messages/${emailId}/reply`).post({
                 comment: draft.body,
             });
-            logger_1.logger.info({ userId: this.userId, emailId }, 'Reply sent');
+            logger.info({ userId: this.userId, emailId }, 'Reply sent');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, emailId, error }, 'Failed to reply to email');
+            logger.error({ userId: this.userId, emailId, error }, 'Failed to reply to email');
             throw error;
         }
     }
@@ -174,10 +171,10 @@ class ExchangeProvider {
             await this.client.api(`/me/messages/${messageId}`).patch({
                 categories: newCategories,
             });
-            logger_1.logger.info({ userId: this.userId, messageId, add, remove }, 'Labels modified');
+            logger.info({ userId: this.userId, messageId, add, remove }, 'Labels modified');
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, messageId, error }, 'Failed to modify labels');
+            logger.error({ userId: this.userId, messageId, error }, 'Failed to modify labels');
             throw error;
         }
     }
@@ -191,13 +188,12 @@ class ExchangeProvider {
         try {
             // This would require Microsoft Graph webhook setup
             // For now, we'll log that notifications are not yet implemented
-            logger_1.logger.info({ userId }, 'Exchange push notifications setup (not yet implemented)');
+            logger.info({ userId }, 'Exchange push notifications setup (not yet implemented)');
         }
         catch (error) {
-            logger_1.logger.error({ userId, error }, 'Failed to setup notifications');
+            logger.error({ userId, error }, 'Failed to setup notifications');
             throw error;
         }
     }
 }
-exports.ExchangeProvider = ExchangeProvider;
 //# sourceMappingURL=exchange.provider.js.map

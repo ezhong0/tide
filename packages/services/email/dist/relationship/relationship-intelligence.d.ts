@@ -1,5 +1,5 @@
 import type { UserId } from '@tide/types';
-import type { Email } from '../types';
+import type { Email } from '../types/index.js';
 export interface Contact {
     email: string;
     name?: string;
@@ -112,8 +112,29 @@ export declare class RelationshipIntelligence {
      */
     private calculateAverageResponseTime;
     /**
-     * Extract topics from interactions (simplified)
+     * Extract topics from interactions (enhanced with better detection)
      */
     private extractTopics;
+    /**
+     * Identify if contact is a decision maker (enhanced algorithm)
+     */
+    private identifyDecisionMaker;
+    /**
+     * Calculate influence with multiple factors
+     */
+    private calculateInfluence;
+    /**
+     * Identify VIP contacts based on comprehensive criteria
+     */
+    identifyVIPs(contacts: Contact[], allEmails: Email[]): Promise<Contact[]>;
+    /**
+     * Get contact recommendations for relationship building
+     */
+    getRelationshipRecommendations(contacts: Contact[], allEmails: Email[]): Promise<{
+        reach_out_now: Contact[];
+        nurture: Contact[];
+        monitor: Contact[];
+        reasons: Map<string, string>;
+    }>;
 }
 //# sourceMappingURL=relationship-intelligence.d.ts.map

@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import type { Email } from '../types';
+import type { Email } from '../types/index.js';
 
 export interface Contact {
   email: string;

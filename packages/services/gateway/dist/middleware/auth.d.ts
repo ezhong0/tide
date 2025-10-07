@@ -1,31 +1,24 @@
 import type { UserId } from '@tide/types';
-export interface JWTPayload {
-    userId: UserId;
-    email: string;
-    type: 'access' | 'refresh';
-    iat?: number;
-    exp?: number;
-}
 export interface AuthContext {
     userId: UserId;
     email: string;
     isAuthenticated: boolean;
 }
 /**
- * Verify JWT access token and extract user information
+ * Verify Supabase JWT token and extract user information
  *
  * @param token - JWT access token from Authorization header
  * @returns AuthContext with user information
  * @throws AuthError if token is invalid or expired
  */
-export declare function verifyAccessToken(token: string): AuthContext;
+export declare function verifyAccessToken(token: string): Promise<AuthContext>;
 /**
  * Optional authentication - verifies token if present, but doesn't require it
  *
  * @param token - Optional JWT access token
  * @returns AuthContext (isAuthenticated = false if no token)
  */
-export declare function optionalAuth(token?: string): AuthContext;
+export declare function optionalAuth(token?: string): Promise<AuthContext>;
 /**
  * Extract token from Authorization header
  *
@@ -41,5 +34,5 @@ export declare function extractToken(authHeader?: string): string | undefined;
  * @returns AuthContext
  * @throws AuthError if required and token is missing/invalid
  */
-export declare function createAuthContext(authHeader?: string, required?: boolean): AuthContext;
+export declare function createAuthContext(authHeader?: string, required?: boolean): Promise<AuthContext>;
 //# sourceMappingURL=auth.d.ts.map

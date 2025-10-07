@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import type { CalendarEvent, TimeSlot } from '../types';
+import type { CalendarEvent, TimeSlot } from '../types/index.js';
 
 export interface ScheduleAnalysis {
   totalMeetingTime: number; // minutes

@@ -1,3 +1,3 @@
-export * from './workflow-repository';
-export * from './task-repository';
-export * from './pattern-repository';
+export * from './workflow-repository.js';
+export * from './task-repository.js';
+export * from './pattern-repository.js';

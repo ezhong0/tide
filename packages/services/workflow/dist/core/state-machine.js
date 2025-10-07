@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.InMemoryStatePersistence = exports.WorkflowStateMachine = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Workflow State Machine
  *
@@ -13,7 +10,7 @@ const logger_1 = require("@tide/logger");
  * - Error handling
  * - History tracking
  */
-class WorkflowStateMachine {
+export class WorkflowStateMachine {
     constructor(workflow, persistence) {
         this.workflow = workflow;
         this.persistence = persistence;
@@ -46,7 +43,7 @@ class WorkflowStateMachine {
             updatedAt: new Date(),
         };
         await this.persistence.save(initialState);
-        logger_1.logger.info({ workflowId: this.workflow.id, executionId: initialState.id }, 'Workflow created');
+        logger.info({ workflowId: this.workflow.id, executionId: initialState.id }, 'Workflow created');
         return initialState;
     }
     /**
@@ -63,7 +60,7 @@ class WorkflowStateMachine {
         state.status = 'running';
         state.updatedAt = new Date();
         await this.persistence.update(state);
-        logger_1.logger.info({ executionId: state.id }, 'Workflow started');
+        logger.info({ executionId: state.id }, 'Workflow started');
         // Execute the workflow
         await this.execute(state);
         return state;
@@ -82,7 +79,7 @@ class WorkflowStateMachine {
         state.status = 'paused';
         state.updatedAt = new Date();
         await this.persistence.update(state);
-        logger_1.logger.info({ executionId: state.id }, 'Workflow paused');
+        logger.info({ executionId: state.id }, 'Workflow paused');
         return state;
     }
     /**
@@ -99,7 +96,7 @@ class WorkflowStateMachine {
         state.status = 'running';
         state.updatedAt = new Date();
         await this.persistence.update(state);
-        logger_1.logger.info({ executionId: state.id }, 'Workflow resumed');
+        logger.info({ executionId: state.id }, 'Workflow resumed');
         // Continue execution
         await this.execute(state);
         return state;
@@ -115,7 +112,7 @@ class WorkflowStateMachine {
         state.status = 'cancelled';
         state.updatedAt = new Date();
         await this.persistence.update(state);
-        logger_1.logger.info({ executionId: state.id }, 'Workflow cancelled');
+        logger.info({ executionId: state.id }, 'Workflow cancelled');
         return state;
     }
     /**
@@ -181,13 +178,13 @@ class WorkflowStateMachine {
             state.updatedAt = new Date();
             await this.persistence.update(state);
         }
-        logger_1.logger.info({ executionId: state.id, status: state.status }, 'Workflow execution completed');
+        logger.info({ executionId: state.id, status: state.status }, 'Workflow execution completed');
     }
     /**
      * Execute a single step
      */
     async executeStep(state, step) {
-        logger_1.logger.info({ executionId: state.id, stepId: step.id, stepType: step.type }, 'Executing step');
+        logger.info({ executionId: state.id, stepId: step.id, stepType: step.type }, 'Executing step');
         const stateDefinition = this.states.get(step.id);
         if (!stateDefinition) {
             throw new Error(`State definition not found for step: ${step.id}`);
@@ -200,14 +197,14 @@ class WorkflowStateMachine {
                 const result = step.timeout
                     ? await this.executeWithTimeout(() => stateDefinition.handler(state.context, step.config), step.timeout)
                     : await stateDefinition.handler(state.context, step.config);
-                logger_1.logger.info({ executionId: state.id, stepId: step.id }, 'Step executed successfully');
+                logger.info({ executionId: state.id, stepId: step.id }, 'Step executed successfully');
                 return {
                     success: true,
                     output: result.output,
                 };
             }
             catch (error) {
-                logger_1.logger.error({ executionId: state.id, stepId: step.id, error, retryCount }, 'Step execution failed');
+                logger.error({ executionId: state.id, stepId: step.id, error, retryCount }, 'Step execution failed');
                 // Check if should retry
                 if (retryCount < maxRetries && step.retryPolicy) {
                     retryCount++;
@@ -314,15 +311,15 @@ class WorkflowStateMachine {
     getDefaultHandler(stepType) {
         const defaultHandlers = {
             action: async (context, config) => {
-                logger_1.logger.info({ stepType: 'action', config }, 'Executing action step');
+                logger.info({ stepType: 'action', config }, 'Executing action step');
                 return { success: true, output: { executed: true } };
             },
             decision: async (context, config) => {
-                logger_1.logger.info({ stepType: 'decision', config }, 'Executing decision step');
+                logger.info({ stepType: 'decision', config }, 'Executing decision step');
                 return { success: true, output: { decision: 'default' } };
             },
             parallel: async (context, config) => {
-                logger_1.logger.info({ stepType: 'parallel', config }, 'Executing parallel step');
+                logger.info({ stepType: 'parallel', config }, 'Executing parallel step');
                 return { success: true, output: { parallelResults: [] } };
             },
             delay: async (context, config) => {
@@ -428,11 +425,10 @@ class WorkflowStateMachine {
         return `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.WorkflowStateMachine = WorkflowStateMachine;
 /**
  * In-Memory State Persistence (for testing)
  */
-class InMemoryStatePersistence {
+export class InMemoryStatePersistence {
     constructor() {
         this.states = new Map();
     }
@@ -456,5 +452,4 @@ class InMemoryStatePersistence {
         this.states.clear();
     }
 }
-exports.InMemoryStatePersistence = InMemoryStatePersistence;
 //# sourceMappingURL=state-machine.js.map

@@ -1,11 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConflictResolver = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Conflict Resolver that detects and resolves calendar conflicts intelligently
  */
-class ConflictResolver {
+export class ConflictResolver {
     constructor(userId) {
         this.userId = userId;
     }
@@ -13,7 +10,7 @@ class ConflictResolver {
      * Detect all conflicts in a set of events
      */
     async detectConflicts(events) {
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             eventCount: events.length,
         }, 'Detecting calendar conflicts');
@@ -36,7 +33,7 @@ class ConflictResolver {
                 }
             }
         }
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             conflictCount: conflicts.length,
         }, 'Conflicts detected');
@@ -99,7 +96,7 @@ class ConflictResolver {
      * Resolve a calendar conflict
      */
     async resolve(conflict) {
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             conflictType: conflict.type,
             eventCount: conflict.events.length,
@@ -129,7 +126,7 @@ class ConflictResolver {
                 reschedule: reschedulePlans,
                 explanation: this.explainResolution(toKeep.event, toReschedule, conflict),
             };
-            logger_1.logger.info({
+            logger.info({
                 userId: this.userId,
                 keepingEvent: toKeep.event.title,
                 reschedulingCount: reschedulePlans.length,
@@ -137,7 +134,7 @@ class ConflictResolver {
             return resolution;
         }
         catch (error) {
-            logger_1.logger.error({ userId: this.userId, error }, 'Failed to resolve conflict');
+            logger.error({ userId: this.userId, error }, 'Failed to resolve conflict');
             throw error;
         }
     }
@@ -351,7 +348,7 @@ class ConflictResolver {
                     }
                 }
                 catch (error) {
-                    logger_1.logger.error({ error }, 'Failed to auto-resolve conflict');
+                    logger.error({ error }, 'Failed to auto-resolve conflict');
                     needsReview.push(conflict);
                 }
             }
@@ -359,7 +356,7 @@ class ConflictResolver {
                 needsReview.push(conflict);
             }
         }
-        logger_1.logger.info({
+        logger.info({
             userId: this.userId,
             resolvedCount: resolved.length,
             needsReviewCount: needsReview.length,
@@ -367,5 +364,4 @@ class ConflictResolver {
         return { resolved, needsReview };
     }
 }
-exports.ConflictResolver = ConflictResolver;
 //# sourceMappingURL=conflict-resolver.js.map

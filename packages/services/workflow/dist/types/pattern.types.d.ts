@@ -1,6 +1,6 @@
 import { UserId } from '@tide/types';
-import { WorkflowDefinition } from './workflow.types';
-import { TaskId } from './task.types';
+import { WorkflowDefinition } from './workflow.types.js';
+import { TaskId } from './task.types.js';
 /**
  * Pattern Detection Types
  * Type definitions for behavioral pattern recognition and automation

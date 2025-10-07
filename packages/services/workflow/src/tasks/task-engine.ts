@@ -8,8 +8,8 @@ import {
   Subtask,
   TaskPriority,
   TaskDependency,
-} from '../types/task.types';
-import { TaskRepository } from '../persistence/task-repository';
+} from '../types/task.types.js';
+import { TaskRepository } from '../persistence/task-repository.js';
 
 /**
  * Task Management Engine

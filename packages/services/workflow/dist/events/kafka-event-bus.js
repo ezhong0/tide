@@ -1,18 +1,15 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.KafkaEventBus = void 0;
-const kafkajs_1 = require("kafkajs");
-const logger_1 = require("@tide/logger");
+import { Kafka } from 'kafkajs';
+import { logger } from '@tide/logger';
 /**
  * Kafka Event Bus
  *
  * Handles event publishing and subscription using Kafka
  */
-class KafkaEventBus {
+export class KafkaEventBus {
     constructor(config) {
         this.config = config;
         this.handlers = new Map();
-        this.kafka = new kafkajs_1.Kafka({
+        this.kafka = new Kafka({
             clientId: config.clientId,
             brokers: config.brokers,
         });
@@ -26,7 +23,7 @@ class KafkaEventBus {
         try {
             await this.producer.connect();
             await this.consumer.connect();
-            logger_1.logger.info('Kafka event bus connected');
+            logger.info('Kafka event bus connected');
             // Subscribe to workflow events
             await this.subscribeToTopics();
             // Start consuming messages
@@ -37,7 +34,7 @@ class KafkaEventBus {
             });
         }
         catch (error) {
-            logger_1.logger.error({ error }, 'Failed to connect to Kafka');
+            logger.error({ error }, 'Failed to connect to Kafka');
             throw error;
         }
     }
@@ -48,10 +45,10 @@ class KafkaEventBus {
         try {
             await this.producer.disconnect();
             await this.consumer.disconnect();
-            logger_1.logger.info('Kafka event bus disconnected');
+            logger.info('Kafka event bus disconnected');
         }
         catch (error) {
-            logger_1.logger.error({ error }, 'Error disconnecting from Kafka');
+            logger.error({ error }, 'Error disconnecting from Kafka');
         }
     }
     /**
@@ -69,10 +66,10 @@ class KafkaEventBus {
                     },
                 ],
             });
-            logger_1.logger.debug({ topic, dataId: data.id }, 'Event published');
+            logger.debug({ topic, dataId: data.id }, 'Event published');
         }
         catch (error) {
-            logger_1.logger.error({ error, topic }, 'Failed to publish event');
+            logger.error({ error, topic }, 'Failed to publish event');
             throw error;
         }
     }
@@ -84,7 +81,7 @@ class KafkaEventBus {
             this.handlers.set(topic, []);
         }
         this.handlers.get(topic).push(handler);
-        logger_1.logger.info({ topic }, 'Subscribed to topic');
+        logger.info({ topic }, 'Subscribed to topic');
     }
     /**
      * Subscribe to workflow topics
@@ -103,7 +100,7 @@ class KafkaEventBus {
         for (const topic of topics) {
             await this.consumer.subscribe({ topic, fromBeginning: false });
         }
-        logger_1.logger.info({ topicCount: topics.length }, 'Subscribed to Kafka topics');
+        logger.info({ topicCount: topics.length }, 'Subscribed to Kafka topics');
     }
     /**
      * Handle incoming message
@@ -112,11 +109,11 @@ class KafkaEventBus {
         const { topic, message } = payload;
         try {
             if (!message.value) {
-                logger_1.logger.warn({ topic }, 'Received empty message');
+                logger.warn({ topic }, 'Received empty message');
                 return;
             }
             const data = JSON.parse(message.value.toString());
-            logger_1.logger.debug({ topic, key: message.key?.toString() }, 'Message received');
+            logger.debug({ topic, key: message.key?.toString() }, 'Message received');
             // Call registered handlers
             const handlers = this.handlers.get(topic) || [];
             for (const handler of handlers) {
@@ -124,12 +121,12 @@ class KafkaEventBus {
                     await handler(data);
                 }
                 catch (error) {
-                    logger_1.logger.error({ error, topic, handler: handler.name }, 'Handler error');
+                    logger.error({ error, topic, handler: handler.name }, 'Handler error');
                 }
             }
         }
         catch (error) {
-            logger_1.logger.error({ error, topic }, 'Failed to handle message');
+            logger.error({ error, topic }, 'Failed to handle message');
         }
     }
     /**
@@ -146,13 +143,12 @@ class KafkaEventBus {
                 topic,
                 messages,
             });
-            logger_1.logger.debug({ topic, count: events.length }, 'Batch events published');
+            logger.debug({ topic, count: events.length }, 'Batch events published');
         }
         catch (error) {
-            logger_1.logger.error({ error, topic }, 'Failed to publish batch events');
+            logger.error({ error, topic }, 'Failed to publish batch events');
             throw error;
         }
     }
 }
-exports.KafkaEventBus = KafkaEventBus;
 //# sourceMappingURL=kafka-event-bus.js.map

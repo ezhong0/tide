@@ -1,15 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.WorkflowEngine = void 0;
-const logger_1 = require("@tide/logger");
-const state_machine_1 = require("../core/state-machine");
-const dag_executor_1 = require("../core/dag-executor");
-const compensation_1 = require("../core/compensation");
-const workflow_repository_1 = require("../persistence/workflow-repository");
-const task_engine_1 = require("../tasks/task-engine");
-const task_repository_1 = require("../persistence/task-repository");
-const pattern_detector_1 = require("../patterns/pattern-detector");
-const pattern_repository_1 = require("../persistence/pattern-repository");
+import { logger } from '@tide/logger';
+import { WorkflowStateMachine } from '../core/state-machine.js';
+import { DAGExecutor } from '../core/dag-executor.js';
+import { CompensationManager, SagaOrchestrator } from '../core/compensation.js';
+import { WorkflowRepository, PostgreSQLStatePersistence } from '../persistence/workflow-repository.js';
+import { TaskEngine, TaskPrioritizer, TaskDecomposer } from '../tasks/task-engine.js';
+import { TaskRepository } from '../persistence/task-repository.js';
+import { PatternDetector, BehaviorAnalyzer } from '../patterns/pattern-detector.js';
+import { PatternRepository } from '../persistence/pattern-repository.js';
 /**
  * Workflow Engine
  *
@@ -20,34 +17,34 @@ const pattern_repository_1 = require("../persistence/pattern-repository");
  * - Task management
  * - Pattern detection
  */
-class WorkflowEngine {
+export class WorkflowEngine {
     constructor(pool) {
         this.pool = pool;
         // Initialize repositories
-        this.workflowRepository = new workflow_repository_1.WorkflowRepository(pool);
-        this.taskRepository = new task_repository_1.TaskRepository(pool);
-        this.patternRepository = new pattern_repository_1.PatternRepository(pool);
+        this.workflowRepository = new WorkflowRepository(pool);
+        this.taskRepository = new TaskRepository(pool);
+        this.patternRepository = new PatternRepository(pool);
         // Initialize persistence
-        this.statePersistence = new workflow_repository_1.PostgreSQLStatePersistence(this.workflowRepository);
+        this.statePersistence = new PostgreSQLStatePersistence(this.workflowRepository);
         // Initialize core components
-        this.compensationManager = new compensation_1.CompensationManager();
-        this.sagaOrchestrator = new compensation_1.SagaOrchestrator(this.compensationManager);
-        this.dagExecutor = new dag_executor_1.DAGExecutor();
+        this.compensationManager = new CompensationManager();
+        this.sagaOrchestrator = new SagaOrchestrator(this.compensationManager);
+        this.dagExecutor = new DAGExecutor();
         // Initialize engines
-        const prioritizer = new task_engine_1.TaskPrioritizer();
-        const decomposer = new task_engine_1.TaskDecomposer();
-        this.taskEngine = new task_engine_1.TaskEngine(this.taskRepository, prioritizer, decomposer);
-        const behaviorAnalyzer = new pattern_detector_1.BehaviorAnalyzer();
-        this.patternDetector = new pattern_detector_1.PatternDetector(this.patternRepository, behaviorAnalyzer);
-        logger_1.logger.info('Workflow engine initialized');
+        const prioritizer = new TaskPrioritizer();
+        const decomposer = new TaskDecomposer();
+        this.taskEngine = new TaskEngine(this.taskRepository, prioritizer, decomposer);
+        const behaviorAnalyzer = new BehaviorAnalyzer();
+        this.patternDetector = new PatternDetector(this.patternRepository, behaviorAnalyzer);
+        logger.info('Workflow engine initialized');
     }
     /**
      * Execute workflow using state machine
      */
     async executeWorkflowStateMachine(workflow, initialContext) {
-        logger_1.logger.info({ workflowId: workflow.id }, 'Executing workflow with state machine');
+        logger.info({ workflowId: workflow.id }, 'Executing workflow with state machine');
         // Create state machine
-        const stateMachine = new state_machine_1.WorkflowStateMachine(workflow, this.statePersistence);
+        const stateMachine = new WorkflowStateMachine(workflow, this.statePersistence);
         // Create workflow instance
         const state = await stateMachine.createWorkflow();
         // Set initial context if provided
@@ -60,14 +57,14 @@ class WorkflowEngine {
         }
         // Start execution
         const result = await stateMachine.start(state.id);
-        logger_1.logger.info({ workflowId: workflow.id, executionId: state.id, status: result.status }, 'Workflow execution completed');
+        logger.info({ workflowId: workflow.id, executionId: state.id, status: result.status }, 'Workflow execution completed');
         return result;
     }
     /**
      * Execute workflow using DAG executor
      */
     async executeWorkflowDAG(workflow, context) {
-        logger_1.logger.info({ workflowId: workflow.id }, 'Executing workflow with DAG');
+        logger.info({ workflowId: workflow.id }, 'Executing workflow with DAG');
         try {
             // Build DAG
             const dag = this.dagExecutor.buildDAG(workflow);
@@ -79,7 +76,7 @@ class WorkflowEngine {
             const duration = Date.now() - startTime;
             // Check if all steps succeeded
             const allSuccess = Array.from(results.values()).every(r => r.success);
-            logger_1.logger.info({
+            logger.info({
                 workflowId: workflow.id,
                 success: allSuccess,
                 duration,
@@ -92,7 +89,7 @@ class WorkflowEngine {
             };
         }
         catch (error) {
-            logger_1.logger.error({ error, workflowId: workflow.id }, 'DAG execution failed');
+            logger.error({ error, workflowId: workflow.id }, 'DAG execution failed');
             throw error;
         }
     }
@@ -100,7 +97,7 @@ class WorkflowEngine {
      * Execute workflow with Saga pattern (for transactions)
      */
     async executeWorkflowSaga(workflow, context) {
-        logger_1.logger.info({ workflowId: workflow.id }, 'Executing workflow with Saga pattern');
+        logger.info({ workflowId: workflow.id }, 'Executing workflow with Saga pattern');
         const executionId = this.generateExecutionId();
         // Convert workflow steps to saga steps
         const sagaSteps = workflow.steps.map(step => ({
@@ -116,7 +113,7 @@ class WorkflowEngine {
         }));
         // Execute saga
         const result = await this.sagaOrchestrator.executeSaga(executionId, sagaSteps, context);
-        logger_1.logger.info({
+        logger.info({
             workflowId: workflow.id,
             executionId,
             success: result.success,
@@ -128,7 +125,7 @@ class WorkflowEngine {
      */
     registerStepHandler(name, handler) {
         this.dagExecutor.registerHandler(name, handler);
-        logger_1.logger.info({ handlerName: name }, 'Step handler registered');
+        logger.info({ handlerName: name }, 'Step handler registered');
     }
     /**
      * Get workflow repository (for saving/loading workflows)
@@ -152,7 +149,7 @@ class WorkflowEngine {
      * Detect patterns for user
      */
     async detectUserPatterns(userId, days = 30) {
-        logger_1.logger.info({ userId, days }, 'Detecting user patterns');
+        logger.info({ userId, days }, 'Detecting user patterns');
         return await this.patternDetector.detectPatterns(userId, days);
     }
     /**
@@ -165,7 +162,7 @@ class WorkflowEngine {
      * Execute ready tasks
      */
     async executeTasks(userId) {
-        logger_1.logger.info({ userId }, 'Executing ready tasks');
+        logger.info({ userId }, 'Executing ready tasks');
         return await this.taskEngine.executeTasks(userId);
     }
     /**
@@ -193,7 +190,7 @@ class WorkflowEngine {
             };
         }
         catch (error) {
-            logger_1.logger.error({ error }, 'Health check failed');
+            logger.error({ error }, 'Health check failed');
             return {
                 status: 'unhealthy',
                 timestamp: new Date(),
@@ -208,5 +205,4 @@ class WorkflowEngine {
         }
     }
 }
-exports.WorkflowEngine = WorkflowEngine;
 //# sourceMappingURL=workflow-engine.js.map

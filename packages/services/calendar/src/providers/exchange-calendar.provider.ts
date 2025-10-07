@@ -8,7 +8,7 @@ import type {
   Availability,
   TimeSlot,
   Attendee,
-} from '../types';
+} from '../types/index.js';
 
 /**
  * Exchange/Outlook Calendar provider implementation using Microsoft Graph API

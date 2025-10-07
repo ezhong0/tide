@@ -8,15 +8,15 @@ import {
   WorkflowState,
   WorkflowContext,
   StepHandler,
-} from '../types';
-import { WorkflowStateMachine } from '../core/state-machine';
-import { DAGExecutor } from '../core/dag-executor';
-import { CompensationManager, SagaOrchestrator } from '../core/compensation';
-import { WorkflowRepository, PostgreSQLStatePersistence } from '../persistence/workflow-repository';
-import { TaskEngine, TaskPrioritizer, TaskDecomposer } from '../tasks/task-engine';
-import { TaskRepository } from '../persistence/task-repository';
-import { PatternDetector, BehaviorAnalyzer } from '../patterns/pattern-detector';
-import { PatternRepository } from '../persistence/pattern-repository';
+} from '../types/index.js';
+import { WorkflowStateMachine } from '../core/state-machine.js';
+import { DAGExecutor } from '../core/dag-executor.js';
+import { CompensationManager, SagaOrchestrator } from '../core/compensation.js';
+import { WorkflowRepository, PostgreSQLStatePersistence } from '../persistence/workflow-repository.js';
+import { TaskEngine, TaskPrioritizer, TaskDecomposer } from '../tasks/task-engine.js';
+import { TaskRepository } from '../persistence/task-repository.js';
+import { PatternDetector, BehaviorAnalyzer } from '../patterns/pattern-detector.js';
+import { PatternRepository } from '../persistence/pattern-repository.js';
 
 /**
  * Workflow Engine

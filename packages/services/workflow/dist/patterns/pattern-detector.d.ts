@@ -1,6 +1,6 @@
 import { UserId } from '@tide/types';
-import { DetectedPattern, UserBehavior } from '../types/pattern.types';
-import { PatternRepository } from '../persistence/pattern-repository';
+import { DetectedPattern, UserBehavior } from '../types/pattern.types.js';
+import { PatternRepository } from '../persistence/pattern-repository.js';
 /**
  * Pattern Detector
  *

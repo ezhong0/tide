@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.SagaExecutionError = exports.SagaOrchestrator = exports.CompensationManager = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * Compensation Manager
  *
@@ -12,7 +9,7 @@ const logger_1 = require("@tide/logger");
  * - Compensation logging
  * - Failure recovery
  */
-class CompensationManager {
+export class CompensationManager {
     constructor() {
         this.compensationHandlers = new Map();
         this.registerDefaultHandlers();
@@ -28,7 +25,7 @@ class CompensationManager {
             status: 'active',
             startedAt: new Date(),
         };
-        logger_1.logger.info({ transactionId: transaction.id, executionId }, 'Transaction started');
+        logger.info({ transactionId: transaction.id, executionId }, 'Transaction started');
         return transaction;
     }
     /**
@@ -42,7 +39,7 @@ class CompensationManager {
             result,
         };
         transaction.steps.push(transactionStep);
-        logger_1.logger.debug({
+        logger.debug({
             transactionId: transaction.id,
             stepId,
             status: transactionStep.status,
@@ -54,7 +51,7 @@ class CompensationManager {
     async commit(transaction) {
         transaction.status = 'committed';
         transaction.completedAt = new Date();
-        logger_1.logger.info({
+        logger.info({
             transactionId: transaction.id,
             stepCount: transaction.steps.length,
             duration: transaction.completedAt.getTime() - transaction.startedAt.getTime(),
@@ -64,7 +61,7 @@ class CompensationManager {
      * Rollback the transaction
      */
     async rollback(transaction, context) {
-        logger_1.logger.warn({
+        logger.warn({
             transactionId: transaction.id,
             stepCount: transaction.steps.length,
         }, 'Starting transaction rollback');
@@ -76,7 +73,7 @@ class CompensationManager {
         }
         transaction.status = 'rolled_back';
         transaction.completedAt = new Date();
-        logger_1.logger.info({
+        logger.info({
             transactionId: transaction.id,
             compensatedSteps: executedSteps.filter(s => s.status === 'compensated').length,
         }, 'Transaction rolled back');
@@ -85,7 +82,7 @@ class CompensationManager {
      * Compensate a single step
      */
     async compensateStep(step, context, transaction) {
-        logger_1.logger.info({
+        logger.info({
             transactionId: transaction.id,
             stepId: step.stepId,
         }, 'Compensating step');
@@ -96,20 +93,20 @@ class CompensationManager {
                 await handler(context, step.result);
                 step.status = 'compensated';
                 step.compensatedAt = new Date();
-                logger_1.logger.info({
+                logger.info({
                     transactionId: transaction.id,
                     stepId: step.stepId,
                 }, 'Step compensated successfully');
             }
             else {
-                logger_1.logger.warn({
+                logger.warn({
                     transactionId: transaction.id,
                     stepId: step.stepId,
                 }, 'No compensation handler found for step');
             }
         }
         catch (error) {
-            logger_1.logger.error({
+            logger.error({
                 transactionId: transaction.id,
                 stepId: step.stepId,
                 error,
@@ -130,7 +127,7 @@ class CompensationManager {
      */
     registerCompensationHandler(stepId, handler) {
         this.compensationHandlers.set(stepId, handler);
-        logger_1.logger.debug({ stepId }, 'Compensation handler registered');
+        logger.debug({ stepId }, 'Compensation handler registered');
     }
     /**
      * Get compensation handler for a step
@@ -144,27 +141,27 @@ class CompensationManager {
     registerDefaultHandlers() {
         // Email compensation (mark as draft/delete)
         this.compensationHandlers.set('email', async (context, stepResult) => {
-            logger_1.logger.info({ stepResult }, 'Compensating email step');
+            logger.info({ stepResult }, 'Compensating email step');
             // Implementation would depend on email service integration
         });
         // Calendar compensation (delete event)
         this.compensationHandlers.set('calendar', async (context, stepResult) => {
-            logger_1.logger.info({ stepResult }, 'Compensating calendar step');
+            logger.info({ stepResult }, 'Compensating calendar step');
             // Implementation would depend on calendar service integration
         });
         // Task compensation (delete or reset task)
         this.compensationHandlers.set('task', async (context, stepResult) => {
-            logger_1.logger.info({ stepResult }, 'Compensating task step');
+            logger.info({ stepResult }, 'Compensating task step');
             // Implementation would depend on task service integration
         });
         // File compensation (delete uploaded file)
         this.compensationHandlers.set('file', async (context, stepResult) => {
-            logger_1.logger.info({ stepResult }, 'Compensating file step');
+            logger.info({ stepResult }, 'Compensating file step');
             // Implementation would depend on file service integration
         });
         // Generic compensation handler
         this.compensationHandlers.set('default', async (context, stepResult) => {
-            logger_1.logger.info({ stepResult }, 'Default compensation handler');
+            logger.info({ stepResult }, 'Default compensation handler');
             // Log compensation attempt
         });
     }
@@ -175,14 +172,13 @@ class CompensationManager {
         return `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 }
-exports.CompensationManager = CompensationManager;
 /**
  * Saga Orchestrator
  *
  * High-level orchestrator for Saga pattern workflows.
  * Manages complex multi-step transactions with automatic compensation.
  */
-class SagaOrchestrator {
+export class SagaOrchestrator {
     constructor(compensationManager) {
         this.compensationManager = compensationManager;
     }
@@ -199,7 +195,7 @@ class SagaOrchestrator {
                     this.compensationManager.registerCompensationHandler(step.stepId, step.compensate);
                 }
                 // Execute step
-                logger_1.logger.info({ stepId: step.stepId }, 'Executing saga step');
+                logger.info({ stepId: step.stepId }, 'Executing saga step');
                 const result = await step.execute();
                 // Record step in transaction
                 await this.compensationManager.recordStep(transaction, step.stepId, result);
@@ -220,7 +216,7 @@ class SagaOrchestrator {
             };
         }
         catch (error) {
-            logger_1.logger.error({ error, transactionId: transaction.id }, 'Saga execution failed');
+            logger.error({ error, transactionId: transaction.id }, 'Saga execution failed');
             // Compensate in reverse order
             await this.compensationManager.rollback(transaction, context);
             return {
@@ -231,16 +227,14 @@ class SagaOrchestrator {
         }
     }
 }
-exports.SagaOrchestrator = SagaOrchestrator;
 /**
  * Saga execution error
  */
-class SagaExecutionError extends Error {
+export class SagaExecutionError extends Error {
     constructor(message, details) {
         super(message);
         this.details = details;
         this.name = 'SagaExecutionError';
     }
 }
-exports.SagaExecutionError = SagaExecutionError;
 //# sourceMappingURL=compensation.js.map

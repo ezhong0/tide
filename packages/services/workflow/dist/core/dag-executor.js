@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DAGExecutor = void 0;
-const logger_1 = require("@tide/logger");
+import { logger } from '@tide/logger';
 /**
  * DAG Executor
  *
@@ -12,7 +9,7 @@ const logger_1 = require("@tide/logger");
  * - Dependency resolution
  * - Cycle detection
  */
-class DAGExecutor {
+export class DAGExecutor {
     constructor() {
         this.handlers = new Map();
         this.registerDefaultHandlers();
@@ -61,7 +58,7 @@ class DAGExecutor {
         // Determine entry and exit points
         const entryPoint = this.findEntryPoint(nodes);
         const exitPoints = this.findExitPoints(nodes);
-        logger_1.logger.info({
+        logger.info({
             workflowId: workflow.id,
             nodeCount: nodes.size,
             edgeCount: Array.from(edges.values()).reduce((sum, e) => sum + e.length, 0),
@@ -98,7 +95,7 @@ class DAGExecutor {
             }
         }
         const totalSteps = Array.from(dag.nodes.values()).length;
-        logger_1.logger.info({
+        logger.info({
             stageCount: stages.length,
             totalSteps,
             parallelStages: stages.filter(s => s.parallel).length,
@@ -113,9 +110,9 @@ class DAGExecutor {
      */
     async execute(plan, context) {
         const results = new Map();
-        logger_1.logger.info({ stageCount: plan.stages.length, totalSteps: plan.totalSteps }, 'Starting DAG execution');
+        logger.info({ stageCount: plan.stages.length, totalSteps: plan.totalSteps }, 'Starting DAG execution');
         for (const stage of plan.stages) {
-            logger_1.logger.info({
+            logger.info({
                 stageNumber: stage.stageNumber,
                 stepCount: stage.steps.length,
                 parallel: stage.parallel,
@@ -131,7 +128,7 @@ class DAGExecutor {
                 // Check if any step failed
                 const failed = Array.from(stageResults.values()).find(r => !r.success);
                 if (failed) {
-                    logger_1.logger.error({ stageNumber: stage.stageNumber }, 'Stage execution failed');
+                    logger.error({ stageNumber: stage.stageNumber }, 'Stage execution failed');
                     break; // Stop execution on failure
                 }
             }
@@ -142,13 +139,13 @@ class DAGExecutor {
                     results.set(step.id, result);
                     context.stepResults.set(step.id, result);
                     if (!result.success) {
-                        logger_1.logger.error({ stepId: step.id, stageNumber: stage.stageNumber }, 'Step execution failed');
+                        logger.error({ stepId: step.id, stageNumber: stage.stageNumber }, 'Step execution failed');
                         break; // Stop execution on failure
                     }
                 }
             }
         }
-        logger_1.logger.info({
+        logger.info({
             totalSteps: results.size,
             successCount: Array.from(results.values()).filter(r => r.success).length,
         }, 'DAG execution completed');
@@ -170,7 +167,7 @@ class DAGExecutor {
             }
             else {
                 // Handle promise rejection
-                logger_1.logger.error({ error: outcome.reason }, 'Parallel step execution failed');
+                logger.error({ error: outcome.reason }, 'Parallel step execution failed');
             }
         }
         return results;
@@ -179,7 +176,7 @@ class DAGExecutor {
      * Execute a single step
      */
     async executeStep(step, context) {
-        logger_1.logger.info({ stepId: step.id, stepType: step.type }, 'Executing step');
+        logger.info({ stepId: step.id, stepType: step.type }, 'Executing step');
         try {
             const handler = this.getHandler(step);
             const result = await handler(context, step.config);
@@ -190,7 +187,7 @@ class DAGExecutor {
             return result;
         }
         catch (error) {
-            logger_1.logger.error({ stepId: step.id, error }, 'Step execution error');
+            logger.error({ stepId: step.id, error }, 'Step execution error');
             return {
                 success: false,
                 error: {
@@ -221,7 +218,7 @@ class DAGExecutor {
      */
     registerHandler(name, handler) {
         this.handlers.set(name, handler);
-        logger_1.logger.info({ handlerName: name }, 'Handler registered');
+        logger.info({ handlerName: name }, 'Handler registered');
     }
     /**
      * Register default handlers
@@ -229,17 +226,17 @@ class DAGExecutor {
     registerDefaultHandlers() {
         // Action handler
         this.handlers.set('default:action', async (context, config) => {
-            logger_1.logger.debug({ config }, 'Default action handler');
+            logger.debug({ config }, 'Default action handler');
             return { success: true, output: { executed: true } };
         });
         // Decision handler
         this.handlers.set('default:decision', async (context, config) => {
-            logger_1.logger.debug({ config }, 'Default decision handler');
+            logger.debug({ config }, 'Default decision handler');
             return { success: true, output: { decision: 'default' } };
         });
         // Parallel handler
         this.handlers.set('default:parallel', async (context, config) => {
-            logger_1.logger.debug({ config }, 'Default parallel handler');
+            logger.debug({ config }, 'Default parallel handler');
             return { success: true, output: { parallelExecuted: true } };
         });
         // Delay handler
@@ -372,5 +369,4 @@ class DAGExecutor {
         return groups;
     }
 }
-exports.DAGExecutor = DAGExecutor;
 //# sourceMappingURL=dag-executor.js.map

@@ -4,9 +4,9 @@ import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
-import { GoogleCalendarProvider } from './providers/google-calendar.provider';
-import { SmartScheduler } from './scheduler/smart-scheduler';
-import type { CalendarProvider, OAuthTokens, MeetingRequest } from './types';
+import { GoogleCalendarProvider } from './providers/google-calendar.provider.js';
+import { SmartScheduler } from './scheduler/smart-scheduler.js';
+import type { CalendarProvider, OAuthTokens, MeetingRequest } from './types/index.js';
 
 /**
  * Calendar service main application
@@ -273,7 +273,7 @@ class CalendarService {
 }
 
 // Start the service
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   const service = new CalendarService();
   service.start().catch((error) => {
     logger.error({ error }, 'Failed to start calendar service');

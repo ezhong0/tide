@@ -53,6 +53,6 @@ async function main() {
 }
 
 // Start if run directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
