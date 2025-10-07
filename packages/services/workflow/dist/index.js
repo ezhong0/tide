@@ -38,7 +38,7 @@ const supabase = !pool ? createClient(supabaseConfig.url, supabaseConfig.service
 // Initialize workflow engine (only if database is configured)
 const workflowEngine = pool ? new WorkflowEngine(pool) : null;
 // Initialize Kafka event bus (only if Kafka is configured AND enabled)
-const kafkaEnabled = process.env.KAFKA_ENABLED !== 'false';
+const kafkaEnabled = process.env.KAFKA_ENABLED === 'true';
 const eventBus = kafkaConfig && kafkaEnabled
     ? new KafkaEventBus({
         brokers: kafkaConfig.brokers,
