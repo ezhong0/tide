@@ -1,45 +1,516 @@
-# Tide Application - External Setup Guide
+# 🔧 External Setup Guide - Manual Steps Required
 
-> **Complete guide to all external services, APIs, and configurations required outside the application**
+> **Things YOU need to do: Browser testing, Mobile app testing**
 
-**Last Updated**: October 6, 2025
-**Status**: Development Ready
+**Last Updated**: October 7, 2025
+**Status**: ✅ **INFRASTRUCTURE READY** - Backend services running!
+
+---
+
+## ✅ COMPLETED VIA CLI
+
+The following have been **automatically completed**:
+- ✅ Docker containers running (PostgreSQL + Redis)
+- ✅ Database migrations executed
+- ✅ `.env` file created with configuration
+- ✅ Auth Service running on port 4001
+- ✅ WebSocket Service running on port 4002
+- ✅ Auth schema issue fixed (firstName/lastName)
+- ✅ User registration tested successfully
+- ✅ User login tested successfully
+
+**Services are running in background shells:**
+- Auth Service: Shell ID `8b92d7`
+- WebSocket Service: Shell ID `ff32b8`
+
+---
+
+## 🎯 REMAINING MANUAL ACTIONS
+
+### Required Now:
+1. [Test WebSocket in Browser](#3-test-websocket-in-browser) - 5 minutes
+2. [Test on iOS](#4-test-on-ios-simulator) - 10 minutes
+3. [Test on Android](#5-test-on-android-emulator) - 10 minutes
+
+### For Later:
+4. [External API Keys](#6-external-api-keys-future) - Production only
 
 ---
 
 ## 📋 Table of Contents
 
-1. [Quick Start Checklist](#quick-start-checklist)
-2. [Priority 1: Essential Services](#priority-1-essential-services)
-3. [Priority 2: Core Features](#priority-2-core-features)
-4. [Priority 3: Optional Services](#priority-3-optional-services)
-5. [Priority 4: Production Only](#priority-4-production-only)
-6. [Cost Estimates](#cost-estimates)
+### Part 1: Manual Testing (Required Now)
+1. [Quick Verification](#1-quick-verification) - 1 minute
+2. [Test in Browser](#3-test-websocket-in-browser) - 5 minutes
+3. [Test on iOS](#4-test-on-ios-simulator) - 10 minutes
+4. [Test on Android](#5-test-on-android-emulator) - 10 minutes
+
+### Part 2: Reference (If Needed)
+5. [Restart Services](#2-restart-services-if-needed) - Reference
+6. [External API Keys](#6-external-api-keys-future) - Future
+7. [Cost Estimates](#cost-estimates) - Reference
 
 ---
 
-## Quick Start Checklist
+## 1. Quick Verification
 
-### Minimum to Start (Development)
-- [x] **Docker Desktop** - ✅ Already required for infrastructure
-- [ ] **OpenAI API Key** - Required for AI features
-- [ ] **Anthropic API Key** - Required for privacy-sensitive AI
-- [ ] **Gmail OAuth** - Required for email integration
-- [ ] **Google Calendar OAuth** - Required for calendar
-- [ ] **Exchange OAuth** - Required for Outlook/Microsoft 365
-- [ ] **Pinecone** - Required for semantic search
+### Verify Services Are Running
 
-### What's Already Configured
-- ✅ PostgreSQL (via Docker)
-- ✅ Redis (via Docker)
-- ✅ Kafka (via Docker)
-- ✅ Prometheus (via Docker)
-- ✅ Grafana (via Docker)
-- ✅ Kafka UI (via Docker)
+```bash
+# Check Docker
+docker ps | grep tide
+
+# Check Auth Service
+curl http://localhost:4001/health
+
+# Check WebSocket Service
+curl http://localhost:4002/health
+```
+
+**Expected:** All should return healthy status.
+
+**If services stopped**, see [Restart Services](#2-restart-services-if-needed) below.
 
 ---
 
-## Priority 1: Essential Services
+## 2. Restart Services (If Needed)
+
+**Only if services stopped! Skip if they're running.**
+
+### 1.1 Open Docker Desktop (REQUIRED)
+
+**Open Terminal and run:**
+
+```bash
+# Start Docker Desktop application
+open -a Docker
+
+# Wait for Docker to be ready (watch menu bar for whale icon)
+# Usually takes 30-60 seconds
+```
+
+**Verify Docker is running:**
+
+```bash
+docker ps
+
+# ✅ Should show: CONTAINER ID   IMAGE   ...
+# ❌ Should NOT show: "Cannot connect to the Docker daemon"
+```
+
+**If Docker isn't installed:**
+1. Download: https://www.docker.com/products/docker-desktop
+2. Install and restart terminal
+3. Come back here
+
+---
+
+### Start Services
+
+**Open NEW terminal windows and run these commands:**
+
+**Terminal 1 - Auth Service:**
+```bash
+cd /Users/edwardzhong/Projects/tide
+set -a && source .env && set +a
+cd packages/services/auth && pnpm dev
+```
+
+**Terminal 2 - WebSocket Service:**
+```bash
+cd /Users/edwardzhong/Projects/tide
+set -a && source .env && set +a
+cd packages/services/realtime && pnpm dev
+```
+
+**Wait for:**
+- ✅ "Auth service started on port 4001"
+- ✅ "Realtime service started on port 4002"
+
+**Verify:**
+```bash
+curl http://localhost:4001/health
+curl http://localhost:4002/health
+```
+
+---
+
+## 3. Test WebSocket in Browser
+
+### 3.1 Register a Test User
+
+**In a NEW terminal, run this command:**
+
+```bash
+curl -X POST http://localhost:4001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "browser-test@tide.ai",
+    "password": "TestPass123!",
+    "firstName": "Browser",
+    "lastName": "Tester"
+  }'
+```
+
+**IMPORTANT: Copy the entire access token from the response!**
+
+The response looks like:
+```json
+{
+  "user": {
+    "id": "...",
+    "email": "browser-test@tide.ai",
+    "name": "Browser Tester",
+    "emailVerified": false
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW...",
+  "refreshToken": "..."
+}
+```
+
+**Copy everything after "accessToken": "..." (the long string starting with eyJ)**
+
+**Note:** The API expects `firstName` and `lastName` (these are combined into `name` in the response).
+
+---
+
+### 3.2 Test in Browser Console
+
+1. **Open your web browser** (Chrome recommended)
+
+2. **Press F12** (or Cmd+Option+I on Mac) to open Developer Console
+
+3. **Click "Console" tab**
+
+4. **Paste this code** (REPLACE YOUR_ACCESS_TOKEN with the token from step 3.1):
+
+```javascript
+// PASTE YOUR TOKEN HERE:
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyXzEyMyIsImVtYWlsIjoidGVzdEB0aWRlLmFpIiwidHlwZSI6ImFjY2VzcyIsImlhdCI6MTcyODI4MDgwMCwiZXhwIjoxNzI4MjgxNzAwfQ.abc123";
+
+const ws = new WebSocket(`ws://localhost:4002/realtime?token=${token}`);
+
+ws.onopen = () => {
+  console.log("✅ WebSocket Connected!");
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log("📨 Received:", data.type, data);
+};
+
+ws.onerror = (error) => {
+  console.error("❌ WebSocket Error:", error);
+};
+
+ws.onclose = () => {
+  console.log("🔌 WebSocket Closed");
+};
+
+// Send a test message after 2 seconds
+setTimeout(() => {
+  console.log("📤 Sending test message...");
+  ws.send(JSON.stringify({
+    type: "message",
+    messageId: "test_123",
+    payload: {
+      conversationId: "conv_test",
+      content: "Hello from browser!"
+    }
+  }));
+}, 2000);
+```
+
+5. **Press Enter to run the code**
+
+---
+
+### 3.3 What You Should See
+
+**In browser console, you should see:**
+
+```
+✅ WebSocket Connected!
+📨 Received: connected {type: "connected", payload: {...}}
+📤 Sending test message...
+📨 Received: message_ack {...}
+📨 Received: message {...content: "Hello from browser!"...}
+📨 Received: message {...content: "AI received: \"Hello from browser!\". Processing..."...}
+```
+
+**If you see these messages: ✅ SUCCESS! WebSocket is working!**
+
+---
+
+### 3.4 Common Browser Issues
+
+**"Authentication failed":**
+- Token expired (they expire after 15 minutes)
+- Register a new user to get fresh token
+
+**"Connection refused":**
+- WebSocket service not running (check Terminal 2)
+- Wrong port (should be 4002)
+
+**"SyntaxError":**
+- Token has quotes or spaces
+- Copy only the token string, not the quotes
+
+---
+
+## 4. Test on iOS Simulator
+
+### 4.1 Open Xcode Project
+
+```bash
+open /Users/edwardzhong/Projects/tide/apps/mobile-ios/*.xcodeproj
+```
+
+---
+
+### 4.2 Build and Run
+
+1. **Select simulator:** iPhone 15 Pro (or any recent model)
+2. **Press Cmd+R** to build and run
+3. **Wait for app to launch** in simulator
+
+---
+
+### 4.3 Register a User
+
+1. **In the app**, go to Register screen
+2. Enter:
+   - Email: `ios-test@tide.ai`
+   - Password: `TestPass123!`
+   - First Name: `iOS`
+   - Last Name: `Tester`
+3. **Tap "Register"**
+
+**Note:** iOS app combines firstName + lastName into full name.
+
+**Watch Terminal 1 (Auth Service)** - you should see:
+```
+User registered successfully
+```
+
+---
+
+### 4.4 Test Messaging
+
+1. **Send a message** in the chat: "Hello from iOS!"
+
+2. **You should see:**
+   - ✅ Your message appears immediately
+   - ✅ Typing indicator shows briefly
+   - ✅ AI response appears within 1-2 seconds
+   - ✅ Message persists (close and reopen app)
+
+**Watch Terminal 2 (WebSocket Service)** - you should see:
+```
+WebSocket connected
+Message received: message
+```
+
+---
+
+### 4.5 iOS Troubleshooting
+
+**App won't build:**
+```bash
+# Clean build
+Product → Clean Build Folder (Cmd+Shift+K)
+
+# Try again
+```
+
+**"Connection refused":**
+- Auth service not running (Terminal 1)
+- WebSocket service not running (Terminal 2)
+- Check both are on ports 4001 and 4002
+
+**No messages appearing:**
+- Check Xcode console for errors
+- Check TideCore integration (should be updated with WebSocket)
+
+---
+
+## 5. Test on Android Emulator
+
+### 5.1 Open Android Studio
+
+```bash
+open -a "Android Studio" /Users/edwardzhong/Projects/tide/apps/mobile-android
+```
+
+**Wait for Gradle sync** to complete (bottom right of window)
+
+---
+
+### 5.2 Start Emulator
+
+1. **Tools → Device Manager**
+2. **Select or create** a Pixel 5 emulator (API 30+)
+3. **Click Play** button to start emulator
+4. **Wait** for emulator to fully boot
+
+---
+
+### 5.3 Run the App
+
+1. **Click green "Run" button** (or Shift+F10)
+2. **Select your emulator**
+3. **Wait for app to install and launch**
+
+---
+
+### 5.4 Register a User
+
+1. **In the app**, go to Register screen
+2. Enter:
+   - Email: `android-test@tide.ai`
+   - Password: `TestPass123!`
+   - First Name: `Android`
+   - Last Name: `Tester`
+3. **Tap "Register"**
+
+**Note:** Android app combines firstName + lastName into full name.
+
+**Watch Terminal 1 (Auth Service)** - you should see:
+```
+User registered successfully
+```
+
+---
+
+### 5.5 Test Messaging
+
+1. **Send a message**: "Hello from Android!"
+
+2. **You should see:**
+   - ✅ Your message appears immediately
+   - ✅ Typing indicator (if implemented)
+   - ✅ AI response within 1-2 seconds
+   - ✅ Connection status indicator
+
+**Watch Terminal 2 (WebSocket Service)** - you should see:
+```
+WebSocket connected
+Message received: message
+```
+
+**Android Note:** Emulator uses `10.0.2.2` to reach host `localhost` - WebSocketManager already configured for this!
+
+---
+
+### 5.6 Android Troubleshooting
+
+**Gradle sync fails:**
+```bash
+# In Android Studio terminal:
+./gradlew clean
+
+# File → Invalidate Caches → Invalidate and Restart
+```
+
+**Emulator can't connect:**
+```bash
+# Check services are reachable from emulator
+# In Android Studio terminal:
+adb shell
+curl http://10.0.2.2:4001/health
+curl http://10.0.2.2:4002/health
+```
+
+**App crashes:**
+- Check Logcat for errors (View → Tool Windows → Logcat)
+- Filter by "WebSocket" or "Tide"
+
+---
+
+## ✅ Verification Checklist
+
+**Check all boxes before proceeding:**
+
+### Infrastructure
+- [ ] Docker Desktop running
+- [ ] PostgreSQL container healthy
+- [ ] Redis container healthy
+- [ ] Database migrations completed
+
+### Services
+- [ ] Auth service running (port 4001)
+- [ ] WebSocket service running (port 4002)
+- [ ] Health checks return "healthy"
+
+### Browser Testing
+- [ ] Registered test user
+- [ ] WebSocket connected in browser
+- [ ] Sent message successfully
+- [ ] Received AI response
+
+### iOS Testing
+- [ ] App builds and runs
+- [ ] Registered iOS test user
+- [ ] Sent message successfully
+- [ ] Received AI response
+- [ ] Messages persist after restart
+
+### Android Testing
+- [ ] App builds and runs
+- [ ] Registered Android test user
+- [ ] Sent message successfully
+- [ ] Received AI response
+- [ ] Connection status shows
+
+---
+
+## 🆘 If Something Doesn't Work
+
+### Check Service Logs
+
+**Auth Service (Terminal 1):**
+- Look for "User registered successfully"
+- Look for "User logged in successfully"
+- Look for errors
+
+**WebSocket Service (Terminal 2):**
+- Look for "WebSocket connected"
+- Look for "Message received"
+- Look for authentication errors
+
+**Docker Logs:**
+```bash
+docker compose logs postgres | tail -50
+docker compose logs redis | tail -50
+```
+
+---
+
+### Get Fresh Tokens
+
+**Tokens expire after 15 minutes!**
+
+If testing later, register a new user or login again:
+
+```bash
+# Login to get fresh tokens
+curl -X POST http://localhost:4001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "browser-test@tide.ai",
+    "password": "TestPass123!"
+  }'
+
+# Copy the new accessToken
+```
+
+---
+
+## 6. External API Keys (Future)
+
+**NOT NEEDED FOR ALPHA TESTING**
+
+For production, you'll need API keys from:
 
 ### 1.1 OpenAI API 🔴 REQUIRED
 
@@ -107,11 +578,13 @@ ANTHROPIC_API_KEY=sk-ant-...your-key...
 
 ## Priority 2: Core Features
 
-### 2.1 Gmail OAuth 🟡 REQUIRED FOR EMAIL
+### 2.1 Google OAuth (Gmail + Calendar) 🟡 REQUIRED
 
-**Purpose**: Gmail integration for email management
+**Purpose**: Unified OAuth for all Google services (Gmail, Calendar, Drive, etc.)
 
 **Setup URL**: https://console.cloud.google.com/
+
+**Why unified?** Single OAuth flow for better UX - users authorize once for all Google services!
 
 #### Steps:
 
@@ -124,7 +597,8 @@ ANTHROPIC_API_KEY=sk-ant-...your-key...
 1. Navigate to **APIs & Services** → **Library**
 2. Search and enable:
    - ✅ **Gmail API**
-   - ✅ **Google Calendar API** (for calendar integration)
+   - ✅ **Google Calendar API**
+   - ✅ **Google Drive API** (optional, for future)
 
 **Part C: Configure OAuth Consent Screen**
 1. Go to **APIs & Services** → **OAuth consent screen**
@@ -133,13 +607,15 @@ ANTHROPIC_API_KEY=sk-ant-...your-key...
    - App name: **Tide AI**
    - User support email: your email
    - Developer contact: your email
-4. Add scopes:
+4. Add scopes (all at once):
    ```
    https://www.googleapis.com/auth/gmail.modify
    https://www.googleapis.com/auth/gmail.compose
    https://www.googleapis.com/auth/gmail.send
    https://www.googleapis.com/auth/gmail.labels
    https://www.googleapis.com/auth/gmail.settings.basic
+   https://www.googleapis.com/auth/calendar
+   https://www.googleapis.com/auth/calendar.events
    ```
 5. Add test users (for development)
 6. Save and continue
@@ -147,69 +623,50 @@ ANTHROPIC_API_KEY=sk-ant-...your-key...
 **Part D: Create OAuth Credentials**
 1. Go to **APIs & Services** → **Credentials**
 2. Click **Create Credentials** → **OAuth 2.0 Client ID**
-3. Application type: **Web application**
-4. Name: **Tide Gmail Integration**
-5. Authorized redirect URIs:
-   ```
-   http://localhost:4000/auth/gmail/callback
-   https://api.tide.ai/auth/gmail/callback
-   ```
-6. Click **Create**
-7. **Copy Client ID and Client Secret**
+3. Create **Web Application** client:
+   - Name: **Tide Web**
+   - Authorized redirect URIs:
+     ```
+     http://localhost:4000/auth/google/callback
+     https://api.tide.ai/auth/google/callback
+     ```
+4. (Optional) Create **iOS** client for mobile app:
+   - Application type: **iOS**
+   - Name: **Tide iOS**
+   - Bundle ID: `com.tide.app`
+5. **Copy Client IDs and Client Secret**
 
 #### Environment Variables:
 ```bash
-GMAIL_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GMAIL_CLIENT_SECRET=xxxxx
-GMAIL_REDIRECT_URI=http://localhost:4000/auth/gmail/callback
+# Single OAuth for all Google services
+GOOGLE_CLIENT_ID=526055709746-xxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+GOOGLE_REDIRECT_URI=http://localhost:4000/auth/google/callback
+GOOGLE_IOS_CLIENT_ID=526055709746-yyyy.apps.googleusercontent.com  # Optional
 ```
 
-#### Testing:
+#### Testing OAuth Flow:
 ```bash
-# OAuth flow URL (replace YOUR_CLIENT_ID)
+# Single OAuth flow grants access to Gmail + Calendar + more
 https://accounts.google.com/o/oauth2/v2/auth?
   client_id=YOUR_CLIENT_ID&
-  redirect_uri=http://localhost:4000/auth/gmail/callback&
+  redirect_uri=http://localhost:4000/auth/google/callback&
   response_type=code&
-  scope=https://www.googleapis.com/auth/gmail.modify&
+  scope=https://www.googleapis.com/auth/gmail.modify%20https://www.googleapis.com/auth/calendar&
   access_type=offline
 ```
 
----
-
-### 2.2 Google Calendar OAuth 🟡 REQUIRED FOR CALENDAR
-
-**Purpose**: Google Calendar integration
-
-**Setup URL**: https://console.cloud.google.com/ (same project as Gmail)
-
-#### Steps:
-1. ✅ Gmail API already enabled above
-2. Add Calendar scope to OAuth consent screen:
-   ```
-   https://www.googleapis.com/auth/calendar
-   ```
-3. Use same OAuth client or create new one
-4. Add redirect URI:
-   ```
-   http://localhost:4000/auth/calendar/callback
-   https://api.tide.ai/auth/calendar/callback
-   ```
-
-#### Environment Variables:
-```bash
-GOOGLE_CALENDAR_CLIENT_ID=xxxxx.apps.googleusercontent.com
-GOOGLE_CALENDAR_CLIENT_SECRET=xxxxx
-GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:4000/auth/calendar/callback
-```
-
-**Note**: Can use same credentials as Gmail
+**✅ Benefits:**
+- User authorizes once for all Google services
+- Single set of credentials to manage
+- Can add more Google services later (Drive, Contacts, etc.)
+- Better user experience
 
 ---
 
-### 2.3 Microsoft Exchange/Outlook OAuth 🟡 REQUIRED FOR OUTLOOK
+### 2.2 Microsoft Exchange OAuth (Outlook + Calendar) 🟡 REQUIRED
 
-**Purpose**: Microsoft 365 / Outlook integration
+**Purpose**: Unified OAuth for all Microsoft services (Outlook, Calendar, OneDrive, etc.)
 
 **Setup URL**: https://portal.azure.com/
 
@@ -224,8 +681,8 @@ GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:4000/auth/calendar/callback
    - Account types: **Accounts in any organizational directory and personal Microsoft accounts**
    - Redirect URIs:
      ```
-     http://localhost:4000/auth/exchange/callback
-     https://api.tide.ai/auth/exchange/callback
+     http://localhost:4000/auth/microsoft/callback
+     https://api.tide.ai/auth/microsoft/callback
      ```
 5. Click **Register**
 
@@ -273,7 +730,7 @@ https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize?
 
 ---
 
-### 2.4 Pinecone Vector Database 🟡 REQUIRED FOR AI SEARCH
+### 2.3 Pinecone Vector Database 🟡 REQUIRED FOR AI SEARCH
 
 **Purpose**: Semantic search, AI memory, contextual understanding
 
@@ -551,11 +1008,11 @@ GOOGLE_CALENDAR_CLIENT_ID=xxxxx.apps.googleusercontent.com
 GOOGLE_CALENDAR_CLIENT_SECRET=xxxxx
 GOOGLE_CALENDAR_REDIRECT_URI=http://localhost:4000/auth/calendar/callback
 
-# Microsoft Exchange OAuth (REQUIRED)
+# Microsoft Exchange OAuth - Unified for Outlook + Calendar (REQUIRED)
 EXCHANGE_CLIENT_ID=xxxxx
 EXCHANGE_CLIENT_SECRET=xxxxx
 EXCHANGE_TENANT_ID=xxxxx
-EXCHANGE_REDIRECT_URI=http://localhost:4000/auth/exchange/callback
+EXCHANGE_REDIRECT_URI=http://localhost:4000/auth/microsoft/callback
 
 # Pinecone (REQUIRED)
 PINECONE_API_KEY=xxxxx

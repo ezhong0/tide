@@ -36,21 +36,17 @@ const EnvSchema = z.object({
   OPENAI_ORG_ID: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
-  // OAuth - Gmail
-  GMAIL_CLIENT_ID: z.string().optional(),
-  GMAIL_CLIENT_SECRET: z.string().optional(),
-  GMAIL_REDIRECT_URI: z.string().url().optional(),
+  // OAuth - Google (unified for Gmail, Calendar, Drive, etc.)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_REDIRECT_URI: z.string().url().optional(),
+  GOOGLE_IOS_CLIENT_ID: z.string().optional(), // For iOS mobile app
 
-  // OAuth - Microsoft Exchange
+  // OAuth - Microsoft Exchange (unified for Outlook, Calendar, OneDrive, etc.)
   EXCHANGE_CLIENT_ID: z.string().optional(),
   EXCHANGE_CLIENT_SECRET: z.string().optional(),
   EXCHANGE_TENANT_ID: z.string().optional(),
   EXCHANGE_REDIRECT_URI: z.string().url().optional(),
-
-  // OAuth - Google Calendar
-  GOOGLE_CALENDAR_CLIENT_ID: z.string().optional(),
-  GOOGLE_CALENDAR_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_CALENDAR_REDIRECT_URI: z.string().url().optional(),
 
   // Vector Database
   PINECONE_API_KEY: z.string().optional(),

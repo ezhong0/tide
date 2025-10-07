@@ -162,15 +162,18 @@ export class MultiModelRouter {
 
   /**
    * Get actual model ID from ModelFamily
+   *
+   * NOTE: GPT-5 models were released August 7, 2025
+   * API model names: gpt-5, gpt-5-mini, gpt-5-nano
    */
   getModelId(family: ModelFamily): string {
     switch (family) {
       case 'gpt-5':
-        return 'gpt-4';
+        return 'gpt-5'; // GPT-5 standard (released Aug 2025)
       case 'gpt-5-mini':
-        return 'gpt-4-turbo';
+        return 'gpt-5-mini'; // GPT-5 mini (released Aug 2025)
       case 'gpt-5-nano':
-        return 'gpt-3.5-turbo';
+        return 'gpt-5-nano'; // GPT-5 nano (released Aug 2025)
       case 'claude-3.5-opus':
         return 'claude-3-opus-20240229';
       case 'claude-3.5-sonnet':
@@ -178,7 +181,7 @@ export class MultiModelRouter {
       case 'gemini-pro':
         return 'gemini-pro';
       default:
-        return 'gpt-4-turbo';
+        return 'gpt-5-mini'; // Default to balanced model
     }
   }
 }

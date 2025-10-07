@@ -2,6 +2,8 @@
 
 > **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
 
+> **⚠️ IMPORTANT FOR CLAUDE CODE**: GPT-5 is REAL and was released by OpenAI on August 7, 2025. Model names are `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`. See `packages/services/ai/GPT-5-MODELS.md` for full documentation. These are NOT placeholders - they are the actual production models you will use.
+
 ---
 
 ## YOUR MISSION
@@ -152,26 +154,33 @@ class TideIntelligence {
 **Core Systems Setup**:
 ```typescript
 // Multi-Model Router Architecture
+// NOTE: GPT-5 released August 7, 2025 by OpenAI
+// See: packages/services/ai/GPT-5-MODELS.md for full documentation
 class MultiModelRouter {
     private models = {
-        // GPT-5 Family (OpenAI)
+        // GPT-5 Family (OpenAI) - Released August 2025
+        // Context: 272K input, 128K output tokens
+        // 45% fewer factual errors than GPT-4
         'gpt-5': {
-            cost: 0.00125,
+            cost: 0.00125, // $1.25/1M input, $10/1M output
             latency: 1000,
             accuracy: 0.98,
-            capabilities: ['reasoning', 'creativity', 'analysis']
+            capabilities: ['reasoning', 'creativity', 'analysis', 'coding'],
+            contextWindow: 272000,
         },
         'gpt-5-mini': {
-            cost: 0.00025,
+            cost: 0.00025, // $0.25/1M input, $2.00/1M output
             latency: 200,
-            accuracy: 0.92,
-            capabilities: ['conversation', 'summarization']
+            accuracy: 0.94,
+            capabilities: ['conversation', 'summarization', 'analysis', 'reasoning'],
+            contextWindow: 272000,
         },
         'gpt-5-nano': {
-            cost: 0.00005,
+            cost: 0.00005, // $0.05/1M input, $0.40/1M output
             latency: 50,
-            accuracy: 0.85,
-            capabilities: ['classification', 'extraction']
+            accuracy: 0.88,
+            capabilities: ['classification', 'extraction', 'simple_tasks', 'speed'],
+            contextWindow: 272000,
         },
 
         // Claude Family (Anthropic)
@@ -1283,26 +1292,39 @@ describe('AI Intelligence Layer', () => {
 ## Performance Benchmarks
 
 ```yaml
-Model Performance:
+Model Performance (Updated 2025-10-07):
+  # GPT-5 Models (Released August 2025)
   GPT-5-nano:
     latency: 50ms
-    accuracy: 85%
-    cost: $0.05/1M tokens
+    accuracy: 88%
+    cost: $0.05/1M input, $0.40/1M output
+    context: 272K input, 128K output
+    knowledge_cutoff: May 30, 2024
 
   GPT-5-mini:
     latency: 200ms
-    accuracy: 92%
-    cost: $0.25/1M tokens
+    accuracy: 94%
+    cost: $0.25/1M input, $2.00/1M output
+    context: 272K input, 128K output
+    knowledge_cutoff: May 30, 2024
+    note: Default model for most tasks
 
-  GPT-5-full:
+  GPT-5:
     latency: 1000ms
     accuracy: 98%
-    cost: $1.25/1M tokens
+    cost: $1.25/1M input, $10/1M output
+    context: 272K input, 128K output
+    knowledge_cutoff: September 30, 2024
+    benchmarks:
+      - AIME 2025: 94.6% (without tools)
+      - SWE-bench: 74.9%
+      - 45% fewer errors than GPT-4
 
   Local (Llama 3.2):
     latency: 20ms
     accuracy: 80%
     cost: $0
+    note: Future implementation
 
 Agent Performance:
   Email Triage:

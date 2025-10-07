@@ -29,7 +29,10 @@ interface RefreshTokenRow {
  */
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const { email, password, name, timezone = 'UTC' } = req.body;
+    const { email, password, firstName, lastName, timezone = 'UTC' } = req.body;
+
+    // Combine firstName and lastName into name
+    const name = `${firstName} ${lastName}`.trim();
 
     // Check if user already exists
     const existingUser = await queryOne<User>(

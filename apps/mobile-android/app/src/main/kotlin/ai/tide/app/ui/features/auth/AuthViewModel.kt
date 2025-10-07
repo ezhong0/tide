@@ -2,6 +2,7 @@ package ai.tide.app.ui.features.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import ai.tide.app.core.TideCore
 import ai.tide.app.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -83,6 +84,16 @@ class AuthViewModel @Inject constructor(
 
                 if (result.isSuccess) {
                     _isAuthenticated.value = true
+
+                    // TODO: Get access token from result and connect WebSocket
+                    // For now, using a placeholder. AuthRepository should return:
+                    // data class AuthResult(val accessToken: String, val refreshToken: String)
+                    //
+                    // Then uncomment this:
+                    // val token = result.getOrNull()?.accessToken
+                    // if (token != null) {
+                    //     TideCore.getInstance().connectWebSocket(token)
+                    // }
                 } else {
                     _uiState.update {
                         it.copy(
@@ -145,6 +156,9 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            // Disconnect WebSocket
+            TideCore.getInstance().disconnectWebSocket()
+
             authRepository.logout()
             _isAuthenticated.value = false
         }

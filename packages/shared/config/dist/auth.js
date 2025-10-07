@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.googleCalendarOAuthConfig = exports.exchangeOAuthConfig = exports.gmailOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = void 0;
+exports.exchangeOAuthConfig = exports.googleCalendarOAuthConfig = exports.gmailOAuthConfig = exports.googleOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = void 0;
 const env_1 = require("./env");
 /**
  * JWT token configuration
@@ -29,17 +29,41 @@ exports.bcryptConfig = {
     saltRounds: env_1.env.BCRYPT_ROUNDS,
 };
 /**
- * Gmail OAuth configuration
+ * Google OAuth configuration (unified for Gmail, Calendar, Drive, etc.)
+ * Single OAuth client handles all Google services with different scopes
  */
-exports.gmailOAuthConfig = env_1.env.GMAIL_CLIENT_ID && env_1.env.GMAIL_CLIENT_SECRET && env_1.env.GMAIL_REDIRECT_URI
+exports.googleOAuthConfig = env_1.env.GOOGLE_CLIENT_ID && env_1.env.GOOGLE_CLIENT_SECRET && env_1.env.GOOGLE_REDIRECT_URI
     ? {
-        clientId: env_1.env.GMAIL_CLIENT_ID,
-        clientSecret: env_1.env.GMAIL_CLIENT_SECRET,
-        redirectUri: env_1.env.GMAIL_REDIRECT_URI,
+        clientId: env_1.env.GOOGLE_CLIENT_ID,
+        clientSecret: env_1.env.GOOGLE_CLIENT_SECRET,
+        redirectUri: env_1.env.GOOGLE_REDIRECT_URI,
+        iosClientId: env_1.env.GOOGLE_IOS_CLIENT_ID,
     }
     : null;
 /**
- * Microsoft Exchange OAuth configuration
+ * Gmail OAuth configuration (uses unified Google OAuth)
+ * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
+ */
+exports.gmailOAuthConfig = exports.googleOAuthConfig
+    ? {
+        clientId: exports.googleOAuthConfig.clientId,
+        clientSecret: exports.googleOAuthConfig.clientSecret,
+        redirectUri: exports.googleOAuthConfig.redirectUri,
+    }
+    : null;
+/**
+ * Google Calendar OAuth configuration (uses unified Google OAuth)
+ * @deprecated Use googleOAuthConfig instead. Kept for backward compatibility.
+ */
+exports.googleCalendarOAuthConfig = exports.googleOAuthConfig
+    ? {
+        clientId: exports.googleOAuthConfig.clientId,
+        clientSecret: exports.googleOAuthConfig.clientSecret,
+        redirectUri: exports.googleOAuthConfig.redirectUri,
+    }
+    : null;
+/**
+ * Microsoft Exchange OAuth configuration (unified for Outlook, Calendar, OneDrive, etc.)
  */
 exports.exchangeOAuthConfig = env_1.env.EXCHANGE_CLIENT_ID && env_1.env.EXCHANGE_CLIENT_SECRET && env_1.env.EXCHANGE_REDIRECT_URI && env_1.env.EXCHANGE_TENANT_ID
     ? {
@@ -47,15 +71,5 @@ exports.exchangeOAuthConfig = env_1.env.EXCHANGE_CLIENT_ID && env_1.env.EXCHANGE
         clientSecret: env_1.env.EXCHANGE_CLIENT_SECRET,
         redirectUri: env_1.env.EXCHANGE_REDIRECT_URI,
         tenantId: env_1.env.EXCHANGE_TENANT_ID,
-    }
-    : null;
-/**
- * Google Calendar OAuth configuration
- */
-exports.googleCalendarOAuthConfig = env_1.env.GOOGLE_CALENDAR_CLIENT_ID && env_1.env.GOOGLE_CALENDAR_CLIENT_SECRET && env_1.env.GOOGLE_CALENDAR_REDIRECT_URI
-    ? {
-        clientId: env_1.env.GOOGLE_CALENDAR_CLIENT_ID,
-        clientSecret: env_1.env.GOOGLE_CALENDAR_CLIENT_SECRET,
-        redirectUri: env_1.env.GOOGLE_CALENDAR_REDIRECT_URI,
     }
     : null;

@@ -1,41 +1,47 @@
 /**
  * Model Configuration
  * Defines available models and their characteristics
+ *
+ * GPT-5 Models Released: August 7, 2025
+ * - Context: 272,000 input tokens, 128,000 output tokens
+ * - Pricing: See https://openai.com/index/introducing-gpt-5/
+ * - 45% fewer factual errors than GPT-4
+ * - Knowledge cutoff: September 30, 2024 (GPT-5), May 30, 2024 (mini/nano)
  */
 
 import type { ModelConfig } from '@tide/contracts';
 
 export const MODEL_CONFIGS: Record<string, ModelConfig> = {
-  // OpenAI Models
-  'gpt-4': {
+  // OpenAI GPT-5 Models (Released August 2025)
+  'gpt-5': {
     provider: 'openai',
-    model: 'gpt-5', // Future-proofed naming
-    cost: 0.00125,
+    model: 'gpt-5',
+    cost: 0.00125, // $1.25/1M input, $10/1M output (averaged)
     latency: 1000,
     accuracy: 0.98,
     capabilities: ['reasoning', 'creativity', 'analysis', 'coding'],
-    contextWindow: 128000,
-    maxTokens: 4096,
+    contextWindow: 272000, // Input: 272K tokens
+    maxTokens: 128000, // Output: 128K tokens (includes reasoning tokens)
   },
-  'gpt-4-turbo': {
+  'gpt-5-mini': {
     provider: 'openai',
     model: 'gpt-5-mini',
-    cost: 0.00025,
+    cost: 0.00025, // $0.25/1M input, $2.00/1M output (averaged)
     latency: 200,
-    accuracy: 0.92,
-    capabilities: ['conversation', 'summarization', 'analysis'],
-    contextWindow: 128000,
-    maxTokens: 4096,
+    accuracy: 0.94,
+    capabilities: ['conversation', 'summarization', 'analysis', 'reasoning'],
+    contextWindow: 272000, // Input: 272K tokens
+    maxTokens: 128000, // Output: 128K tokens
   },
-  'gpt-3.5-turbo': {
+  'gpt-5-nano': {
     provider: 'openai',
     model: 'gpt-5-nano',
-    cost: 0.00005,
+    cost: 0.00005, // $0.05/1M input, $0.40/1M output (averaged)
     latency: 50,
-    accuracy: 0.85,
-    capabilities: ['classification', 'extraction', 'simple_tasks'],
-    contextWindow: 16385,
-    maxTokens: 4096,
+    accuracy: 0.88,
+    capabilities: ['classification', 'extraction', 'simple_tasks', 'speed'],
+    contextWindow: 272000, // Input: 272K tokens
+    maxTokens: 128000, // Output: 128K tokens
   },
 
   // Anthropic Models
@@ -75,9 +81,9 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
 
 // Default model selections by use case
 export const DEFAULT_MODELS = {
-  fast: 'gpt-3.5-turbo',
-  balanced: 'gpt-4-turbo',
-  advanced: 'gpt-4',
-  analysis: 'claude-3-sonnet-20240229',
-  reasoning: 'claude-3-opus-20240229',
+  fast: 'gpt-5-nano', // Fastest, optimized for speed and edge devices
+  balanced: 'gpt-5-mini', // Best cost/performance balance
+  advanced: 'gpt-5', // Full reasoning capabilities
+  analysis: 'claude-3-sonnet-20240229', // Claude for analysis tasks
+  reasoning: 'claude-3-opus-20240229', // Claude for deep reasoning
 };

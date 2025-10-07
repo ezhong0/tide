@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.eventTypes = exports.kafkaTopics = exports.cacheKeys = exports.cacheTTL = exports.websocketConfig = exports.serverConfig = exports.requireFeature = exports.isFeatureEnabled = exports.features = exports.monitoringConfig = exports.emailServiceConfig = exports.vectorDBConfig = exports.aiServiceConfig = exports.googleCalendarOAuthConfig = exports.exchangeOAuthConfig = exports.gmailOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = exports.kafkaConfig = exports.redisConfig = exports.databaseConfig = exports.getWebSocketOrigins = exports.getAllowedOrigins = exports.getKafkaBrokers = exports.isTest = exports.isDevelopment = exports.isProduction = exports.env = void 0;
+exports.eventTypes = exports.kafkaTopics = exports.cacheKeys = exports.cacheTTL = exports.websocketConfig = exports.serverConfig = exports.requireFeature = exports.isFeatureEnabled = exports.features = exports.monitoringConfig = exports.emailServiceConfig = exports.vectorDBConfig = exports.aiServiceConfig = exports.googleCalendarOAuthConfig = exports.exchangeOAuthConfig = exports.gmailOAuthConfig = exports.googleOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = exports.kafkaConfig = exports.redisConfig = exports.databaseConfig = exports.getWebSocketOrigins = exports.getAllowedOrigins = exports.getKafkaBrokers = exports.isTest = exports.isDevelopment = exports.isProduction = exports.env = void 0;
 // Export environment configuration
 var env_1 = require("./env");
 Object.defineProperty(exports, "env", { enumerable: true, get: function () { return env_1.env; } });
@@ -20,6 +20,7 @@ var auth_1 = require("./auth");
 Object.defineProperty(exports, "jwtConfig", { enumerable: true, get: function () { return auth_1.jwtConfig; } });
 Object.defineProperty(exports, "passwordConfig", { enumerable: true, get: function () { return auth_1.passwordConfig; } });
 Object.defineProperty(exports, "bcryptConfig", { enumerable: true, get: function () { return auth_1.bcryptConfig; } });
+Object.defineProperty(exports, "googleOAuthConfig", { enumerable: true, get: function () { return auth_1.googleOAuthConfig; } });
 Object.defineProperty(exports, "gmailOAuthConfig", { enumerable: true, get: function () { return auth_1.gmailOAuthConfig; } });
 Object.defineProperty(exports, "exchangeOAuthConfig", { enumerable: true, get: function () { return auth_1.exchangeOAuthConfig; } });
 Object.defineProperty(exports, "googleCalendarOAuthConfig", { enumerable: true, get: function () { return auth_1.googleCalendarOAuthConfig; } });
