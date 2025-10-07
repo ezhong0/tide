@@ -426,6 +426,391 @@ export class APIGateway {
 }
 ```
 
+**Afternoon: Mock Services for Independent Development**
+
+```typescript
+// packages/mocks/index.ts - Export all mocks for easy use
+export * from './ai-service.mock';
+export * from './email-service.mock';
+export * from './calendar-service.mock';
+export * from './workflow-service.mock';
+
+// packages/mocks/ai-service.mock.ts
+import { AIIntent, AIResponse, SuggestedAction } from '@tide/contracts';
+
+export class MockAIService {
+  private responseDelay = 100; // Simulate AI processing time
+
+  async detectIntent(content: string): Promise<AIIntent> {
+    await this.delay();
+
+    // Simple pattern matching for demo
+    if (content.toLowerCase().includes('email')) {
+      return { type: 'email', confidence: 0.92, entities: [] };
+    }
+    if (content.toLowerCase().includes('meeting') || content.toLowerCase().includes('schedule')) {
+      return { type: 'calendar', confidence: 0.89, entities: [] };
+    }
+    if (content.toLowerCase().includes('task') || content.toLowerCase().includes('workflow')) {
+      return { type: 'task', confidence: 0.85, entities: [] };
+    }
+
+    return { type: 'general', confidence: 0.75, entities: [] };
+  }
+
+  async generateResponse(intent: AIIntent, context: any): Promise<AIResponse> {
+    await this.delay();
+
+    return {
+      content: `I understand you want help with ${intent.type}. I'm processing your request...`,
+      confidence: intent.confidence,
+      suggestedActions: this.generateActions(intent),
+      reasoning: `Detected intent: ${intent.type} with ${intent.confidence * 100}% confidence`
+    };
+  }
+
+  async triageEmail(email: any): Promise<{ priority: string; category: string; summary: string }> {
+    await this.delay();
+
+    // Simple mock triage logic
+    const hasUrgent = email.subject?.toLowerCase().includes('urgent') ||
+                      email.body?.toLowerCase().includes('asap');
+
+    return {
+      priority: hasUrgent ? 'high' : 'normal',
+      category: 'general',
+      summary: `Email from ${email.from.name}: ${email.subject.substring(0, 50)}...`
+    };
+  }
+
+  async draftEmail(context: { to: string; subject: string; context: string }): Promise<string[]> {
+    await this.delay();
+
+    // Return 3 draft options as per spec
+    return [
+      `Dear ${context.to},\n\nThank you for reaching out regarding ${context.subject}. I appreciate you taking the time to connect...\n\n[Detailed 450-word response]`,
+      `Hi ${context.to},\n\nThanks for your message about ${context.subject}. Here are the key points...\n\n[Balanced 200-word response]`,
+      `${context.to},\n\nRe: ${context.subject} - Let's discuss Tuesday.\n\n[Brief 75-word response]`
+    ];
+  }
+
+  async optimizeCalendar(events: any[]): Promise<any[]> {
+    await this.delay();
+
+    // Return events with optimization suggestions
+    return events.map(event => ({
+      ...event,
+      suggestions: ['Move to avoid back-to-back meetings', 'Add 15min prep time']
+    }));
+  }
+
+  private generateActions(intent: AIIntent): SuggestedAction[] {
+    const actions: SuggestedAction[] = [];
+
+    switch (intent.type) {
+      case 'email':
+        actions.push({
+          id: 'draft_email',
+          type: 'email.draft',
+          description: 'Draft a response',
+          preview: 'I can help you draft a professional response',
+          confidence: 0.9
+        });
+        break;
+      case 'calendar':
+        actions.push({
+          id: 'schedule_meeting',
+          type: 'calendar.schedule',
+          description: 'Schedule a meeting',
+          preview: 'Let me find available times',
+          confidence: 0.85
+        });
+        break;
+      case 'task':
+        actions.push({
+          id: 'create_workflow',
+          type: 'workflow.create',
+          description: 'Create a workflow',
+          preview: 'I can automate this process',
+          confidence: 0.8
+        });
+        break;
+    }
+
+    return actions;
+  }
+
+  private delay(): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, this.responseDelay));
+  }
+}
+
+// packages/mocks/email-service.mock.ts
+export class MockEmailService {
+  private mockEmails: any[] = [];
+
+  async fetchEmails(userId: string, filter?: any): Promise<any[]> {
+    // Return realistic mock emails
+    return [
+      {
+        id: 'email_1',
+        from: { name: 'John Smith', email: 'john@acme.com' },
+        to: [{ name: 'You', email: 'you@company.com' }],
+        subject: 'Q4 Budget Review',
+        body: 'Hi, I wanted to discuss the Q4 budget allocations...',
+        priority: 'high',
+        labels: ['important', 'finance'],
+        timestamp: Date.now() - 3600000,
+        aiSummary: 'Request to review Q4 budget allocations'
+      },
+      {
+        id: 'email_2',
+        from: { name: 'Sarah Johnson', email: 'sarah@partner.com' },
+        to: [{ name: 'You', email: 'you@company.com' }],
+        subject: 'Partnership Opportunity',
+        body: 'I hope this email finds you well. I wanted to reach out...',
+        priority: 'normal',
+        labels: ['business development'],
+        timestamp: Date.now() - 7200000,
+        aiSummary: 'Partnership proposal from Sarah at Partner Co'
+      },
+      {
+        id: 'email_3',
+        from: { name: 'Newsletter', email: 'news@tech.com' },
+        to: [{ name: 'You', email: 'you@company.com' }],
+        subject: 'Weekly Tech Newsletter',
+        body: 'Here are this week\'s top tech stories...',
+        priority: 'low',
+        labels: ['newsletter', 'fyi'],
+        timestamp: Date.now() - 10800000,
+        aiSummary: 'Weekly tech industry newsletter'
+      }
+    ];
+  }
+
+  async sendEmail(email: any): Promise<{ success: boolean; messageId: string }> {
+    this.mockEmails.push({ ...email, id: `email_${Date.now()}`, sent: true });
+    return { success: true, messageId: `msg_${Date.now()}` };
+  }
+
+  async triageEmail(emailId: string): Promise<any> {
+    return {
+      priority: 'normal',
+      category: 'general',
+      suggestedActions: ['reply', 'archive']
+    };
+  }
+}
+
+// packages/mocks/calendar-service.mock.ts
+export class MockCalendarService {
+  private mockEvents: any[] = [];
+
+  async fetchEvents(userId: string, start: Date, end: Date): Promise<any[]> {
+    const now = new Date();
+
+    return [
+      {
+        id: 'event_1',
+        title: 'Product Review Meeting',
+        start: new Date(now.getTime() + 3600000), // 1 hour from now
+        end: new Date(now.getTime() + 5400000), // 1.5 hours from now
+        attendees: [
+          { name: 'You', email: 'you@company.com' },
+          { name: 'Team Lead', email: 'lead@company.com' }
+        ],
+        location: 'Conference Room A',
+        meetingType: 'internal',
+        hasPrep: true,
+        meetingPrep: {
+          summary: 'Review Q4 product roadmap',
+          attendeeInsights: ['Team Lead prefers data-driven discussions'],
+          talkingPoints: ['Feature priorities', 'Resource allocation', 'Timeline'],
+          relatedDocs: []
+        }
+      },
+      {
+        id: 'event_2',
+        title: '1:1 with Sarah',
+        start: new Date(now.getTime() + 86400000), // Tomorrow
+        end: new Date(now.getTime() + 88200000), // Tomorrow + 30min
+        attendees: [
+          { name: 'You', email: 'you@company.com' },
+          { name: 'Sarah Johnson', email: 'sarah@company.com' }
+        ],
+        meetingType: 'one-on-one',
+        hasPrep: true
+      },
+      {
+        id: 'event_3',
+        title: 'Board Meeting',
+        start: new Date(now.getTime() + 172800000), // 2 days from now
+        end: new Date(now.getTime() + 180000000), // 2 days + 2 hours
+        attendees: Array(8).fill(null).map((_, i) => ({
+          name: `Board Member ${i + 1}`,
+          email: `board${i + 1}@company.com`
+        })),
+        location: 'Virtual (Zoom)',
+        meetingType: 'board',
+        hasPrep: true
+      }
+    ];
+  }
+
+  async scheduleEvent(event: any): Promise<{ success: boolean; eventId: string }> {
+    const newEvent = { ...event, id: `event_${Date.now()}` };
+    this.mockEvents.push(newEvent);
+    return { success: true, eventId: newEvent.id };
+  }
+
+  async findAvailableSlots(participants: string[], duration: number): Promise<any[]> {
+    const now = new Date();
+
+    // Return mock available slots
+    return [
+      {
+        start: new Date(now.getTime() + 86400000), // Tomorrow 2pm
+        end: new Date(now.getTime() + 86400000 + duration * 60000),
+        allAvailable: true
+      },
+      {
+        start: new Date(now.getTime() + 172800000), // Day after 10am
+        end: new Date(now.getTime() + 172800000 + duration * 60000),
+        allAvailable: true
+      },
+      {
+        start: new Date(now.getTime() + 259200000), // 3 days 3pm
+        end: new Date(now.getTime() + 259200000 + duration * 60000),
+        allAvailable: true
+      }
+    ];
+  }
+
+  async optimizeSchedule(events: any[]): Promise<any> {
+    return {
+      suggestions: [
+        'Move 2pm meeting to 10am for better energy',
+        'Add 15min buffer between back-to-back meetings',
+        'Protect 2-4pm Friday for deep work'
+      ],
+      conflicts: [],
+      optimizedEvents: events
+    };
+  }
+}
+
+// packages/mocks/workflow-service.mock.ts
+export class MockWorkflowService {
+  private mockWorkflows: any[] = [];
+
+  async detectPattern(actions: any[]): Promise<any> {
+    if (actions.length < 3) {
+      return { patternDetected: false };
+    }
+
+    return {
+      patternDetected: true,
+      pattern: {
+        name: 'Weekly Status Report',
+        frequency: 'weekly',
+        steps: [
+          'Gather metrics from dashboard',
+          'Draft update email',
+          'Review with team',
+          'Send to stakeholders'
+        ],
+        confidence: 0.85
+      },
+      suggestAutomation: true
+    };
+  }
+
+  async executeWorkflow(workflowId: string): Promise<any> {
+    return {
+      workflowId,
+      status: 'running',
+      currentStep: 1,
+      totalSteps: 5,
+      completedSteps: 0,
+      progress: 0.0
+    };
+  }
+
+  async getWorkflowStatus(workflowId: string): Promise<any> {
+    return {
+      workflowId,
+      status: 'completed',
+      currentStep: 5,
+      totalSteps: 5,
+      completedSteps: 5,
+      progress: 1.0,
+      results: {
+        success: true,
+        output: 'Workflow completed successfully'
+      }
+    };
+  }
+}
+
+// packages/mocks/README.md
+export const MOCK_USAGE = `
+# Mock Services Usage Guide
+
+All tracks can use these mocks for independent development:
+
+## Track 1 (Mobile)
+\`\`\`typescript
+import { MockAIService, MockEmailService, MockCalendarService } from '@tide/mocks';
+
+const aiService = new MockAIService();
+const response = await aiService.generateResponse(intent, context);
+\`\`\`
+
+## Track 2 (AI) - Can develop algorithms locally
+\`\`\`typescript
+// Use mocks to test AI orchestration without external APIs
+const mockAI = new MockAIService();
+// Test your router logic
+\`\`\`
+
+## Track 3 (Email/Calendar)
+\`\`\`typescript
+import { MockAIService } from '@tide/mocks';
+
+// Use mock AI while building email/calendar features
+const ai = new MockAIService();
+const triage = await ai.triageEmail(email);
+\`\`\`
+
+## Track 4 (Workflow)
+\`\`\`typescript
+import { MockAIService, MockEmailService, MockCalendarService } from '@tide/mocks';
+
+// Orchestrate workflows with all mocks
+const workflow = new WorkflowEngine({
+  ai: new MockAIService(),
+  email: new MockEmailService(),
+  calendar: new MockCalendarService()
+});
+\`\`\`
+
+## Switching from Mocks to Real Services
+
+Just change the import:
+\`\`\`typescript
+// Development with mocks
+import { MockAIService } from '@tide/mocks';
+const ai = new MockAIService();
+
+// Production with real services
+import { AIService } from '@tide/ai';
+const ai = new AIService();
+\`\`\`
+
+All mocks implement the same interfaces as real services!
+`;
+```
+
 ### Friday: Testing, Documentation & Integration
 
 **Morning: Testing Framework**

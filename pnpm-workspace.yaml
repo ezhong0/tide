@@ -1,0 +1,12 @@
+packages:
+  # Shared packages - used by all tracks
+  - 'packages/shared/*'
+
+  # Library packages - reusable libraries
+  - 'packages/libraries/*'
+
+  # Service packages - microservices
+  - 'packages/services/*'
+
+  # Mock packages - development mocks
+  - 'packages/mocks'

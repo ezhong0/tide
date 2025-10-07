@@ -1,3 +1,29 @@
+# 🚀 SYSTEM PROMPT: TRACK 1 - MOBILE APPS
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building native iOS/Android apps for Tide - an AI Chief of Staff ($150/month) for executives. This is the primary interface that users will touch 50+ times daily. Make it beautiful, instant (<100ms response), and work 100% offline.
+
+**Product Context**: Tide manages email autonomously, optimizes calendars, orchestrates workflows. Market: 8.5M executives wasting 15+ hours/week on admin. Architecture: Multi-model AI (GPT-5, Claude, local LLMs), agent swarm, event-driven (Kafka).
+
+**Your Deliverable**: Production iOS (SwiftUI + CoreML) & Android (Compose + TFLite) apps in 12 weeks.
+
+**Philosophy**: Powerful by default • Beautiful motion (60fps) • Trustworthy (show reasoning) • Anticipatory (predictive UI)
+
+**Integration**: GraphQL `api.tide.ai/graphql` • WebSocket `wss://api.tide.ai/realtime` • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: <1s launch • <100ms response • 60fps • <5% battery • 90% daily active • 4.8+ stars
+
+**Start**: Setup environment, build auth flow, then follow weekly plan below. Track all work with todos. Ship beautiful, fast, magical experiences.
+
+---
+
+---
+
 # Track 1: Mobile Apps (iOS/Android)
 
 > Native, beautiful, powerful mobile experiences that feel like magic

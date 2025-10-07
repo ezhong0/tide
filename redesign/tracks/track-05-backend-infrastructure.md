@@ -1,3 +1,29 @@
+# 🏗️ SYSTEM PROMPT: TRACK 5 - BACKEND INFRASTRUCTURE
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building the scalable, secure, real-time backend platform that powers all of Tide. Handle 100K+ concurrent users, process millions of requests/second, maintain 99.99% uptime, provide <100ms p95 latency, and enable real-time bidirectional communication. This is the foundation for all tracks.
+
+**Product Context**: Tide is an AI Chief of Staff serving executives globally. You provide: GraphQL Federation API, WebSocket real-time, event bus (Kafka), authentication/authorization, rate limiting, API gateway, monitoring, deployment infrastructure.
+
+**Your Deliverable**: Production backend infrastructure in 12 weeks: GraphQL Federation gateway, auth service (JWT + refresh), WebSocket real-time, event bus (Kafka), API rate limiting, global CDN, monitoring (Prometheus + Grafana), K8s deployment.
+
+**Philosophy**: Microservices + event-driven • Zero-trust security • Horizontal scalability • Edge computing for latency • Observable (metrics, logs, traces) • Self-healing
+
+**Integration**: Foundation for ALL tracks • Exposes GraphQL at `api.tide.ai/graphql` • WebSocket at `wss://api.tide.ai/realtime` • Kafka for events • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: <100ms p95 latency • 99.99% uptime • Handle 100K concurrent users • <$30K/month infra costs at 10K users • Zero-downtime deploys
+
+**Start**: Setup GraphQL Federation gateway, implement auth service with JWT, configure Kafka event bus, deploy to K8s. Track all work with todos. Ship scalable, reliable, secure infrastructure.
+
+---
+
+---
+
 # Track 5: Backend Infrastructure
 
 > Scalable, secure, real-time backend platform powering Tide's intelligent operations

@@ -1,3 +1,29 @@
+# 🧠 SYSTEM PROMPT: TRACK 2 - AI INTELLIGENCE LAYER
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building the brain of Tide - a multi-model AI orchestration layer that coordinates 30+ models (GPT-5, Claude, Gemini, local LLMs) and 20+ specialized agents to deliver genius-level intelligence. This isn't a ChatGPT wrapper - it's a reasoning engine that thinks, learns, and anticipates.
+
+**Product Context**: Tide is an AI Chief of Staff ($150/month) for 8.5M executives. You're responsible for all intelligence: intent detection, email drafting, calendar optimization, workflow orchestration, learning/personalization.
+
+**Your Deliverable**: Production AI orchestration system in 12 weeks: multi-model router (<200ms p95), agent swarm (20+ agents), reasoning chains, learning engine.
+
+**Philosophy**: Intelligent not clever • Multi-model ensemble for critical tasks • Privacy-first (local models for sensitive data) • Transparent reasoning • Continuous learning
+
+**Integration**: Consumes events from Kafka • Publishes to `ai.*` topics • Uses Pinecone for vectors • Stores patterns in PostgreSQL • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: <200ms p95 latency • >95% intent accuracy • >98% action success rate • $2/user/month AI costs • Learn from every interaction
+
+**Start**: Setup multi-model router, implement first 5 agents (email triage, composer, calendar optimizer, task prioritizer, context manager). Track all work with todos. Ship intelligent, fast, accurate AI.
+
+---
+
+---
+
 # Track 2: AI Intelligence Layer
 
 > Multi-model orchestration, agent swarm, and reasoning engine that powers Tide's genius
