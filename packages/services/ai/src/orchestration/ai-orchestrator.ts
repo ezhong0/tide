@@ -265,18 +265,16 @@ Generate a clear, actionable response.`;
   }
 
   /**
-   * Calculate cost based on tokens and model
+   * Calculate cost based on tokens and model (GPT-5 only)
    */
   private calculateCost(tokens: number, model: string): number {
     const costPer1M: Record<string, number> = {
-      'gpt-5': 0.00125,
-      'gpt-5-mini': 0.00025,
-      'gpt-5-nano': 0.00005,
-      'claude-3.5-opus': 0.006,
-      'claude-3.5-sonnet': 0.0006,
+      'gpt-5': 0.00125,        // $1.25/1M input, $10/1M output (averaged)
+      'gpt-5-mini': 0.00025,   // $0.25/1M input, $2.00/1M output (averaged)
+      'gpt-5-nano': 0.00005,   // $0.05/1M input, $0.40/1M output (averaged)
     };
 
-    const cost = costPer1M[model] || 0.0005;
+    const cost = costPer1M[model] || 0.00025; // Default to gpt-5-mini cost
     return (tokens / 1000000) * cost;
   }
 }

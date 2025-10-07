@@ -11,6 +11,7 @@
     "migrate": "node dist/migrate.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.74.0",
     "@tide/config": "workspace:*",
     "@tide/logger": "workspace:*",
     "@tide/types": "workspace:*",

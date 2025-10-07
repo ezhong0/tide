@@ -48,7 +48,7 @@ export type TriageStrategy =
 /**
  * Draft approach types
  */
-export type DraftApproach = 'detailed' | 'concise' | 'friendly' | 'formal';
+export type DraftApproach = 'detailed' | 'concise' | 'friendly' | 'formal' | 'ai-enhanced';
 
 /**
  * Email sentiment

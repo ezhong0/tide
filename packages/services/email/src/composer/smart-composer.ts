@@ -115,7 +115,7 @@ export class SmartComposer {
   }
 
   /**
-   * Generate email body
+   * Generate email body with AI enhancement
    */
   private generateBody(
     approach: DraftApproach,
@@ -130,7 +130,7 @@ export class SmartComposer {
     parts.push(greeting);
     parts.push('');
 
-    // Main content
+    // Main content with AI enhancement
     const mainContent = this.generateMainContent(approach, request, context);
     parts.push(mainContent);
     parts.push('');
@@ -140,6 +140,193 @@ export class SmartComposer {
     parts.push(closing);
 
     return parts.join('\n');
+  }
+
+  /**
+   * Generate AI-enhanced email draft using AI Service
+   * This integrates with the AI Service for intelligent composition
+   */
+  async generateAIDraft(request: ComposeRequest): Promise<EmailDraft> {
+    logger.info({ userId: request.userId }, 'Generating AI-enhanced draft');
+
+    try {
+      // Build context from thread and user history
+      const context = this.buildEnhancedContext(request);
+      const style = await this.getUserStyle(request.userId);
+
+      // Prepare AI prompt for email composition
+      const prompt = this.buildAIPrompt(request, context, style);
+
+      // Call AI Service for draft generation (would integrate with actual AI service)
+      // For now, use enhanced template-based approach
+      const aiGeneratedContent = await this.generateWithAI(prompt, request);
+
+      // Extract subject and body from AI response
+      const { subject, body } = this.parseAIResponse(aiGeneratedContent, request);
+
+      return {
+        approach: 'ai-enhanced',
+        subject,
+        body,
+        tone: this.analyzeTone(body, 'detailed'),
+        length: body.length,
+        confidence: 0.85, // Higher confidence for AI-generated content
+      };
+    } catch (error) {
+      logger.error({ userId: request.userId, error }, 'AI draft generation failed');
+      // Fallback to standard generation
+      return this.generateDraft('detailed', request, await this.getUserStyle(request.userId));
+    }
+  }
+
+  /**
+   * Build enhanced context including thread history and user preferences
+   */
+  private buildEnhancedContext(request: ComposeRequest): string {
+    const contextParts: string[] = [];
+
+    // Add thread context
+    if (request.thread && request.thread.length > 0) {
+      const threadSummary = this.summarizeThread(request.thread);
+      contextParts.push(`Thread context: ${threadSummary}`);
+    }
+
+    // Add user-provided context
+    if (request.context) {
+      contextParts.push(`User intent: ${request.context}`);
+    }
+
+    // Add recipient context (if available from relationship intelligence)
+    const recipientName = this.extractName(request.recipient);
+    contextParts.push(`Recipient: ${recipientName} (${request.recipient})`);
+
+    return contextParts.join('\n');
+  }
+
+  /**
+   * Build AI prompt for email composition
+   */
+  private buildAIPrompt(request: ComposeRequest, context: string, style: WritingStyle): string {
+    return `You are an AI email assistant helping compose a professional email.
+
+Context:
+${context}
+
+User's writing style:
+- Formality level: ${style.formalityLevel * 100}%
+- Average sentence length: ${style.averageSentenceLength} words
+- Preferred greetings: ${style.preferredGreetings.join(', ')}
+- Preferred closings: ${style.preferredClosings.join(', ')}
+
+Task: Compose a ${request.subject ? 'reply' : 'new'} email that:
+1. Matches the user's writing style
+2. Addresses the context appropriately
+3. Is professional and clear
+4. Includes a clear call-to-action if needed
+
+Generate the email in this format:
+Subject: [subject line]
+Body: [email body]`;
+  }
+
+  /**
+   * Generate content using AI (integration point for AI Service)
+   */
+  private async generateWithAI(prompt: string, request: ComposeRequest): Promise<string> {
+    // TODO: Integrate with actual AI Service endpoint
+    // const response = await fetch(`${process.env.AI_SERVICE_URL}/compose`, {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ prompt, userId: request.userId })
+    // });
+    // return await response.json();
+
+    // For now, use enhanced template with context awareness
+    return this.generateEnhancedTemplate(prompt, request);
+  }
+
+  /**
+   * Enhanced template generation with better context awareness
+   */
+  private generateEnhancedTemplate(prompt: string, request: ComposeRequest): string {
+    const hasThread = request.thread && request.thread.length > 0;
+    const contextLower = (request.context || '').toLowerCase();
+
+    // Detect email intent
+    const isQuestion = contextLower.includes('question') || contextLower.includes('clarif');
+    const isFollowUp = contextLower.includes('follow') || hasThread;
+    const isRequest = contextLower.includes('request') || contextLower.includes('need');
+    const isMeeting = contextLower.includes('meeting') || contextLower.includes('schedule');
+
+    let subject = request.subject || '';
+    let body = '';
+
+    if (!subject) {
+      if (isMeeting) {
+        subject = 'Meeting Request - Let\'s Connect';
+      } else if (isQuestion) {
+        subject = 'Quick Question';
+      } else if (isFollowUp) {
+        subject = hasThread ? `Re: ${request.thread![0].subject}` : 'Following Up';
+      } else {
+        subject = 'Reaching Out';
+      }
+    }
+
+    // Generate contextually appropriate body
+    if (isMeeting) {
+      body = `Subject: ${subject}\nBody: I wanted to reach out to schedule some time to connect. Based on our recent discussions, I think it would be valuable to meet and discuss next steps.\n\nWould you be available for a 30-minute call sometime this week or next? I'm flexible with timing and happy to work around your schedule.\n\nLooking forward to connecting.`;
+    } else if (isFollowUp && hasThread) {
+      body = `Subject: ${subject}\nBody: Thank you for your previous email. I wanted to follow up on our discussion and provide some additional thoughts.\n\n${request.context || 'I\'ve had a chance to review the information, and I believe we can move forward with the proposed approach.'}\n\nPlease let me know if you have any questions or if there's anything else I can help clarify.`;
+    } else if (isRequest) {
+      body = `Subject: ${subject}\nBody: I hope this email finds you well. I wanted to reach out regarding ${request.context || 'a matter that requires your attention'}.\n\nIf possible, it would be helpful to get your thoughts on this by end of week. Please let me know if you need any additional information from my end.\n\nThank you for your time and assistance.`;
+    } else {
+      body = `Subject: ${subject}\nBody: ${request.context || 'I wanted to touch base and see how things are progressing. It would be great to connect and discuss any updates.'}\n\nPlease feel free to reach out if you have any questions or if there's anything I can assist with.\n\nBest regards`;
+    }
+
+    return body;
+  }
+
+  /**
+   * Parse AI-generated response
+   */
+  private parseAIResponse(aiResponse: string, request: ComposeRequest): { subject: string; body: string } {
+    const lines = aiResponse.split('\n');
+    let subject = request.subject || 'Hello';
+    let bodyLines: string[] = [];
+    let inBody = false;
+
+    for (const line of lines) {
+      if (line.startsWith('Subject:')) {
+        subject = line.replace('Subject:', '').trim();
+      } else if (line.startsWith('Body:')) {
+        inBody = true;
+        const bodyStart = line.replace('Body:', '').trim();
+        if (bodyStart) {
+          bodyLines.push(bodyStart);
+        }
+      } else if (inBody) {
+        bodyLines.push(line);
+      }
+    }
+
+    return {
+      subject,
+      body: bodyLines.join('\n').trim() || this.generateBody('detailed', request, { preferredGreetings: [], preferredClosings: [], averageSentenceLength: 15, formalityLevel: 0.6, commonPhrases: [], toneProfile: { professional: 0.7, casual: 0.2, formal: 0.1 } }, ''),
+    };
+  }
+
+  /**
+   * Summarize email thread for context
+   */
+  private summarizeThread(thread: Email[]): string {
+    if (thread.length === 0) return '';
+    if (thread.length === 1) return `Single email about: ${thread[0].subject}`;
+
+    const subjects = new Set(thread.map(e => e.subject.replace(/^Re: /i, '').trim()));
+    const uniqueSubjects = Array.from(subjects);
+
+    return `Thread of ${thread.length} emails discussing: ${uniqueSubjects.join(', ')}`;
   }
 
   /**

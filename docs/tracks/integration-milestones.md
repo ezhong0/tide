@@ -1,72 +1,96 @@
-# Integration Milestones
+# Integration Milestones (2025 Revision)
 
-> Critical coordination points for 4 parallel feature tracks in 12-week sprint
+> Critical coordination points for 4 parallel feature tracks building on Supabase + Railway foundation
 
-**Last Updated**: 2025-10-07
-**Current Status**: ✅ Week 0 Foundation Complete | ⭐ **ALPHA READY (87/100)** - 5 of 6 Tracks Complete
-**Security**: JWT Verification ✅ | Rate Limiting ✅ | 100+ Integration Tests ✅
+**Last Updated**: 2025-10-07 (Comprehensive Revision)
+**Current Status**: Week 3 Alpha - 73% Overall (3 of 4 tracks Alpha-ready)
+**Infrastructure**: Supabase (Auth, DB, Realtime) ✅ | Railway Deployment 🚧 | Docker Compose ✅
 
 ## Overview
 
-Integration milestones ensure all 4 feature tracks work together seamlessly while maintaining independent development velocity. The **Week 0 Foundation** (Tracks 5-6) delivered complete infrastructure upfront - Supabase-based backend with PostgreSQL, Redis, Kafka, and monitoring. All tracks now build on this solid foundation.
+Integration milestones ensure all 4 feature tracks work together seamlessly while building on a **Supabase-first, Railway-deployed** foundation. This revision reflects actual implementation progress and aligns with the updated roadmap.
 
-**Architecture Evolution**:
-- **Phase 1 (Week 0)**: Custom auth service planned
-- **Phase 2-3 (Current)**: Migrated to **Supabase-first** architecture
-- OAuth-only authentication (no passwords)
-- Supabase Realtime for WebSocket connections
-- PostgreSQL with Row Level Security
-- See [Current Architecture](/Users/edwardzhong/Projects/tide/docs/architecture/CURRENT-ARCHITECTURE.md) for details
+**Architecture Foundation**:
+- ✅ **Supabase Platform**: Auth (OAuth), PostgreSQL 16, Realtime (WebSocket), Storage
+- ✅ **Railway Deployment**: Monorepo support, Node 20, automatic scaling
+- ✅ **Infrastructure Ready**: Redis 7, Kafka 7.5 (Docker local, Railway production)
+- 🚧 **Service Deployment**: AI, Email, Calendar, Workflow, Gateway deploying to Railway
 
-## ⭐ ALPHA READINESS STATUS (2025-10-07)
+**Track Status** (Week 3):
+- Track 1 (Mobile): 65% ✅ Alpha Ready
+- Track 2 (AI): 75% ✅ Alpha Ready
+- Track 3 (Email/Calendar): 52% ⚠️ Needs 60%+
+- Track 4 (Workflow): 80% ✅ Alpha Ready
+- Tracks 5-6 (Infrastructure): 100% ✅ Complete
+
+See [Current Architecture](../architecture/CURRENT-ARCHITECTURE.md) | [Roadmap](../archive/IMPLEMENTATION-ROADMAP.md)
+
+## ⭐ ALPHA READINESS STATUS (Updated 2025-10-07)
 
 ### Executive Summary
 
-**Overall Alpha Score**: **87/100** - ✅ **APPROVED FOR ALPHA LAUNCH**
+**Overall Progress**: **73/100** - 🚧 **NEEDS TRACK 3 COMPLETION**
 
-**Security Hardening Complete** (added 2025-10-07):
-- ✅ JWT token verification in API Gateway
-- ✅ Rate limiting on auth endpoints (5/15min auth, 10/15min refresh)
-- ✅ 100+ integration tests across 4 services (auth, email, calendar, AI)
+**Current State**:
+- ✅ **3 of 4 feature tracks Alpha-ready** (Tracks 1, 2, 4)
+- ⚠️ **1 track needs work** (Track 3: Email/Calendar at 52%)
+- ✅ **Infrastructure complete** (Tracks 5-6: 100%)
+- 🚧 **Railway deployment in progress** (services deploying incrementally)
 
-**Track Completion Status**:
-| Track | Completion | Status | LOC | Files | Tests |
-|-------|-----------|--------|-----|-------|-------|
-| Track 1: Mobile | 65% | ✅ Alpha Ready | 5,635 | 40 | Native UI |
-| Track 2: AI | 75% | ✅ Alpha Ready | 4,935 | 38 | 25+ tests |
-| Track 3: Email/Cal | 52% | ⚠️ Below Threshold | 7,005 | 18 | 20+ tests |
-| Track 4: Workflow | 80% | ✅ Alpha Ready | 5,483 | 22 | Saga tests |
-| Track 5: Backend | 100% | ✅ Complete | - | - | Foundation |
-| Track 6: Data | 100% | ✅ Complete | - | - | Foundation |
+**Track Completion Status** (Based on Actual Codebase):
+| Track | Completion | Status | LOC | TypeScript Files | Notes |
+|-------|-----------|--------|-----|------------------|-------|
+| Track 1: Mobile | 65% | ✅ Alpha Ready | 5,635 | 40 (19 Swift, 21 Kotlin) | Supabase SDKs integrated |
+| Track 2: AI | 75% | ✅ Alpha Ready | 4,935 | 75 | 16 agents, multi-model router |
+| Track 3: Email/Cal | 52% | ⚠️ Below Threshold | 7,005 | 34 (17 email, 17 calendar) | **Needs 60%+ for Alpha** |
+| Track 4: Workflow | 80% | ✅ Alpha Ready | 5,483 | 43 | Saga pattern, event sourcing |
+| Track 5: Backend | 100% | ✅ Complete | - | - | Supabase + Railway |
+| Track 6: Data | 100% | ✅ Complete | - | - | PostgreSQL + RLS |
 
-**Total**: 22,058 LOC implemented across 118 files
+**Total Codebase**: 23,058 LOC across 192 TypeScript files (+ Swift/Kotlin mobile files)
 
-### Alpha Launch Decision
+### Alpha Launch Decision (Revised)
 
-**Option A: Launch NOW with 5 Tracks** (Recommended)
-- ✅ Tracks 1, 2, 4, 5, 6 are Alpha-ready (87% overall)
-- ✅ Core features operational: Mobile apps, AI intelligence, Workflows, Infrastructure
-- ⚠️ Temporarily exclude Email/Calendar (Track 3)
-- ⏱️ Timeline: Launch immediately
-- 💡 Benefit: Get to market faster, validate core product-market fit
+**Current Recommendation: Complete Track 3 First (5 Days)**
 
-**Option B: Wait 3-5 Days for Track 3**
-- ⏳ Complete Email/Calendar track to 60%+ (needs ~8% more)
-- ✅ Launch with full 6-track feature set
-- ⏱️ Timeline: Launch in 3-5 days
-- 💡 Benefit: More complete product, but delayed market entry
+**Why This Changed from Previous Plan**:
+- Track 3 is already 52% complete with substantial implementation (7,005 LOC)
+- Only needs 8% more to reach 60% Alpha threshold
+- Estimated 3-5 days to complete (specific areas identified)
+- Better to launch with all core features than partial product
 
-**Recommendation**: **Option A** - Launch with 5 tracks. Email/Calendar can be released as a major update in Week 4-5 once matured.
+**Immediate Action Plan** (Next 5 Days):
+1. **Day 1-2**: Polish smart email composition
+2. **Day 3-4**: Mature relationship tracking
+3. **Day 5**: Integration testing and bug fixes
+4. **Parallel**: Deploy all services to Railway
 
-## Timeline Overview
+**After Track 3 Complete**:
+- ✅ All 4 feature tracks Alpha-ready (Target: >73% → >80%)
+- ✅ Launch Alpha with complete feature set
+- ✅ Better product-market fit validation
+
+**Contingency**: If Track 3 blocked >5 days, revert to 5-track launch (Option A from previous plan)
+
+## Revised Timeline Overview
 
 ```
-Week 0: Foundation & Setup (All Tracks)
-Week 3: Alpha Integration - "Core Systems Connected"
-Week 6: Beta Integration - "Full Features Working"
-Week 9: Production Integration - "Polish & Performance"
-Week 12: Launch - "Ship to 10,000 Users"
+Week 0: Foundation Complete (Tracks 5-6) ✅
+Week 3: 73% Progress - 3 of 4 tracks Alpha-ready 🚧
+Week 4: Complete Track 3 + Alpha Launch 🎯
+Week 5: Cache Invalidation (ADR-012) + Alpha Stabilization 📋
+Week 6: Mobile BFF (ADR-013) + Beta Ready 📋
+Weeks 7-8: gRPC (ADR-014) + Advanced Features 📋
+Weeks 9-10: Gateway Complete + Production Ready 📋
+Week 11: Beta Launch (5,000 users) 📋
+Week 12: Production Launch Decision 📋
 ```
+
+**Key Changes from Original Plan**:
+- Week 3: Now reflects actual 73% progress (was "Alpha Integration")
+- Week 4: Focus on Track 3 completion + Alpha launch (new critical milestone)
+- Weeks 5-8: Architecture improvements integrated (ADR-012, ADR-013, ADR-014)
+- Timeline more realistic based on actual codebase state
 
 ## Week 0: Foundation Setup - ✅ COMPLETE
 
@@ -339,9 +363,276 @@ describe('Week 3 Integration', () => {
 **Outstanding**:
 - [ ] ⚠️ Email/Calendar services (Track 3) - **52% complete, needs 60%+ for Alpha**
 
-**Alpha Readiness**: ⭐ **87/100** - 5 of 6 tracks ready, **APPROVED FOR ALPHA LAUNCH**
+**Alpha Readiness** (Updated): 🚧 **73/100** - 3 of 4 tracks ready, **Track 3 needs completion**
 
-## Week 6: Beta Integration
+---
+
+## Week 4: **CRITICAL** - Complete Track 3 + Alpha Launch 🎯
+
+### Goal
+Complete Email/Calendar track (52% → 60%+) and deploy all services to Railway for Alpha launch.
+
+**Primary Objective**: Unblock Alpha launch by completing Track 3
+
+### Critical Path Actions (Next 5 Days)
+
+**Day 1-2: Smart Email Composition Polish**
+```typescript
+// Focus areas for email composition
+- AI-powered draft suggestions (improve prompt templates)
+- Email template management system
+- Composition quality testing and refinement
+- Integration with AI Service for better suggestions
+
+Target: Bring composition feature from basic to Alpha-ready
+```
+
+**Day 3-4: Relationship Tracking Maturity**
+```typescript
+// Focus areas for relationship tracking
+- Contact frequency analysis algorithms
+- VIP detection (based on email patterns)
+- Relationship scoring system
+- Contact importance classification
+
+Target: Implement robust relationship intelligence
+```
+
+**Day 5: Integration Testing & Bug Fixes**
+```typescript
+// Final validation
+- End-to-end email/calendar workflows
+- Integration test suite (add 10+ tests)
+- Critical bug fixes
+- Performance validation
+- Railway deployment validation
+
+Target: Track 3 ready for production use
+```
+
+**Parallel: Railway Deployment**
+```bash
+# Deploy all services to Railway production
+railway up --service ai          # AI Service (75 files)
+railway up --service email       # Email Service (17 files)
+railway up --service calendar    # Calendar Service (17 files)
+railway up --service workflow    # Workflow Service (43 files)
+railway up --service gateway     # Gateway Service (4 files)
+
+# Configure environment variables
+- SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+- ANTHROPIC_API_KEY, OPENAI_API_KEY
+- Railway Redis URL, Railway Kafka URL
+- OAuth credentials (Google, Microsoft)
+
+# Set up monitoring
+- Railway logs and metrics
+- Health check endpoints
+- Error tracking configuration
+```
+
+### Success Criteria for Alpha Launch
+
+**Track 3 Completion**:
+- [ ] Smart composition reaches production quality
+- [ ] Relationship tracking algorithms working
+- [ ] Integration tests passing (30+ tests total for Track 3)
+- [ ] Track 3 reaches 60%+ completion
+
+**Railway Deployment**:
+- [ ] All 5 services deployed to Railway production
+- [ ] Environment variables configured
+- [ ] Health checks passing
+- [ ] Monitoring dashboards operational
+- [ ] Services communicating successfully
+
+**Alpha Readiness**:
+- [ ] All 4 feature tracks Alpha-ready (Target: >60% each)
+- [ ] Overall progress >80%
+- [ ] 100+ integration tests passing across all services
+- [ ] Mobile apps ready for Alpha testing
+- [ ] Alpha user onboarding plan ready
+
+### Week 4 Deliverables
+
+**Track Progress** (Expected End-of-Week State):
+- Track 1 (Mobile): 65% → 70% (UI polish, Railway integration)
+- Track 2 (AI): 75% → 80% (begin RAG implementation)
+- Track 3 (Email/Calendar): 52% → 65% ✅ **UNBLOCKED**
+- Track 4 (Workflow): 80% → 85% (pattern detection refinement)
+
+**Infrastructure**:
+- Railway deployment complete
+- All services in production
+- Monitoring operational
+
+**Decision Point**: **Alpha Launch Approval** (End of Week 4)
+- If Track 3 ≥60%: ✅ Launch Alpha with all 4 tracks
+- If Track 3 <60%: 🔄 Launch with 3 tracks, add Track 3 in Week 5
+
+---
+
+## Week 5: Architecture Improvements + Alpha Stabilization
+
+### Goal
+Implement ADR-012 (Event-Driven Cache Invalidation) while stabilizing Alpha with real users.
+
+**Focus**: Architecture improvement + Alpha user feedback
+
+### Deliverables
+
+**Architecture**: ADR-012 Implementation
+```typescript
+// Event-Driven Cache Invalidation
+- Create CacheInvalidationService (Railway service)
+- Define Kafka topic `cache.invalidate`
+- Implement tag-based cache keys in Redis
+- Update services to publish invalidation events
+- Test cache consistency across services
+
+Benefit: Eliminate stale data, improve UX
+```
+
+**Track Progress**:
+- Track 1: 70% → 75% (offline caching, push notifications)
+- Track 2: 80% → 85% (RAG with pgvector, MCP integration)
+- Track 3: 65% → 75% (optimization, email search)
+- Track 4: 85% → 88% (team workflows)
+
+**Alpha Stabilization**:
+- Onboard 50-100 Alpha users
+- Monitor system performance
+- Fix critical bugs
+- Collect user feedback
+- Performance optimization
+
+**Week 5 Deliverables**:
+- [ ] Cache invalidation service deployed
+- [ ] All services using event-driven cache
+- [ ] Alpha users actively testing
+- [ ] Feedback loop established
+
+---
+
+## Week 6: Mobile BFF + Beta Readiness
+
+### Goal
+Implement ADR-013 (Mobile BFF Pattern) to achieve 10x faster mobile screen loading.
+
+**Focus**: Mobile performance optimization + feature completion
+
+### Deliverables
+
+**Architecture**: ADR-013 Implementation
+```typescript
+// Mobile Backend for Frontend (BFF)
+- Create MobileBFFService (Railway)
+- Implement `/mobile/v1/screen/{screenName}` endpoints
+- Aggregate 7-15 backend calls → 1 call per screen
+- Add Redis caching with invalidation
+- Update mobile apps to use BFF
+
+Benefit: 10x faster loading, 76% less data usage
+```
+
+**Track Progress**:
+- Track 1: 75% → 85% (Mobile BFF integration, offline mode complete)
+- Track 2: 85% → 90% (complete RAG, multi-agent coordination)
+- Track 3: 75% → 85% (smart scheduling, meeting prep automation)
+- Track 4: 88% → 90% (pattern detection >80% accuracy)
+
+**Week 6 Deliverables**:
+- [ ] Mobile BFF deployed
+- [ ] Mobile apps 10x faster
+- [ ] All tracks >85% complete
+- [ ] Beta readiness criteria met
+- [ ] Ready for 500-1000 beta users
+
+---
+
+## Weeks 7-8: gRPC + Advanced Features
+
+### Goal
+Implement ADR-014 (gRPC for Service-to-Service Communication) and complete advanced features.
+
+**Focus**: Internal service optimization + feature completion
+
+### Deliverables
+
+**Architecture**: ADR-014 Implementation
+```protobuf
+// gRPC for Service-to-Service
+- Define .proto files for AI Service API
+- Set up protoc compiler in monorepo
+- Generate TypeScript clients
+- AI Service exposes gRPC + REST
+- Services use gRPC for AI calls
+
+Benefit: 5-10x faster internal calls, type safety, streaming
+```
+
+**Track Progress**:
+- Track 1: 85% → 95% (Live Activities, widgets, watch apps)
+- Track 2: 90% → 100% (gRPC server, learning system, personalization)
+- Track 3: 85% → 95% (email search, advanced relationships)
+- Track 4: 90% → 95% (team workflows, automation suggestions)
+
+**Week 7-8 Deliverables**:
+- [ ] gRPC deployed for all service-to-service calls
+- [ ] All tracks >95% complete
+- [ ] Beta testing with 500-1000 users
+- [ ] Performance metrics exceeding targets
+
+---
+
+## Weeks 9-10: Gateway + Production Readiness
+
+### Goal
+Complete Gateway Service and prepare for production launch.
+
+**Gateway Service** (4 files → Complete):
+- REST + GraphQL Federation
+- Rate limiting (Redis-backed)
+- Response caching with invalidation
+- API documentation (OpenAPI/Swagger)
+- Monitoring and alerting
+
+**Track Progress**: All tracks 95% → 100%
+
+**Week 9-10 Deliverables**:
+- [ ] Gateway Service deployed
+- [ ] All tracks 100% feature-complete
+- [ ] Security audit passed
+- [ ] Load testing passed (10,000 concurrent users)
+
+---
+
+## Weeks 11-12: Beta Launch + Production Preparation
+
+### Goal
+Launch Beta to 5,000 users and prepare for production.
+
+**Week 11**: Beta Launch
+- Monitor system performance
+- Collect user feedback
+- Fix critical bugs
+- A/B testing
+
+**Week 12**: Production Preparation
+- Security penetration testing
+- Disaster recovery testing
+- Final performance tuning
+- Production launch decision
+
+**Week 11-12 Deliverables**:
+- [ ] Beta launched with 5,000+ users
+- [ ] 99.9%+ uptime achieved
+- [ ] NPS >60
+- [ ] Production launch approved
+
+---
+
+## Week 6: Beta Integration (Original - Archived)
 
 ### Goal
 Full feature integration with sophisticated AI, complex workflows, and production-grade infrastructure.
