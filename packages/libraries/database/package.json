@@ -14,12 +14,10 @@
     "@supabase/supabase-js": "^2.74.0",
     "@tide/config": "workspace:*",
     "@tide/logger": "workspace:*",
-    "@tide/types": "workspace:*",
-    "pg": "^8.11.3"
+    "@tide/types": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
-    "@types/pg": "^8.10.9",
     "dotenv": "^17.2.3",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"

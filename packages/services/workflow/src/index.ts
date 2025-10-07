@@ -1,10 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { Pool } from 'pg';
-import { createClient } from '@supabase/supabase-js';
 import { logger } from '@tide/logger';
-import { supabaseConfig, databaseConfig, kafkaConfig } from '@tide/config';
+import { supabaseConfig, kafkaConfig } from '@tide/config';
+import { createSupabase } from '@tide/database';
 import { WorkflowEngine } from './engine/index.js';
 import { KafkaEventBus } from './events/kafka-event-bus.js';
 
@@ -13,6 +12,8 @@ import { KafkaEventBus } from './events/kafka-event-bus.js';
  *
  * Status: Not started (planned for Weeks 9-12)
  * This service is scaffolded but not yet operational.
+ *
+ * Uses Supabase-first architecture (ADR-001)
  */
 
 const app: express.Application = express();
@@ -28,22 +29,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Database connection - use Supabase or direct PostgreSQL
-const pool = databaseConfig
-  ? new Pool({
-      connectionString: databaseConfig.url,
-      ssl: databaseConfig.ssl ? { rejectUnauthorized: false } : false,
-      max: databaseConfig.pool.max,
-      idleTimeoutMillis: databaseConfig.pool.idleTimeoutMillis,
-      connectionTimeoutMillis: databaseConfig.pool.connectionTimeoutMillis,
-    })
-  : null;
+// Database connection - Supabase client
+const supabase = createSupabase(true);
 
-// If no direct DB connection, use Supabase
-const supabase = !pool ? createClient(supabaseConfig.url, supabaseConfig.serviceRoleKey) : null;
-
-// Initialize workflow engine (only if database is configured)
-const workflowEngine = pool ? new WorkflowEngine(pool) : null;
+// Initialize workflow engine
+// Note: WorkflowEngine needs to be updated to use Supabase client instead of Pool
+const workflowEngine = null; // TODO: Update WorkflowEngine to use Supabase client
 
 // Initialize Kafka event bus (only if Kafka is configured AND enabled)
 const kafkaEnabled = process.env.KAFKA_ENABLED === 'true';
@@ -230,12 +221,13 @@ const PORT = parseInt(process.env.PORT || '3004', 10);
 
 async function start() {
   try {
-    // Test database connection (if configured)
-    if (pool) {
-      await pool.query('SELECT 1');
-      logger.info('Database connected');
-    } else {
-      logger.warn('No DATABASE_URL configured - service not ready (Week 9-12)');
+    // Test Supabase connection
+    try {
+      const { error } = await supabase.from('user_profiles').select('count', { count: 'exact', head: true });
+      if (error) throw error;
+      logger.info('Supabase connected');
+    } catch (error) {
+      logger.warn({ error }, 'Supabase connection check failed - service not ready (Week 9-12)');
     }
 
     // Connect to Kafka (if configured and enabled)
@@ -261,7 +253,6 @@ async function start() {
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
-  if (pool) await pool.end();
   if (eventBus) await eventBus.disconnect();
   process.exit(0);
 });
