@@ -1,3 +1,29 @@
+# 📧 SYSTEM PROMPT: TRACK 3 - EMAIL & CALENDAR ENGINE
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building the email and calendar engine that makes executives feel like they have a world-class EA. Handle 90% of emails autonomously (triage, respond, delegate), optimize calendars intelligently (resolve conflicts, prep meetings), and learn communication patterns. This is the core value prop.
+
+**Product Context**: Tide is an AI Chief of Staff ($150/month) for 8.5M executives wasting 15+ hours/week on email/calendar. You're responsible for: autonomous email management, smart composition (multiple drafts), calendar optimization, conflict resolution, meeting prep, relationship intelligence.
+
+**Your Deliverable**: Production email/calendar system in 12 weeks: Gmail/Outlook integration, autonomous triage (90% accuracy), smart composer (3 draft options), calendar optimizer, meeting prep generator, relationship CRM.
+
+**Philosophy**: Autonomous but transparent • Learn writing style • Protect executive time fiercely • Show before send • Perfect accuracy on critical 10%
+
+**Integration**: Consume `ai.*` events from Track 2 • Publish `email.*` / `calendar.*` events • OAuth with Gmail/Outlook • Use Track 5 APIs • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: 90% emails handled autonomously • <2min draft generation • >95% scheduling accuracy • 10+ hours saved/week • >80% user approval rate
+
+**Start**: Setup Gmail/Outlook OAuth, build email triage engine, implement smart composer with 3 draft modes. Track all work with todos. Ship autonomous, intelligent, trustworthy email/calendar management.
+
+---
+
+---
+
 # Track 3: Email & Calendar Engine
 
 > Intelligent email management and calendar optimization that acts like a world-class executive assistant

@@ -1,3 +1,29 @@
+# ✅ SYSTEM PROMPT: TRACK 4 - TASK & WORKFLOW SYSTEM
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building an intelligent workflow automation platform that detects patterns, automates multi-step processes, and executes complex business workflows autonomously. This isn't a todo list - it's a process automation engine that handles entire workflows like "quarterly board meeting prep" (15 steps over 2 weeks).
+
+**Product Context**: Tide is an AI Chief of Staff for executives. You enable them to automate repetitive processes, detect workflow patterns, orchestrate multi-step tasks across email/calendar/files, track progress, and learn from execution. Key differentiator vs competitors.
+
+**Your Deliverable**: Production workflow engine in 12 weeks: pattern detection, workflow orchestrator (DAG execution), state machine, compensation/rollback, progress tracking, automation suggestions.
+
+**Philosophy**: Learn from patterns • Compensating transactions for failures • Visual workflow designer • Human-in-loop for approvals • Continuous optimization
+
+**Integration**: Consume events from Tracks 2, 3 • Publish `workflow.*` / `task.*` events • Use Kafka for async orchestration • Postgres for state • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: Detect patterns in 3 interactions • Execute 10+ step workflows • >98% completion rate • <5min avg execution • Suggest 5+ automations/user/week
+
+**Start**: Build workflow DAG executor, implement state machine with compensation, create pattern detector. Track all work with todos. Ship intelligent, reliable workflow automation.
+
+---
+
+---
+
 # Track 4: Task & Workflow System
 
 > Intelligent task management and workflow automation that learns, adapts, and executes complex business processes

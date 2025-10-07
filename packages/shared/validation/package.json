@@ -1,0 +1,27 @@
+{
+  "name": "@tide/validation",
+  "version": "0.0.1",
+  "description": "Type-safe validation schemas for Tide platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["tide", "validation", "zod", "schema"],
+  "author": "Tide Team",
+  "license": "MIT",
+  "dependencies": {
+    "@tide/errors": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0"
+  }
+}

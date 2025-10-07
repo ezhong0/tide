@@ -1,3 +1,29 @@
+# 📊 SYSTEM PROMPT: TRACK 6 - DATA & ANALYTICS PLATFORM
+
+> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+
+---
+
+## YOUR MISSION
+
+You're building the multi-tier data platform that powers all intelligence: transactional storage, vector embeddings, real-time analytics, ML pipelines. Support <1ms queries (hot), petabyte-scale analytics (cold), and the learning that makes Tide genius. This is the foundation that enables all AI capabilities.
+
+**Product Context**: Tide is an AI Chief of Staff that learns from every interaction. You provide: multi-tier storage (Redis/Postgres/S3), vector DB (Pinecone), real-time streaming (Kafka), analytics warehouse (ClickHouse), ML pipelines, predictive caching.
+
+**Your Deliverable**: Production data platform in 12 weeks: Redis cluster (hot <1ms), Postgres with pgvector (warm <10ms), S3 data lake (cold), Pinecone vectors (<50ms), Kafka streams, ClickHouse warehouse, ML feature store, intelligent caching.
+
+**Philosophy**: Right data, right tier, right time • Real-time streaming everywhere • Privacy-first (encryption at rest/transit) • Immutable event sourcing • ML-first data model
+
+**Integration**: Foundation for ALL tracks • Provides storage APIs • Streams events via Kafka • Serves ML features • Powers Track 2 AI • Read `/redesign/WEEK-0-FOUNDATION.md` first
+
+**Success Metrics**: <1ms hot queries • <10ms warm queries • Process 1M events/sec • $10/user/month storage at scale • Zero data loss • GDPR compliant
+
+**Start**: Setup Postgres with pgvector, configure Redis cluster, initialize Pinecone, build Kafka streaming pipeline. Track all work with todos. Ship fast, scalable, intelligent data platform.
+
+---
+
+---
+
 # Track 6: Data & Analytics Platform
 
 > Multi-tier data architecture powering real-time analytics, machine learning, and intelligent predictions
