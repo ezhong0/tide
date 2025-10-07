@@ -19,6 +19,16 @@ class EmailService {
         let body: String
         let timestamp: Date
         let isRead: Bool
+        let aiCategory: String?
+        let aiPriority: Int?
+        let aiSummary: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id, userId, provider, messageId, threadId, from, to, subject, body, timestamp, isRead
+            case aiCategory = "ai_category"
+            case aiPriority = "ai_priority"
+            case aiSummary = "ai_summary"
+        }
     }
 
     struct FetchEmailsResponse: Codable {
@@ -54,6 +64,23 @@ class EmailService {
         // Generate preview from body (first 100 chars)
         let preview = String(response.body.prefix(100))
 
+        // Map AI category to priority
+        let priority: EmailPriority
+        if let aiCategory = response.aiCategory {
+            switch aiCategory.lowercased() {
+            case "urgent":
+                priority = .high
+            case "important":
+                priority = .high
+            case "low":
+                priority = .low
+            default:
+                priority = .normal
+            }
+        } else {
+            priority = .normal
+        }
+
         return Email(
             id: response.id,
             from: fromContact,
@@ -64,7 +91,8 @@ class EmailService {
             timestamp: response.timestamp,
             isRead: response.isRead,
             isStarred: false,
-            priority: .normal
+            priority: priority,
+            aiSummary: response.aiSummary
         )
     }
 

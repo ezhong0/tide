@@ -266,7 +266,7 @@ class EmailService {
           unreadOnly: unreadOnly === 'true',
         });
 
-        // Store emails in database
+        // Store emails in database and triage them
         for (const email of emails) {
           // Create or update thread
           await this.db
@@ -282,7 +282,26 @@ class EmailService {
               onConflict: 'user_id,external_thread_id',
             });
 
-          // Store individual email message
+          // Run AI triage analysis
+          const triageResult = await this.triageEngine.analyze(email);
+
+          // Map urgency to category for database
+          let aiCategory = 'normal';
+          if (triageResult.urgency === 'immediate' || triageResult.importance > 0.8) {
+            aiCategory = 'urgent';
+          } else if (triageResult.importance > 0.6) {
+            aiCategory = 'important';
+          } else if (triageResult.importance < 0.3) {
+            aiCategory = 'low';
+          }
+
+          // Calculate priority score (1-10)
+          const aiPriority = Math.round(triageResult.importance * 10);
+
+          // Generate AI summary
+          const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
+
+          // Store individual email message with AI analysis
           await this.db
             .from('email_messages')
             .upsert({
@@ -298,9 +317,20 @@ class EmailService {
               body_html: email.htmlBody || null,
               received_at: email.timestamp,
               is_read: email.isRead || false,
+              ai_category: aiCategory,
+              ai_priority: aiPriority,
+              ai_summary: aiSummary,
             }, {
               onConflict: 'user_id,external_message_id',
             });
+
+          logger.info({
+            emailId: email.id,
+            aiCategory,
+            aiPriority,
+            urgency: triageResult.urgency,
+            importance: triageResult.importance
+          }, 'Email triaged and stored');
         }
 
         res.json({ emails, count: emails.length });
