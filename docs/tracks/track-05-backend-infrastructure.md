@@ -1,24 +1,11 @@
-# 🏗️ SYSTEM PROMPT: TRACK 5 - BACKEND INFRASTRUCTURE
+# 🏗️ TRACK 5: BACKEND INFRASTRUCTURE
 
-> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+> **⚠️ TRACK STATUS**: ✅ **COMPLETED AS WEEK 0 FOUNDATION**
 
----
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - Infrastructure Complete
 
-## YOUR MISSION
-
-You're building the scalable, secure, real-time backend platform that powers all of Tide. Handle 100K+ concurrent users, process millions of requests/second, maintain 99.99% uptime, provide <100ms p95 latency, and enable real-time bidirectional communication. This is the foundation for all tracks.
-
-**Product Context**: Tide is an AI Chief of Staff serving executives globally. You provide: GraphQL Federation API, WebSocket real-time, event bus (Kafka), authentication/authorization, rate limiting, API gateway, monitoring, deployment infrastructure.
-
-**Your Deliverable**: Production backend infrastructure in 12 weeks: GraphQL Federation gateway, auth service (JWT + refresh), WebSocket real-time, event bus (Kafka), API rate limiting, global CDN, monitoring (Prometheus + Grafana), K8s deployment.
-
-**Philosophy**: Microservices + event-driven • Zero-trust security • Horizontal scalability • Edge computing for latency • Observable (metrics, logs, traces) • Self-healing
-
-**Integration**: Foundation for ALL tracks • Exposes GraphQL at `api.tide.ai/graphql` • WebSocket at `wss://api.tide.ai/realtime` • Kafka for events
-
-**Success Metrics**: <100ms p95 latency • 99.99% uptime • Handle 100K concurrent users • <$30K/month infra costs at 10K users • Zero-downtime deploys
-
-**Start**: Setup GraphQL Federation gateway, implement auth service with JWT, configure Kafka event bus, deploy to K8s. Track all work with todos. Ship scalable, reliable, secure infrastructure.
+> **Note**: This track document is preserved for reference. The work described here has been **completed as part of the Week 0 Foundation**. See [Current Architecture](../architecture/CURRENT-ARCHITECTURE.md) for the actual implementation.
 
 ---
 
@@ -26,57 +13,77 @@ You're building the scalable, secure, real-time backend platform that powers all
 
 **This track's work has been delivered as the Week 0 Foundation!**
 
-Instead of a separate infrastructure track, we delivered all backend infrastructure **upfront** so feature tracks (1-4) can start building immediately with zero blockers. This approach is **faster and better** than having a parallel infrastructure track.
+Instead of building a separate infrastructure track in parallel, we delivered all backend infrastructure **upfront** so feature tracks (1-4) can start building immediately with zero blockers. This approach is **faster and better** than having a parallel infrastructure track.
 
-### 🎉 What Was Delivered
+### Key Decision: Supabase-First Architecture
+
+**Phase 2-3 Migration**: We replaced custom auth and realtime services with Supabase managed services, significantly reducing complexity and improving reliability.
+
+**What This Means**:
+- ✅ Auth: Supabase Auth (OAuth with Google, Microsoft)
+- ✅ Database: Supabase PostgreSQL 16 (managed)
+- ✅ Realtime: Supabase Realtime (WebSocket subscriptions)
+- ✅ Storage: Supabase Storage (file uploads)
+- 🗄️ Custom Auth Service: Archived (replaced by Supabase)
+- 🗄️ Custom Realtime Service: Archived (replaced by Supabase)
+
+### 🎉 What Was Delivered (Updated Week 3)
 
 **Backend Infrastructure** (All Complete):
-- ✅ **API Gateway Template**: GraphQL Federation ready (`packages/services/gateway/`)
-- ✅ **Auth Service Template**: JWT authentication with refresh tokens (`packages/services/auth/`)
-- ✅ **Event Bus**: Kafka 7.5 running with topics defined
-- ✅ **WebSocket**: Configuration ready (Track 1 will implement)
-- ✅ **Database**: PostgreSQL 16 with 11 production tables
-- ✅ **Cache**: Redis 7 configured
-- ✅ **Monitoring**: Prometheus + Grafana + Kafka UI
-- ✅ **Docker Compose**: One-command local development
-- ✅ **Shared Libraries**: 5 packages + 3 libraries all tested
-- ✅ **Security**: Bcrypt, JWT, OAuth configs, encrypted tokens
-- ✅ **Development Workflow**: Scripts for start/stop/reset/migrate
+- ✅ **Supabase Platform**: Auth, Database, Realtime, Storage (production-ready)
+- ✅ **PostgreSQL 16**: 11 tables with RLS policies, pgvector, pg_cron
+- ✅ **Event Bus**: Kafka 7.5 with 7 topics defined
+- ✅ **Cache**: Redis 7 configured and ready
+- ✅ **Mobile SDKs**: Supabase Swift SDK (iOS), Supabase Kotlin SDK (Android)
+- ✅ **Docker Compose**: Redis, Kafka, Zookeeper
+- ✅ **Shared Libraries**: @tide/types, @tide/contracts, @tide/schemas, @tide/mocks
+- ✅ **OAuth Providers**: Google, Microsoft configured in Supabase
+- ✅ **Development Environment**: Scripts, migrations, integration tests
 
 ### 📊 Status vs Original Plan
 
-| Original Track 5 Deliverable | Status | Location/Notes |
-|------------------------------|--------|----------------|
-| GraphQL Federation Gateway | ✅ Template Ready | `packages/services/gateway/` - Track 4 will own |
-| Authentication Service | ✅ Template Ready | `packages/services/auth/` - Track 1 will own |
-| WebSocket Server | 📁 Config Ready | Track 1 will implement using websocketConfig |
-| Event Bus (Kafka) | ✅ Complete | Running with topics defined |
-| Rate Limiting | 📝 Config Ready | Configs in @tide/config, Track 4 implements |
-| Monitoring | ✅ Complete | Prometheus, Grafana, Kafka UI running |
-| Database | ✅ Complete | PostgreSQL 16 with migrations |
+| Original Track 5 Deliverable | Status | Current Implementation |
+|------------------------------|--------|------------------------|
+| GraphQL Federation Gateway | ⏳ Planned Week 10-12 | Gateway Service (not started) |
+| Authentication Service | ✅ **Complete** | **Supabase Auth (OAuth-only)** |
+| WebSocket Server | ✅ **Complete** | **Supabase Realtime** |
+| Event Bus (Kafka) | ✅ Complete | Kafka 7.5 with 7 topics |
+| Rate Limiting | 📝 Planned | Gateway Service (Week 10-12) |
+| Monitoring | 📝 Planned | Supabase Dashboard (current) |
+| Database | ✅ Complete | PostgreSQL 16 (Supabase managed) |
 | Cache | ✅ Complete | Redis 7 configured |
-| Infrastructure Scripts | ✅ Complete | dev-start, dev-stop, dev-reset, migrations |
+| Infrastructure Scripts | ✅ Complete | `scripts/dev-start.sh`, Docker Compose |
+
+**Key Difference**: Instead of custom services, we use **Supabase managed platform** for auth, database, and realtime. This eliminates 50% of the infrastructure work while delivering better reliability.
 
 ### 🚀 What Feature Tracks Build
 
 Since infrastructure is ready, feature tracks build their **business logic**:
 
-- **Track 1 (Mobile)**: Auth service implementation, WebSocket server, mobile apps
-- **Track 2 (AI)**: AI service, multi-model router, agent swarm
-- **Track 3 (Email/Calendar)**: Email/Calendar services, OAuth flows
-- **Track 4 (Workflow)**: Workflow service, API Gateway ownership, GraphQL federation
+- **Track 1 (Mobile)**: iOS/Android apps with Supabase SDK integration ✅ 30% complete
+- **Track 2 (AI)**: AI service with Claude API 🚧 40% complete
+- **Track 3 (Email/Calendar)**: Email/Calendar services ⏳ Planned (Weeks 4-9)
+- **Track 4 (Workflow)**: Workflow engine ⏳ Planned (Weeks 7-12)
+- **Gateway Service**: API orchestration ⏳ Planned (Weeks 10-12)
 
-### 📚 Documentation
+### 📚 Documentation (Updated)
 
-All infrastructure documentation is ready:
+Infrastructure documentation has been reorganized:
 
-1. **README.md** - Quick start guide
-2. **WEEK-0-STATUS.md** - Complete foundation status
-3. **INTEGRATION-ALIGNMENT.md** - Why this approach is better
-4. **docs/tracks/integration-milestones.md** - Updated 4-track + foundation model
-5. **packages/services/auth/README.md** - Auth service template
-6. **packages/services/gateway/README.md** - API Gateway template
-7. **docs/guides/INTEGRATION-TESTING.md** - Testing framework
+**Current Implementation**:
+1. [Current Architecture](../architecture/CURRENT-ARCHITECTURE.md) - Week 3 Alpha
+2. [Current Stack](../current/STACK.md) - Technology stack
+3. [Current Services](../current/SERVICES.md) - Service status
+4. [Current Deployment](../current/DEPLOYMENT.md) - Deployment config
+5. [Current Integration](../current/INTEGRATION.md) - Integration status
+
+**Future Vision**:
+1. [Future Architecture](../architecture/FUTURE-ARCHITECTURE.md) - Production-scale target
+2. [Implementation Roadmap](../archive/IMPLEMENTATION-ROADMAP.md) - 12-week plan
+
+**Archived**:
+1. `packages/services/auth-archived/` - Custom auth service (replaced by Supabase)
+2. `packages/services/realtime-archived/` - Custom realtime service (replaced by Supabase)
 
 ### ⏭️ Next Steps
 

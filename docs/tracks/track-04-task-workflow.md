@@ -1,5 +1,32 @@
 # ✅ SYSTEM PROMPT: TRACK 4 - TASK & WORKFLOW SYSTEM
 
+> **⚠️ TRACK STATUS**: ⏳ **PLANNED** (0% complete)
+
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - Planned for Weeks 7-12
+
+**Current Progress**:
+- ✅ Week 0 Foundation Complete (Supabase, PostgreSQL, Redis, Kafka)
+- ✅ Event sourcing infrastructure ready (Kafka + outbox pattern)
+- ✅ API Gateway template ready (GraphQL Federation)
+- ⏳ Workflow service planned for Week 7-9
+- ⏳ Task management planned for Week 7-9
+- ⏳ Pattern detection planned for Week 10-12
+- ⏳ Team workflows planned for Week 10-12
+
+**Architecture Changes**:
+- Using **Supabase PostgreSQL** for workflow state and task storage
+- Workflow orchestration via **Kafka** (event-driven)
+- API Gateway (GraphQL Federation) owned by Track 4
+- See [Current Architecture](/Users/edwardzhong/Projects/tide/docs/architecture/CURRENT-ARCHITECTURE.md) for details
+
+**Documentation**:
+- Current Stack: [docs/current/STACK.md](/Users/edwardzhong/Projects/tide/docs/current/STACK.md)
+- Services: [docs/current/SERVICES.md](/Users/edwardzhong/Projects/tide/docs/current/SERVICES.md)
+- Integration: [docs/current/INTEGRATION.md](/Users/edwardzhong/Projects/tide/docs/current/INTEGRATION.md)
+
+---
+
 > **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
 
 ---
@@ -22,50 +49,55 @@ You're building an intelligent workflow automation platform that detects pattern
 
 ---
 
-## 📦 Week 0 Foundation - READY FOR YOU
+## 📦 Week 0 Foundation - ✅ COMPLETE
 
-The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+**Infrastructure delivered and operational** (completed as Week 0 Foundation - now Tracks 5-6):
 
 ### ✅ What's Ready
-- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5 (perfect for event-driven workflows), Monitoring
-- **Database**: Event sourcing tables (events, outbox), transaction support for state management
+- **Supabase Platform**: PostgreSQL 16 with Row Level Security, transaction support
+- **Infrastructure**: Redis 7, Kafka 7.5 (perfect for event-driven workflows), Monitoring
+- **Database**: Event sourcing tables (events, outbox), state management support
 - **Event Bus**: Kafka ready for async workflow orchestration, workflow.* & task.* topics defined
 - **Shared Packages**: @tide/config (event types), @tide/types, @tide/errors, @tide/validation
 - **Libraries**: @tide/logger, @tide/database (with transaction support for state machines)
 - **Outbox Pattern**: Reliable event publishing for workflow steps
 - **API Gateway Template**: GraphQL Federation template ready (`packages/services/gateway/`)
-- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+- **Testing**: Integration test framework ready
 
 ### 📚 Essential Reading (Read These First!)
-1. **README.md** - Quick start and developer guide
-2. **WEEK-0-STATUS.md** - Complete foundation status (see Track 4 section)
-3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
-4. **packages/services/gateway/README.md** - API Gateway template (you'll own this!)
-5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+1. **docs/architecture/CURRENT-ARCHITECTURE.md** - Current Supabase-first architecture
+2. **docs/architecture/FUTURE-ARCHITECTURE.md** - Future evolution plan
+3. **docs/current/STACK.md** - Technology stack (updated for Supabase)
+4. **docs/current/SERVICES.md** - Service architecture overview
+5. **docs/tracks/integration-milestones.md** - Integration plan with Week 3 Alpha status
+6. **docs/tracks/track-05-backend-infrastructure.md** - Week 0 Foundation details
+7. **packages/services/gateway/README.md** - API Gateway template (you'll own this!)
 
 ### 🚀 Quick Start
 ```bash
-# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
-pnpm dev:start
+# 1. Environment setup
+cp .env.example .env
+# Add your Supabase credentials
 
-# 2. Run migrations
-pnpm db:migrate
+# 2. Start local infrastructure (Redis, Kafka, Monitoring)
+pnpm dev:start
 
 # 3. Build all packages
 pnpm build
 
-# 4. Database tables extensible (add workflow/task tables as needed)
+# 4. Database extensible (add workflow/task tables as needed in migrations)
 # 5. You're ready! Zero infrastructure blockers.
 ```
 
-### 🔗 Your Responsibilities
+### 🔗 Your Responsibilities (Starting Week 7)
 - **Workflow Service**: You'll build this (create in `packages/services/workflow/`)
 - **API Gateway**: You'll own this (template in `packages/services/gateway/`)
 - **GraphQL Federation**: Coordinate with other tracks to add their services as subgraphs
 - **Event Orchestration**: Use Kafka for async workflow step execution
+- **Database Migrations**: Create workflow/task tables (see `packages/libraries/database/migrations/`)
 
 ### 🎯 Special Note
-Track 4 is recommended to **own the API Gateway** since you're coordinating workflows across all services. The template is ready - add your workflow service as the first subgraph, then coordinate with other tracks to federate their services.
+Track 4 **owns the API Gateway** since you're coordinating workflows across all services. The template is ready - add your workflow service as the first subgraph, then coordinate with other tracks to federate their services.
 
 ---
 

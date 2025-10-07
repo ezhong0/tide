@@ -1,5 +1,32 @@
 # 🚀 SYSTEM PROMPT: TRACK 1 - MOBILE APPS
 
+> **⚠️ TRACK STATUS**: 🚧 **IN PROGRESS** (30% complete)
+
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - SDK Integrated, UI Development In Progress
+
+**Current Progress**:
+- ✅ Week 0 Foundation Complete (Supabase Auth, PostgreSQL, Redis, Kafka)
+- ✅ Supabase SDK integrated in mobile apps
+- 🚧 Core UI components in development
+- 🚧 Real-time subscriptions being implemented
+- ⏳ Offline mode planned for Week 4-6
+- ⏳ Platform-specific features (Live Activities, Watch apps) planned for Week 7-9
+
+**Architecture Changes**:
+- Using **Supabase Auth** (OAuth-only, no custom auth service)
+- Using **Supabase Realtime** for WebSocket connections
+- Backend services built on **Supabase PostgreSQL** with Row Level Security
+- See [Current Architecture](/Users/edwardzhong/Projects/tide/docs/architecture/CURRENT-ARCHITECTURE.md) for details
+
+**Documentation**:
+- Current Stack: [docs/current/STACK.md](/Users/edwardzhong/Projects/tide/docs/current/STACK.md)
+- Services: [docs/current/SERVICES.md](/Users/edwardzhong/Projects/tide/docs/current/SERVICES.md)
+- Deployment: [docs/current/DEPLOYMENT.md](/Users/edwardzhong/Projects/tide/docs/current/DEPLOYMENT.md)
+- Integration: [docs/current/INTEGRATION.md](/Users/edwardzhong/Projects/tide/docs/current/INTEGRATION.md)
+
+---
+
 > **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
 
 ---
@@ -14,7 +41,7 @@ You're building native iOS/Android apps for Tide - an AI Chief of Staff ($150/mo
 
 **Philosophy**: Powerful by default • Beautiful motion (60fps) • Trustworthy (show reasoning) • Anticipatory (predictive UI)
 
-**Integration**: GraphQL `api.tide.ai/graphql` • WebSocket `wss://api.tide.ai/realtime`
+**Integration**: Supabase Auth (OAuth) • Supabase Realtime (WebSocket) • GraphQL API Gateway
 
 **Success Metrics**: <1s launch • <100ms response • 60fps • <5% battery • 90% daily active • 4.8+ stars
 
@@ -22,44 +49,50 @@ You're building native iOS/Android apps for Tide - an AI Chief of Staff ($150/mo
 
 ---
 
-## 📦 Week 0 Foundation - READY FOR YOU
+## 📦 Week 0 Foundation - ✅ COMPLETE
 
-The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+**Infrastructure delivered and operational** (completed as Week 0 Foundation - now Tracks 5-6):
 
 ### ✅ What's Ready
-- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5, Monitoring (Prometheus, Grafana)
-- **Database**: 11 tables including users, conversations, messages, OAuth tokens
+- **Supabase Platform**: PostgreSQL 16, Supabase Auth (OAuth-only), Supabase Realtime
+- **Infrastructure**: Redis 7, Kafka 7.5, Monitoring (Prometheus, Grafana)
+- **Database**: PostgreSQL with Row Level Security policies
 - **Shared Packages**: @tide/config, @tide/types, @tide/errors, @tide/validation, @tide/contracts
 - **Libraries**: @tide/logger, @tide/database, @tide/mocks
-- **Auth Template**: Complete authentication service with JWT (`packages/services/auth/`)
-- **API Gateway Template**: GraphQL Federation setup (`packages/services/gateway/`)
-- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+- **API Gateway**: GraphQL Federation setup (Track 4 responsibility)
+- **Testing**: Integration test framework ready
 
 ### 📚 Essential Reading (Read These First!)
-1. **README.md** - Quick start and developer guide
-2. **WEEK-0-STATUS.md** - Complete foundation status and track readiness
-3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
-4. **packages/services/auth/README.md** - Reference for building services
-5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+1. **docs/architecture/CURRENT-ARCHITECTURE.md** - Current Supabase-first architecture
+2. **docs/architecture/FUTURE-ARCHITECTURE.md** - Future evolution plan
+3. **docs/current/STACK.md** - Technology stack (updated for Supabase)
+4. **docs/current/SERVICES.md** - Service architecture overview
+5. **docs/tracks/integration-milestones.md** - Integration plan with Week 3 Alpha status
+6. **docs/tracks/track-05-backend-infrastructure.md** - Week 0 Foundation details
+7. **docs/tracks/track-06-data-analytics.md** - Data platform details
 
 ### 🚀 Quick Start
 ```bash
-# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
+# 1. Environment setup
+cp .env.example .env
+# Add your Supabase credentials (URL, anon key, service key)
+
+# 2. Start local infrastructure (Redis, Kafka, Monitoring)
 pnpm dev:start
 
-# 2. Run migrations
-pnpm db:migrate
+# 3. Supabase is cloud-hosted, no local setup needed
 
-# 3. Build all packages
+# 4. Build all packages
 pnpm build
 
-# 4. You're ready! Zero infrastructure blockers.
+# 5. You're ready! Zero infrastructure blockers.
 ```
 
-### 🔗 Your Dependencies
-- **Auth Service**: You'll build this (use template in `packages/services/auth/`)
-- **WebSocket Service**: You'll build this for real-time updates
-- **GraphQL API**: Coordinate with Track 4 for API Gateway
+### 🔗 Your Integration Points
+- **Authentication**: Supabase Auth with OAuth providers (Google, GitHub, Apple)
+- **Real-time**: Supabase Realtime for WebSocket connections
+- **GraphQL API**: API Gateway (Track 4) federates all services
+- **Database**: Direct Supabase client for queries with RLS
 
 ---
 

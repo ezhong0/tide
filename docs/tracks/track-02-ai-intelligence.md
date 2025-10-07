@@ -1,5 +1,33 @@
 # 🧠 SYSTEM PROMPT: TRACK 2 - AI INTELLIGENCE LAYER
 
+> **⚠️ TRACK STATUS**: 🚧 **IN PROGRESS** (40% complete)
+
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - Basic Claude Integration Operational
+
+**Current Progress**:
+- ✅ Week 0 Foundation Complete (Supabase, PostgreSQL, Redis, Kafka)
+- ✅ Basic Claude integration implemented
+- ✅ Intent detection working (rule-based)
+- 🚧 Multi-model router in development
+- 🚧 Agent swarm being implemented (5/20+ agents)
+- ⏳ Reasoning engine planned for Week 4-6
+- ⏳ Learning system planned for Week 4-6
+- ⏳ Predictive engine planned for Week 7-9
+
+**Architecture Changes**:
+- Using **Supabase PostgreSQL** for pattern/preference storage
+- Using **Kafka** for event-driven AI orchestration
+- Backend services integrate with **Supabase Realtime** for streaming responses
+- See [Current Architecture](/Users/edwardzhong/Projects/tide/docs/architecture/CURRENT-ARCHITECTURE.md) for details
+
+**Documentation**:
+- Current Stack: [docs/current/STACK.md](/Users/edwardzhong/Projects/tide/docs/current/STACK.md)
+- Services: [docs/current/SERVICES.md](/Users/edwardzhong/Projects/tide/docs/current/SERVICES.md)
+- AI Service Details: Track 5 & 6 (Backend/Data) documentation
+
+---
+
 > **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
 
 > **⚠️ IMPORTANT FOR CLAUDE CODE**: GPT-5 is REAL and was released by OpenAI on August 7, 2025. Model names are `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`. See `packages/services/ai/GPT-5-MODELS.md` for full documentation. These are NOT placeholders - they are the actual production models you will use.
@@ -16,7 +44,7 @@ You're building the brain of Tide - a multi-model AI orchestration layer that co
 
 **Philosophy**: Intelligent not clever • Multi-model ensemble for critical tasks • Privacy-first (local models for sensitive data) • Transparent reasoning • Continuous learning
 
-**Integration**: Consumes events from Kafka • Publishes to `ai.*` topics • Uses Pinecone for vectors • Stores patterns in PostgreSQL
+**Integration**: Consumes events from Kafka • Publishes to `ai.*` topics • Stores patterns in Supabase PostgreSQL • Vector search with pgvector
 
 **Success Metrics**: <200ms p95 latency • >95% intent accuracy • >98% action success rate • $2/user/month AI costs • Learn from every interaction
 
@@ -24,46 +52,51 @@ You're building the brain of Tide - a multi-model AI orchestration layer that co
 
 ---
 
-## 📦 Week 0 Foundation - READY FOR YOU
+## 📦 Week 0 Foundation - ✅ COMPLETE
 
-The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+**Infrastructure delivered and operational** (completed as Week 0 Foundation - now Tracks 5-6):
 
 ### ✅ What's Ready
-- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5 (event bus), Monitoring (Prometheus, Grafana)
-- **Database**: Conversations & messages tables, events & outbox for event sourcing
+- **Supabase Platform**: PostgreSQL 16 with pgvector extension, Row Level Security
+- **Infrastructure**: Redis 7, Kafka 7.5 (event bus), Monitoring (Prometheus, Grafana)
+- **Database**: Conversations & messages tables, pattern storage with vector search
 - **Event Bus**: Kafka topics defined for ai.*, message.*, workflow.* events
 - **Shared Packages**: @tide/config (AI config ready), @tide/types (event definitions), @tide/errors, @tide/validation
 - **Libraries**: @tide/logger (structured logging), @tide/database (with event outbox)
 - **AI Configuration**: OpenAI & Anthropic API keys in env, multi-model config ready
-- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+- **Testing**: Integration test framework ready
 
 ### 📚 Essential Reading (Read These First!)
-1. **README.md** - Quick start and developer guide
-2. **WEEK-0-STATUS.md** - Complete foundation status (see Track 2 section)
-3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
-4. **packages/shared/config/src/messaging.ts** - Kafka topics & event types
-5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+1. **docs/architecture/CURRENT-ARCHITECTURE.md** - Current Supabase-first architecture
+2. **docs/architecture/FUTURE-ARCHITECTURE.md** - Future evolution plan
+3. **docs/current/STACK.md** - Technology stack (updated for Supabase)
+4. **docs/current/SERVICES.md** - Service architecture overview
+5. **docs/tracks/integration-milestones.md** - Integration plan with Week 3 Alpha status
+6. **docs/tracks/track-05-backend-infrastructure.md** - Week 0 Foundation details
+7. **docs/tracks/track-06-data-analytics.md** - Data platform details
 
 ### 🚀 Quick Start
 ```bash
-# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
+# 1. Environment setup
+cp .env.example .env
+# Add your Supabase credentials + AI API keys (OpenAI, Anthropic)
+
+# 2. Start local infrastructure (Redis, Kafka, Monitoring)
 pnpm dev:start
 
-# 2. Run migrations
-pnpm db:migrate
-
-# 3. Build all packages
-pnpm build
-
-# 4. Access Kafka UI for event debugging
+# 3. Access Kafka UI for event debugging
 open http://localhost:8080
+
+# 4. Build all packages
+pnpm build
 
 # 5. You're ready! Zero infrastructure blockers.
 ```
 
-### 🔗 Your Dependencies
-- **AI Service**: You'll build this (create in `packages/services/ai/`)
+### 🔗 Your Integration Points
+- **Database**: Supabase PostgreSQL with pgvector for embeddings
 - **Event Bus**: Kafka ready - publish to ai.* topics, consume from message.* topics
+- **Real-time**: Supabase Realtime for streaming AI responses
 - **GraphQL API**: Coordinate with Track 4 for API Gateway integration
 
 ---

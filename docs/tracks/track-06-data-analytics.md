@@ -1,24 +1,11 @@
-# 📊 SYSTEM PROMPT: TRACK 6 - DATA & ANALYTICS PLATFORM
+# 📊 TRACK 6: DATA & ANALYTICS PLATFORM
 
-> **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
+> **⚠️ TRACK STATUS**: ✅ **COMPLETED AS WEEK 0 FOUNDATION**
 
----
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - Data Infrastructure Complete
 
-## YOUR MISSION
-
-You're building the multi-tier data platform that powers all intelligence: transactional storage, vector embeddings, real-time analytics, ML pipelines. Support <1ms queries (hot), petabyte-scale analytics (cold), and the learning that makes Tide genius. This is the foundation that enables all AI capabilities.
-
-**Product Context**: Tide is an AI Chief of Staff that learns from every interaction. You provide: multi-tier storage (Redis/Postgres/S3), vector DB (Pinecone), real-time streaming (Kafka), analytics warehouse (ClickHouse), ML pipelines, predictive caching.
-
-**Your Deliverable**: Production data platform in 12 weeks: Redis cluster (hot <1ms), Postgres with pgvector (warm <10ms), S3 data lake (cold), Pinecone vectors (<50ms), Kafka streams, ClickHouse warehouse, ML feature store, intelligent caching.
-
-**Philosophy**: Right data, right tier, right time • Real-time streaming everywhere • Privacy-first (encryption at rest/transit) • Immutable event sourcing • ML-first data model
-
-**Integration**: Foundation for ALL tracks • Provides storage APIs • Streams events via Kafka • Serves ML features • Powers Track 2 AI
-
-**Success Metrics**: <1ms hot queries • <10ms warm queries • Process 1M events/sec • $10/user/month storage at scale • Zero data loss • GDPR compliant
-
-**Start**: Setup Postgres with pgvector, configure Redis cluster, initialize Pinecone, build Kafka streaming pipeline. Track all work with todos. Ship fast, scalable, intelligent data platform.
+> **Note**: This track document is preserved for reference. The work described here has been **completed as part of the Week 0 Foundation**. See [Current Architecture](../architecture/CURRENT-ARCHITECTURE.md) for the actual implementation.
 
 ---
 
@@ -26,58 +13,110 @@ You're building the multi-tier data platform that powers all intelligence: trans
 
 **This track's work has been delivered as the Week 0 Foundation!**
 
-Instead of a separate data/analytics track, we delivered all data platform infrastructure **upfront** so feature tracks (1-4) can start storing and querying data immediately with zero blockers. This approach is **faster and better** than having a parallel data track.
+Instead of building a separate data/analytics track in parallel, we delivered all data platform infrastructure **upfront** so feature tracks (1-4) can start storing and querying data immediately with zero blockers. This approach is **faster and better** than having a parallel data track.
 
-### 🎉 What Was Delivered
+### Key Decision: Supabase PostgreSQL + Event Sourcing
+
+**Architecture Decision**: We use Supabase-managed PostgreSQL 16 for all transactional and analytical data, with Redis for caching and Kafka for event streaming.
+
+**What This Means**:
+- ✅ PostgreSQL 16: Supabase-managed (automated backups, monitoring, scaling)
+- ✅ pgvector: Enabled for AI embeddings and RAG
+- ✅ RLS Policies: User-level data isolation enforced
+- ✅ Redis 7: Local (dev) → Redis Cloud (production)
+- ✅ Kafka 7.5: Local (dev) → Confluent Cloud (production)
+- ⏳ Pinecone: Planned for production-scale vector search (future)
+- ⏳ ClickHouse: Planned for analytics warehouse (future)
+- ⏳ S3 Data Lake: Planned for cold storage (future)
+
+### 🎉 What Was Delivered (Updated Week 3)
 
 **Data & Analytics Platform** (Core Complete):
-- ✅ **PostgreSQL 16**: Production-ready with 11 tables, pgvector support configured
-- ✅ **Redis 7**: Cache layer configured for hot data (<1ms queries)
-- ✅ **Kafka 7.5**: Event streaming platform with topics defined
-- ✅ **Database Schema**: Users, conversations, messages, events, outbox (event sourcing)
-- ✅ **Event Sourcing**: Complete event log with outbox pattern for reliability
-- ✅ **Partitioning**: Hash partitioning (conversations), range partitioning (messages)
-- ✅ **Migrations**: 5 production migrations ready, extensible for tracks
-- ✅ **Monitoring**: Prometheus metrics, Grafana dashboards, Kafka UI
-- ✅ **Development Tools**: Scripts for data management, health checks
+- ✅ **PostgreSQL 16 (Supabase)**: 11 tables, RLS policies, pgvector extension
+- ✅ **Redis 7**: Cache layer ready for hot data (<1ms queries)
+- ✅ **Kafka 7.5**: Event streaming with 7 topics defined
+- ✅ **Database Schema**:
+  - `user_profiles`, `provider_tokens` (auth)
+  - `conversations`, `messages` (AI)
+  - `email_messages`, `calendar_events` (email/calendar)
+  - `tasks`, `workflows`, `workflow_executions`, `workflow_steps` (tasks/workflows)
+  - `patterns` (pattern detection)
+- ✅ **Event Sourcing Pattern**: Kafka topics for event-driven architecture
+- ✅ **Migrations**: 8 migrations applied via Supabase CLI
+- ✅ **Monitoring**: Supabase Dashboard, Docker logs
+- ✅ **Development Tools**: `supabase db push`, `supabase db reset`, integration tests
 
 ### 📊 Status vs Original Plan
 
-| Original Track 6 Deliverable | Status | Location/Notes |
-|------------------------------|--------|----------------|
-| PostgreSQL Cluster | ✅ Complete | PostgreSQL 16 running, 11 tables, migrations |
-| Redis Cluster | ✅ Complete | Redis 7 configured, cache configs in @tide/config |
-| Kafka Streaming | ✅ Complete | Kafka 7.5 with topics, event types defined |
-| Vector Database (Pinecone) | 📝 Config Ready | vectorDBConfig in @tide/config, Track 2 implements |
-| ClickHouse Warehouse | ⏳ Future | Not needed for MVP, can add later |
+| Original Track 6 Deliverable | Status | Current Implementation |
+|------------------------------|--------|------------------------|
+| PostgreSQL Cluster | ✅ **Complete** | **Supabase PostgreSQL 16 (managed)** |
+| Redis Cluster | ✅ Complete | Redis 7 (Docker → Redis Cloud) |
+| Kafka Streaming | ✅ Complete | Kafka 7.5 with 7 topics |
+| Vector Database (pgvector) | ✅ **Complete** | **pgvector extension enabled** |
+| Vector Database (Pinecone) | ⏳ Future | Planned for production scale |
+| ClickHouse Warehouse | ⏳ Future | Not needed for MVP |
 | ML Feature Store | ⏳ Future | Track 2 will implement as needed |
 | Data Lake (S3) | ⏳ Future | Can add when cold storage needed |
-| Event Sourcing | ✅ Complete | events & outbox tables, full audit log |
-| Real-time Analytics | 📝 Tools Ready | Prometheus + Grafana operational |
+| Event Sourcing | ✅ Complete | Kafka event streaming |
+| Real-time Analytics | 🚧 Partial | Supabase Dashboard (current) |
+
+**Key Difference**: We use **Supabase-managed PostgreSQL** instead of self-hosted cluster, eliminating operational overhead while delivering better reliability and performance.
 
 ### 🚀 What Feature Tracks Build
 
-Since data infrastructure is ready, feature tracks build their **data models**:
+Since data infrastructure is ready, feature tracks build their **data models and business logic**:
 
 - **Track 1 (Mobile)**: User preferences, session data, mobile analytics
-- **Track 2 (AI)**: Vector embeddings, ML features, conversation context
-- **Track 3 (Email/Calendar)**: Email metadata, calendar events, relationship data
-- **Track 4 (Workflow)**: Workflow state, task data, execution history
+  - **Status**: ✅ 30% complete (Supabase SDK integrated)
 
-**How to extend the database**:
+- **Track 2 (AI)**: Vector embeddings, ML features, conversation context
+  - **Status**: 🚧 40% complete (basic storage working)
+
+- **Track 3 (Email/Calendar)**: Email metadata, calendar events, relationship data
+  - **Status**: ⏳ Planned (Weeks 4-9)
+
+- **Track 4 (Workflow)**: Workflow state, task data, execution history
+  - **Status**: ⏳ Planned (Weeks 7-12)
+
+### How Feature Tracks Extend the Database
+
+**Option 1: Add new migration (recommended)**:
 ```bash
 # Create new migration
-cat > packages/libraries/database/migrations/006_my_feature.sql <<EOF
--- Add your tables
-CREATE TABLE tide.my_table (
+cd packages/libraries/database/migrations/
+touch 009_my_feature.sql
+
+# Write SQL
+cat > 009_my_feature.sql <<EOF
+-- Create new table
+CREATE TABLE IF NOT EXISTS public.my_table (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ...
+  user_id UUID NOT NULL REFERENCES public.user_profiles(id),
+  data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Enable RLS
+ALTER TABLE public.my_table ENABLE ROW LEVEL SECURITY;
+
+-- Add RLS policy
+CREATE POLICY "Users can only see their own data"
+  ON public.my_table
+  FOR SELECT
+  USING (auth.uid() = user_id);
 EOF
 
-# Run migration
-pnpm db:migrate
+# Apply migration
+supabase db push
 ```
+
+**Option 2: Use Supabase Dashboard**:
+1. Go to https://app.supabase.com
+2. Select your project
+3. Go to "Table Editor" → "New table"
+4. Design schema visually
+5. Export SQL for version control
 
 ### 📚 Documentation
 

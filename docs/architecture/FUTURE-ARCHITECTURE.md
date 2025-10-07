@@ -1,6 +1,33 @@
-# 🏗️ Tide Technical Architecture
+# 🏗️ Tide Future Architecture (Production-Scale Target)
+
+> **⚠️ IMPORTANT**: This document describes the **future production-scale architecture** that Tide will evolve towards. For the **current implementation** (Week 3 Alpha), see [CURRENT-ARCHITECTURE.md](./CURRENT-ARCHITECTURE.md).
 
 > Building the most sophisticated mobile AI assistant with uncompromising quality
+
+---
+
+## Document Status
+
+**Type**: Aspirational / Future Vision
+**Target Timeline**: Post-MVP (Week 13+)
+**Current Status**: Week 3 Alpha (see [CURRENT-ARCHITECTURE.md](./CURRENT-ARCHITECTURE.md))
+
+This document outlines the production-scale architecture that will support:
+- 100k+ concurrent users
+- 1M+ daily AI requests
+- 99.99% uptime SLA
+- Global edge deployment
+- Real-time collaboration
+- Multi-region data residency
+
+**For the current Week 3 Alpha implementation**, refer to:
+- [Current Architecture](./CURRENT-ARCHITECTURE.md) - What's actually built
+- [Current Stack](../current/STACK.md) - Current technology stack
+- [Current Services](../current/SERVICES.md) - Service implementation status
+- [Current Deployment](../current/DEPLOYMENT.md) - Deployment configuration
+- [Current Integration](../current/INTEGRATION.md) - Integration status
+
+---
 
 ## Table of Contents
 
