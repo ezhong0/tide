@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'tide-platform'
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Future services will be added here
+  # Example:
+  # - job_name: 'tide-auth-service'
+  #   static_configs:
+  #     - targets: ['auth-service:4001']
+  #   metrics_path: '/metrics'
+
+  # - job_name: 'tide-gateway'
+  #   static_configs:
+  #     - targets: ['gateway-service:4000']
+  #   metrics_path: '/metrics'

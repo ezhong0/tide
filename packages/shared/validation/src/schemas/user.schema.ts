@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EmailSchema, PhoneSchema } from './base.schema';
+import { EmailAddressSchema, PhoneSchema } from './base.schema';
 
 /**
  * User subscription plans
@@ -56,7 +56,7 @@ export const SubscriptionSchema = z.object({
  */
 export const UserSchema = z.object({
   id: z.string().uuid(),
-  email: EmailSchema,
+  email: EmailAddressSchema,
   emailVerified: z.boolean().default(false),
   profile: UserProfileSchema,
   preferences: UserPreferencesSchema,
@@ -72,7 +72,7 @@ export type User = z.infer<typeof UserSchema>;
  * User registration schema
  */
 export const UserRegistrationSchema = z.object({
-  email: EmailSchema,
+  email: EmailAddressSchema,
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password must not exceed 128 characters')
@@ -91,7 +91,7 @@ export type UserRegistration = z.infer<typeof UserRegistrationSchema>;
  * User login schema
  */
 export const UserLoginSchema = z.object({
-  email: EmailSchema,
+  email: EmailAddressSchema,
   password: z.string().min(1),
 });
 
@@ -111,7 +111,7 @@ export type UserUpdate = z.infer<typeof UserUpdateSchema>;
  * Password reset request schema
  */
 export const PasswordResetRequestSchema = z.object({
-  email: EmailSchema,
+  email: EmailAddressSchema,
 });
 
 /**
