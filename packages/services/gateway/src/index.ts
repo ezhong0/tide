@@ -2,7 +2,7 @@ import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import { logger } from '@tide/logger';
+import { logger } from './simple-logger.js';
 
 /**
  * API Gateway (REST Proxy)
