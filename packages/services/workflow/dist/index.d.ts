@@ -9,7 +9,14 @@ import { KafkaEventBus } from './events/kafka-event-bus.js';
  * Uses Supabase-first architecture (ADR-001)
  */
 declare const app: express.Application;
-declare const workflowEngine: null;
+import { SupabaseTaskRepository, SupabaseWorkflowRepository, SupabasePatternRepository } from './supabase-adapter.js';
+import { TaskEngine } from './tasks/task-engine.js';
+import { PatternDetector } from './patterns/pattern-detector.js';
+declare const taskRepository: SupabaseTaskRepository;
+declare const workflowRepository: SupabaseWorkflowRepository;
+declare const patternRepository: SupabasePatternRepository;
+declare const taskEngine: TaskEngine;
+declare const patternDetector: PatternDetector;
 declare const eventBus: KafkaEventBus | null;
-export { app, workflowEngine, eventBus };
+export { app, eventBus, taskEngine, patternDetector, workflowRepository, taskRepository, patternRepository, };
 //# sourceMappingURL=index.d.ts.map
