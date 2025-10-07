@@ -1,2 +1,2 @@
-export { createSupabase, createPool, query, queryOne, transaction, closePool, healthCheck } from './client';
+export { createSupabase } from './client';
 //# sourceMappingURL=index.d.ts.map

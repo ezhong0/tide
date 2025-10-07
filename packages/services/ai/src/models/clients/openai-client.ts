@@ -29,7 +29,7 @@ export class OpenAIClient implements ModelClient {
           { role: 'user' as const, content: prompt },
         ],
         temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 1000,
+        max_completion_tokens: options.maxTokens ?? 1000,
         stop: options.stopSequences,
       });
 
@@ -64,7 +64,7 @@ export class OpenAIClient implements ModelClient {
           { role: 'user' as const, content: prompt },
         ],
         temperature: options.temperature ?? 0.7,
-        max_tokens: options.maxTokens ?? 1000,
+        max_completion_tokens: options.maxTokens ?? 1000,
         stream: true,
       });
 

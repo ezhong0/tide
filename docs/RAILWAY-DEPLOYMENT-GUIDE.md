@@ -344,12 +344,27 @@ This script will:
 
 ## Success Criteria
 
-- [ ] All 5 services deployed successfully
-- [ ] All health checks passing (200 OK)
-- [ ] No errors in logs (checked last 100 lines)
-- [ ] Services can communicate with each other
+- [x] All 5 services deployed successfully ✅
+- [x] All health checks passing (200 OK) ✅
+- [x] No errors in logs (checked last 100 lines) ✅
+- [x] Services can communicate with each other ✅
 - [ ] Mobile apps can connect to gateway
 - [ ] OAuth flows working (test with one account)
+
+## Live Service URLs (Production)
+
+**Last Updated**: 2025-10-07
+
+- **Gateway**: https://gateway-production-caf0.up.railway.app
+- **AI Service**: https://ai-production-5753.up.railway.app
+- **Email Service**: https://email-production-264c.up.railway.app
+- **Calendar Service**: https://calendar-production-325a.up.railway.app
+- **Workflow Service**: https://workflow-production-a5d2.up.railway.app
+
+**Quick Health Check**:
+```bash
+./scripts/health-check.sh
+```
 
 ---
 
