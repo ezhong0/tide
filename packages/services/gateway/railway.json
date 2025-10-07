@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @tide/gateway build"
   },
   "deploy": {
-    "startCommand": "node packages/services/gateway/start.js",
+    "startCommand": "node packages/services/gateway/dist/index.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",

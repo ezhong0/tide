@@ -127,13 +127,11 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 });
 
 // Start server
-const PORT = parseInt(process.env.PORT || process.env.GATEWAY_PORT || '4000', 10);
-const HOST = '0.0.0.0'; // Bind to all interfaces for Railway
+const PORT = parseInt(process.env.GATEWAY_PORT || '4000', 10);
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, () => {
   logger.info({
     port: PORT,
-    host: HOST,
     service: 'gateway',
     mode: 'rest-proxy',
     services: {
