@@ -80,6 +80,25 @@ app.use('/api/workflow', createProxyMiddleware({
   pathRewrite: { '^/api/workflow': '' },
 }));
 
+// Root endpoint - landing page
+app.get('/', (req, res) => {
+  res.json({
+    name: 'Tide API Gateway',
+    version: '0.1.0',
+    mode: 'rest-proxy',
+    status: 'healthy',
+    endpoints: {
+      health: '/health',
+      services: '/api/services',
+      ai: '/api/ai/*',
+      email: '/api/email/*',
+      calendar: '/api/calendar/*',
+      workflow: '/api/workflow/*',
+    },
+    documentation: 'https://github.com/ezhong0/tide',
+  });
+});
+
 // Services info endpoint
 app.get('/api/services', (req, res) => {
   res.json({
