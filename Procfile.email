@@ -1,0 +1,1 @@
+web: node packages/services/email/dist/index.js

@@ -488,7 +488,8 @@ workflow.events      - Workflow execution events
 
 **Prerequisites**:
 - Node.js 20
-- Docker Desktop
+- Docker Desktop (optional - for local Redis/Kafka)
+- Railway CLI (`npm install -g @railway/cli`) - for production deployment
 - pnpm 9
 - Supabase CLI
 - Xcode 15 (for iOS)
@@ -578,15 +579,21 @@ See [docs/current/DEPLOYMENT.md](../current/DEPLOYMENT.md) for detailed deployme
 ## Monitoring & Observability
 
 **Current**:
-- Supabase Dashboard (database, auth, logs)
-- Docker Compose logs (`docker-compose logs -f`)
+- **Supabase Dashboard**: Database queries, auth users, API logs
+- **Railway Dashboard**: Service logs, metrics, resource usage (production)
+- **Docker Logs**: Local development debugging (`docker-compose logs -f`)
 - Manual testing
 
-**Planned** (future):
-- Prometheus + Grafana (metrics)
-- Loki (logging)
-- Tempo (distributed tracing)
-- Sentry (error tracking)
+**Railway Built-in Monitoring**:
+- Service health checks
+- CPU, memory, network metrics
+- Real-time logs (`railway logs`)
+- Deployment history and rollback
+
+**Future Enhancements**:
+- Sentry for error tracking (APM)
+- Custom dashboards (optional)
+- Alerting for critical issues
 
 ---
 

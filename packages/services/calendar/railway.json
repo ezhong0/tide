@@ -2,10 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd ../../.. && pnpm install --frozen-lockfile && pnpm --filter @tide/calendar-service build && cd packages/services/calendar"
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm --filter @tide/calendar-service build"
   },
   "deploy": {
-    "startCommand": "node dist/index.js",
+    "startCommand": "node packages/services/calendar/dist/index.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",

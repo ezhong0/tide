@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["corepack enable", "corepack prepare pnpm@latest --activate", "pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm build"]
