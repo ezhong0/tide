@@ -19,6 +19,12 @@ class TideError extends Error {
         Error.captureStackTrace(this, this.constructor);
     }
     /**
+     * Alias for details (for compatibility)
+     */
+    get metadata() {
+        return this.details;
+    }
+    /**
      * Convert error to API response format
      */
     toJSON() {

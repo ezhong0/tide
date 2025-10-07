@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.googleCalendarOAuthConfig = exports.exchangeOAuthConfig = exports.gmailOAuthConfig = exports.passwordConfig = exports.jwtConfig = void 0;
+exports.googleCalendarOAuthConfig = exports.exchangeOAuthConfig = exports.gmailOAuthConfig = exports.bcryptConfig = exports.passwordConfig = exports.jwtConfig = void 0;
 const env_1 = require("./env");
 /**
  * JWT token configuration
@@ -10,12 +10,23 @@ exports.jwtConfig = {
     refreshSecret: env_1.env.JWT_REFRESH_SECRET,
     accessExpiresIn: env_1.env.JWT_ACCESS_EXPIRES_IN,
     refreshExpiresIn: env_1.env.JWT_REFRESH_EXPIRES_IN,
+    // Aliases for compatibility
+    accessTokenSecret: env_1.env.JWT_ACCESS_SECRET,
+    refreshTokenSecret: env_1.env.JWT_REFRESH_SECRET,
+    accessTokenExpiry: env_1.env.JWT_ACCESS_EXPIRES_IN,
+    refreshTokenExpiry: env_1.env.JWT_REFRESH_EXPIRES_IN,
 };
 /**
  * Password hashing configuration
  */
 exports.passwordConfig = {
     bcryptRounds: env_1.env.BCRYPT_ROUNDS,
+};
+/**
+ * Bcrypt configuration (alias for passwordConfig for compatibility)
+ */
+exports.bcryptConfig = {
+    saltRounds: env_1.env.BCRYPT_ROUNDS,
 };
 /**
  * Gmail OAuth configuration

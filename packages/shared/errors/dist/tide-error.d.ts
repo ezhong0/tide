@@ -22,6 +22,10 @@ export declare class TideError extends Error {
     requestId?: string;
     constructor(code: ErrorCode, message: string, details?: any, statusCode?: number, isOperational?: boolean);
     /**
+     * Alias for details (for compatibility)
+     */
+    get metadata(): any;
+    /**
      * Convert error to API response format
      */
     toJSON(): ErrorDetail;

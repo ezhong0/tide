@@ -11,6 +11,8 @@ export declare class AuthErrors {
     static userAlreadyExists(email: string): TideError;
     static verificationRequired(): TideError;
     static accountLocked(reason?: string): TideError;
+    static invalidToken(): TideError;
+    static accountSuspended(): TideError;
 }
 /**
  * Email error factories

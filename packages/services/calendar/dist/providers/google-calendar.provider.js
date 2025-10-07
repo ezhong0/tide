@@ -1,0 +1,315 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GoogleCalendarProvider = void 0;
+const googleapis_1 = require("googleapis");
+const logger_1 = require("@tide/logger");
+/**
+ * Google Calendar provider implementation
+ */
+class GoogleCalendarProvider {
+    constructor() {
+        this.calendar = null;
+        this.userId = null;
+    }
+    /**
+     * Initialize Google Calendar client with OAuth credentials
+     */
+    async initialize(userId, tokens) {
+        try {
+            this.userId = userId;
+            // Create OAuth2 client
+            this.auth = new googleapis_1.google.auth.OAuth2();
+            this.auth.setCredentials({
+                access_token: tokens.accessToken,
+                refresh_token: tokens.refreshToken,
+                expiry_date: tokens.expiresAt.getTime(),
+            });
+            // Initialize Calendar API client
+            this.calendar = googleapis_1.google.calendar({ version: 'v3', auth: this.auth });
+            logger_1.logger.info({ userId }, 'Google Calendar provider initialized');
+        }
+        catch (error) {
+            logger_1.logger.error({ userId, error }, 'Failed to initialize Google Calendar provider');
+            throw error;
+        }
+    }
+    /**
+     * Fetch calendar events
+     */
+    async fetchEvents(start, end) {
+        if (!this.calendar || !this.userId) {
+            throw new Error('Google Calendar provider not initialized');
+        }
+        try {
+            const response = await this.calendar.events.list({
+                calendarId: 'primary',
+                timeMin: start.toISOString(),
+                timeMax: end.toISOString(),
+                singleEvents: true,
+                orderBy: 'startTime',
+                maxResults: 250,
+            });
+            if (!response.data.items || response.data.items.length === 0) {
+                return [];
+            }
+            return response.data.items
+                .map((event) => this.transformToCalendarEvent(event))
+                .filter((event) => event !== null);
+        }
+        catch (error) {
+            logger_1.logger.error({ userId: this.userId, error }, 'Failed to fetch calendar events');
+            throw error;
+        }
+    }
+    /**
+     * Transform Google Calendar event to CalendarEvent
+     */
+    transformToCalendarEvent(event) {
+        if (!event.id || !event.start || !event.end || !this.userId) {
+            return null;
+        }
+        const start = event.start.dateTime
+            ? new Date(event.start.dateTime)
+            : new Date(event.start.date);
+        const end = event.end.dateTime
+            ? new Date(event.end.dateTime)
+            : new Date(event.end.date);
+        const attendees = (event.attendees || []).map((a) => ({
+            email: a.email,
+            name: a.displayName || undefined,
+            responseStatus: a.responseStatus,
+            isOrganizer: a.organizer || false,
+            isOptional: a.optional || false,
+        }));
+        return {
+            id: event.id,
+            userId: this.userId,
+            provider: 'google',
+            title: event.summary || 'Untitled Event',
+            description: event.description || undefined,
+            start,
+            end,
+            location: event.location || undefined,
+            attendees,
+            organizer: event.organizer
+                ? {
+                    email: event.organizer.email,
+                    name: event.organizer.displayName || undefined,
+                }
+                : undefined,
+            status: this.mapStatus(event.status || undefined),
+            isRecurring: !!event.recurrence,
+            recurrenceRule: event.recurrence?.[0] || undefined,
+            reminders: event.reminders?.overrides?.map((r) => r.minutes),
+            conferenceLink: event.hangoutLink || event.conferenceData?.entryPoints?.[0]?.uri || undefined,
+            isAllDay: !!event.start.date,
+        };
+    }
+    /**
+     * Map Google Calendar status to our status
+     */
+    mapStatus(status) {
+        switch (status) {
+            case 'confirmed':
+                return 'confirmed';
+            case 'tentative':
+                return 'tentative';
+            case 'cancelled':
+                return 'cancelled';
+            default:
+                return 'confirmed';
+        }
+    }
+    /**
+     * Create calendar event
+     */
+    async createEvent(event) {
+        if (!this.calendar || !this.userId) {
+            throw new Error('Google Calendar provider not initialized');
+        }
+        try {
+            const googleEvent = {
+                summary: event.title,
+                description: event.description,
+                location: event.location,
+                start: {
+                    dateTime: event.start?.toISOString(),
+                    timeZone: 'America/Los_Angeles', // Should be configurable
+                },
+                end: {
+                    dateTime: event.end?.toISOString(),
+                    timeZone: 'America/Los_Angeles',
+                },
+                attendees: event.attendees?.map((a) => ({
+                    email: a.email,
+                    displayName: a.name,
+                    optional: a.isOptional,
+                })),
+                conferenceData: event.conferenceLink || true
+                    ? {
+                        createRequest: {
+                            requestId: `tide-${Date.now()}`,
+                            conferenceSolutionKey: {
+                                type: 'hangoutsMeet',
+                            },
+                        },
+                    }
+                    : undefined,
+            };
+            const response = await this.calendar.events.insert({
+                calendarId: 'primary',
+                requestBody: googleEvent,
+                conferenceDataVersion: 1,
+            });
+            const created = this.transformToCalendarEvent(response.data);
+            if (!created) {
+                throw new Error('Failed to create event');
+            }
+            logger_1.logger.info({ userId: this.userId, eventId: created.id, title: created.title }, 'Calendar event created');
+            return created;
+        }
+        catch (error) {
+            logger_1.logger.error({ userId: this.userId, error }, 'Failed to create calendar event');
+            throw error;
+        }
+    }
+    /**
+     * Update calendar event
+     */
+    async updateEvent(eventId, updates) {
+        if (!this.calendar || !this.userId) {
+            throw new Error('Google Calendar provider not initialized');
+        }
+        try {
+            const googleUpdates = {
+                summary: updates.title,
+                description: updates.description,
+                location: updates.location,
+                start: updates.start
+                    ? {
+                        dateTime: updates.start.toISOString(),
+                        timeZone: 'America/Los_Angeles',
+                    }
+                    : undefined,
+                end: updates.end
+                    ? {
+                        dateTime: updates.end.toISOString(),
+                        timeZone: 'America/Los_Angeles',
+                    }
+                    : undefined,
+                attendees: updates.attendees?.map((a) => ({
+                    email: a.email,
+                    displayName: a.name,
+                    optional: a.isOptional,
+                })),
+            };
+            const response = await this.calendar.events.patch({
+                calendarId: 'primary',
+                eventId,
+                requestBody: googleUpdates,
+            });
+            const updated = this.transformToCalendarEvent(response.data);
+            if (!updated) {
+                throw new Error('Failed to update event');
+            }
+            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event updated');
+            return updated;
+        }
+        catch (error) {
+            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to update event');
+            throw error;
+        }
+    }
+    /**
+     * Delete calendar event
+     */
+    async deleteEvent(eventId) {
+        if (!this.calendar || !this.userId) {
+            throw new Error('Google Calendar provider not initialized');
+        }
+        try {
+            await this.calendar.events.delete({
+                calendarId: 'primary',
+                eventId,
+            });
+            logger_1.logger.info({ userId: this.userId, eventId }, 'Calendar event deleted');
+        }
+        catch (error) {
+            logger_1.logger.error({ userId: this.userId, eventId, error }, 'Failed to delete event');
+            throw error;
+        }
+    }
+    /**
+     * Get availability (free/busy)
+     */
+    async getAvailability(start, end) {
+        if (!this.calendar || !this.userId) {
+            throw new Error('Google Calendar provider not initialized');
+        }
+        try {
+            const response = await this.calendar.freebusy.query({
+                requestBody: {
+                    timeMin: start.toISOString(),
+                    timeMax: end.toISOString(),
+                    items: [{ id: 'primary' }],
+                },
+            });
+            const busySlots = [];
+            const calendars = response.data.calendars;
+            if (calendars && calendars.primary) {
+                for (const busy of calendars.primary.busy || []) {
+                    if (busy.start && busy.end) {
+                        busySlots.push({
+                            start: new Date(busy.start),
+                            end: new Date(busy.end),
+                        });
+                    }
+                }
+            }
+            // Calculate free slots
+            const slots = this.calculateFreeSlots(start, end, busySlots);
+            return {
+                userId: this.userId,
+                dateRange: { start, end },
+                slots,
+                busySlots,
+            };
+        }
+        catch (error) {
+            logger_1.logger.error({ userId: this.userId, error }, 'Failed to get availability');
+            throw error;
+        }
+    }
+    /**
+     * Calculate free time slots from busy periods
+     */
+    calculateFreeSlots(start, end, busySlots) {
+        const freeSlots = [];
+        // Sort busy slots by start time
+        const sorted = [...busySlots].sort((a, b) => a.start.getTime() - b.start.getTime());
+        let currentTime = start;
+        for (const busy of sorted) {
+            // If there's a gap before this busy slot
+            if (currentTime < busy.start) {
+                freeSlots.push({
+                    start: new Date(currentTime),
+                    end: new Date(busy.start),
+                });
+            }
+            // Move current time to end of busy slot
+            if (busy.end > currentTime) {
+                currentTime = busy.end;
+            }
+        }
+        // Add final free slot if there's time left
+        if (currentTime < end) {
+            freeSlots.push({
+                start: new Date(currentTime),
+                end: new Date(end),
+            });
+        }
+        return freeSlots;
+    }
+}
+exports.GoogleCalendarProvider = GoogleCalendarProvider;
+//# sourceMappingURL=google-calendar.provider.js.map

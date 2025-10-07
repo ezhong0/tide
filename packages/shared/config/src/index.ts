@@ -7,7 +7,7 @@ export { databaseConfig, redisConfig, kafkaConfig } from './database';
 export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
 
 // Export authentication configuration
-export { jwtConfig, passwordConfig, gmailOAuthConfig, exchangeOAuthConfig, googleCalendarOAuthConfig } from './auth';
+export { jwtConfig, passwordConfig, bcryptConfig, gmailOAuthConfig, exchangeOAuthConfig, googleCalendarOAuthConfig } from './auth';
 export type { JWTConfig, OAuthProviderConfig } from './auth';
 
 // Export service configuration

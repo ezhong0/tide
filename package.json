@@ -6,6 +6,8 @@
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev",
     "test": "pnpm -r test",
+    "test:integration": "./scripts/test-week0-integration.sh",
+    "test:alpha": "./scripts/run-alpha-integration.sh",
     "dev:start": "./scripts/dev-start.sh",
     "dev:stop": "./scripts/dev-stop.sh",
     "dev:reset": "./scripts/dev-reset.sh",

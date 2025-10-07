@@ -3,6 +3,10 @@ export interface JWTConfig {
     refreshSecret: string;
     accessExpiresIn: string;
     refreshExpiresIn: string;
+    accessTokenSecret: string;
+    refreshTokenSecret: string;
+    accessTokenExpiry: string;
+    refreshTokenExpiry: string;
 }
 /**
  * JWT token configuration
@@ -13,6 +17,12 @@ export declare const jwtConfig: JWTConfig;
  */
 export declare const passwordConfig: {
     bcryptRounds: number;
+};
+/**
+ * Bcrypt configuration (alias for passwordConfig for compatibility)
+ */
+export declare const bcryptConfig: {
+    saltRounds: number;
 };
 export interface OAuthProviderConfig {
     clientId: string;

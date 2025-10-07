@@ -5,6 +5,11 @@ export interface JWTConfig {
   refreshSecret: string;
   accessExpiresIn: string;
   refreshExpiresIn: string;
+  // Aliases for compatibility
+  accessTokenSecret: string;
+  refreshTokenSecret: string;
+  accessTokenExpiry: string;
+  refreshTokenExpiry: string;
 }
 
 /**
@@ -15,6 +20,11 @@ export const jwtConfig: JWTConfig = {
   refreshSecret: env.JWT_REFRESH_SECRET,
   accessExpiresIn: env.JWT_ACCESS_EXPIRES_IN,
   refreshExpiresIn: env.JWT_REFRESH_EXPIRES_IN,
+  // Aliases for compatibility
+  accessTokenSecret: env.JWT_ACCESS_SECRET,
+  refreshTokenSecret: env.JWT_REFRESH_SECRET,
+  accessTokenExpiry: env.JWT_ACCESS_EXPIRES_IN,
+  refreshTokenExpiry: env.JWT_REFRESH_EXPIRES_IN,
 };
 
 /**
@@ -22,6 +32,13 @@ export const jwtConfig: JWTConfig = {
  */
 export const passwordConfig = {
   bcryptRounds: env.BCRYPT_ROUNDS,
+};
+
+/**
+ * Bcrypt configuration (alias for passwordConfig for compatibility)
+ */
+export const bcryptConfig = {
+  saltRounds: env.BCRYPT_ROUNDS,
 };
 
 export interface OAuthProviderConfig {

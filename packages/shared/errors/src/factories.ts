@@ -64,6 +64,18 @@ export class AuthErrors {
       { reason }
     );
   }
+
+  // Aliases for compatibility
+  static invalidToken(): TideError {
+    return this.tokenInvalid();
+  }
+
+  static accountSuspended(): TideError {
+    return new TideError(
+      ErrorCode.AUTH_ACCOUNT_LOCKED,
+      'Account has been suspended'
+    );
+  }
 }
 
 /**

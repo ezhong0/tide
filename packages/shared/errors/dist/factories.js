@@ -31,6 +31,13 @@ class AuthErrors {
     static accountLocked(reason) {
         return new tide_error_1.TideError(codes_1.ErrorCode.AUTH_ACCOUNT_LOCKED, 'Account has been locked', { reason });
     }
+    // Aliases for compatibility
+    static invalidToken() {
+        return this.tokenInvalid();
+    }
+    static accountSuspended() {
+        return new tide_error_1.TideError(codes_1.ErrorCode.AUTH_ACCOUNT_LOCKED, 'Account has been suspended');
+    }
 }
 exports.AuthErrors = AuthErrors;
 /**
