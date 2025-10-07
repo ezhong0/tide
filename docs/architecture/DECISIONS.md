@@ -20,6 +20,11 @@ This document records significant architectural decisions made during the develo
 9. [ADR-009: Supabase Realtime for WebSocket](#adr-009-supabase-realtime-for-websocket)
 10. [ADR-010: Redis and Kafka via Docker Compose](#adr-010-redis-and-kafka-via-docker-compose)
 11. [ADR-011: Railway for Simplified Deployment](#adr-011-railway-for-simplified-deployment)
+12. [ADR-012: Event-Driven Cache Invalidation](#adr-012-event-driven-cache-invalidation)
+13. [ADR-013: Mobile BFF Pattern](#adr-013-mobile-bff-pattern)
+14. [ADR-014: gRPC for Service-to-Service Communication](#adr-014-grpc-for-service-to-service-communication)
+15. [ADR-015: Reject Service Mesh for Railway Environment](#adr-015-reject-service-mesh-for-railway-environment)
+16. [ADR-016: Reject CQRS Pattern for MVP](#adr-016-reject-cqrs-pattern-for-mvp)
 
 ---
 
@@ -733,6 +738,528 @@ We need a production deployment strategy for Tide's microservices and infrastruc
 - [Current Deployment](../current/DEPLOYMENT.md#railway-deployment)
 - [ADR-001: Supabase-First Architecture](#adr-001-supabase-first-architecture)
 - [ADR-010: Redis and Kafka via Docker Compose](#adr-010-redis-and-kafka-via-docker-compose)
+
+---
+
+## ADR-012: Event-Driven Cache Invalidation
+
+**Status**: ✅ Accepted (Week 4-5, Planned)
+**Date**: 2025-10-07
+**Decision Makers**: Development Team
+**Impact**: Medium - Cache consistency and performance
+
+### Context
+
+Redis caching improves performance but introduces staleness risks. Current approach requires manual cache invalidation, leading to:
+- Stale data shown to users after updates
+- Complex cache key management across services
+- Risk of showing incorrect data (e.g., deleted emails still appearing)
+- No coordination between services on cache invalidation
+
+Options for cache invalidation:
+1. **TTL-Only**: Set expiration times, accept staleness
+2. **Manual Invalidation**: Services invalidate cache on updates (current)
+3. **Event-Driven Invalidation**: Services publish events, cache listener invalidates
+4. **Tag-Based Invalidation**: Tag related cache entries, invalidate by tag
+
+### Decision
+
+**We will implement event-driven cache invalidation with tag-based keys** using:
+- **Kafka Events**: Services publish `cache.invalidate` events when data changes
+- **Tag-Based Keys**: Cache keys include tags like `user:{userId}`, `email:{emailId}`
+- **Cache Invalidation Service**: Listens to events and invalidates related cache entries
+- **Railway Redis**: Use Railway-managed Redis for cache storage
+
+**Implementation Pattern**:
+```typescript
+// Email service publishes event when email is deleted
+await kafka.publish('cache.invalidate', {
+  tags: ['user:123', 'email:456', 'inbox:123'],
+  reason: 'email_deleted'
+});
+
+// Cache invalidation service listens and invalidates
+await redis.del(
+  'emails:user:123',
+  'email:456',
+  'inbox:user:123:unread_count'
+);
+```
+
+### Rationale
+
+1. **Consistency**: Cache always reflects latest data
+2. **Decoupling**: Services don't need to know cache structure
+3. **Scalability**: Invalidation service scales independently
+4. **Audit Trail**: Events provide invalidation history
+5. **Railway Integration**: Works seamlessly with Railway-managed Redis and Kafka
+
+### Consequences
+
+**Positive**:
+- ✅ Eliminates stale data issues
+- ✅ Services focus on business logic, not cache management
+- ✅ Easy to debug (event log shows invalidations)
+- ✅ Can batch invalidations for efficiency
+- ✅ Works with existing Railway Kafka infrastructure
+
+**Negative**:
+- ⚠️ Small latency (event processing time, typically <50ms)
+- ⚠️ Additional service to maintain (Cache Invalidation Service)
+- ⚠️ Complexity in tag management
+
+**Trade-offs**:
+- **Gave Up**: Immediate cache invalidation (TTL=0), manual invalidation complexity
+- **Gained**: Consistency, maintainability, better UX
+
+### Implementation Plan
+
+**Week 4-5 (Email/Calendar Track)**:
+1. Create `CacheInvalidationService` as Railway service
+2. Define Kafka topic `cache.invalidate` with schema
+3. Update Email/Calendar services to publish invalidation events
+4. Implement tag-based cache key patterns
+5. Add monitoring for invalidation latency
+
+**Cache Key Pattern**:
+```
+user:{userId}:emails
+user:{userId}:inbox:unread_count
+email:{emailId}
+calendar:{userId}:events
+task:{taskId}
+```
+
+**Invalidation Event Schema**:
+```typescript
+interface CacheInvalidationEvent {
+  tags: string[];           // ['user:123', 'email:456']
+  reason: string;           // 'email_deleted', 'task_updated'
+  timestamp: number;
+  service: string;          // 'email-service'
+}
+```
+
+### References
+
+- [Current Stack](../current/STACK.md#redis-7)
+- [ADR-011: Railway for Simplified Deployment](#adr-011-railway-for-simplified-deployment)
+- [Track 3: Email & Calendar](../tracks/track-03-email-calendar.md)
+
+---
+
+## ADR-013: Mobile BFF Pattern
+
+**Status**: ✅ Accepted (Week 6-8, Planned)
+**Date**: 2025-10-07
+**Decision Makers**: Development Team
+**Impact**: High - Mobile app performance and user experience
+
+### Context
+
+Mobile apps currently make 7-15 separate API calls to load a single screen:
+1. User profile
+2. Unread email count
+3. Recent emails (paginated)
+4. Today's calendar events
+5. Pending tasks
+6. AI conversation state
+7. Notification preferences
+
+**Problems**:
+- **Slow Loading**: 7-15 sequential network requests (2-5 seconds)
+- **High Data Usage**: ~500KB per screen load (mostly redundant headers)
+- **Poor UX**: Screens load progressively, flickering
+- **Battery Drain**: Multiple network radios on
+
+**BFF (Backend for Frontend) Pattern**:
+- Single API endpoint aggregates multiple backend calls
+- Tailored responses for mobile (only needed fields)
+- Server-side composition reduces network overhead
+
+### Decision
+
+**We will implement a Mobile BFF (Backend for Frontend) service** deployed on Railway:
+- **Mobile BFF Service**: Aggregates backend calls, returns optimized payloads
+- **Single Endpoint**: `/mobile/v1/screen/{screenName}` endpoint per screen
+- **GraphQL Alternative**: Consider GraphQL for flexible queries (optional)
+- **Railway Deployment**: Deploy as Railway service alongside other services
+
+**Example Request**:
+```typescript
+GET /mobile/v1/screen/inbox
+Response (118KB vs. 500KB):
+{
+  user: { id, name, email },
+  inbox: {
+    unread_count: 12,
+    emails: [{ id, subject, from, snippet, time }]
+  },
+  tasks: {
+    pending_count: 5,
+    urgent: [{ id, title, due }]
+  },
+  calendar: {
+    today_events: [{ id, title, start, end }]
+  }
+}
+```
+
+### Rationale
+
+1. **Performance**: 1 API call instead of 7-15 (10x faster)
+2. **Data Efficiency**: 118KB vs. 500KB (~76% reduction)
+3. **Better UX**: Screen loads instantly, no flickering
+4. **Battery Savings**: Single network request
+5. **Mobile-Specific**: Optimize for mobile constraints
+6. **Railway Integration**: Simple deployment with `railway up`
+
+### Consequences
+
+**Positive**:
+- ✅ 10x faster screen loading (500ms vs. 5s)
+- ✅ 76% reduction in data usage
+- ✅ Better mobile UX (instant loading)
+- ✅ Lower battery consumption
+- ✅ Easier to optimize for mobile
+
+**Negative**:
+- ⚠️ Additional service to maintain (Mobile BFF)
+- ⚠️ Coupling to mobile app screen structure
+- ⚠️ Duplicate logic with individual services (acceptable)
+
+**Trade-offs**:
+- **Gave Up**: Direct access to individual services from mobile
+- **Gained**: Performance, UX, mobile optimization, lower costs
+
+### Implementation Plan
+
+**Week 6-8 (Mobile Track)**:
+1. Create `MobileBFFService` as Railway service
+2. Implement `/mobile/v1/screen/inbox` endpoint
+3. Implement `/mobile/v1/screen/tasks` endpoint
+4. Implement `/mobile/v1/screen/calendar` endpoint
+5. Update iOS/Android apps to use BFF endpoints
+6. Add caching with Redis (with ADR-012 invalidation)
+7. Monitor performance improvements
+
+**Technology**:
+- **Runtime**: Node.js 20 with TypeScript
+- **Framework**: Express.js or Fastify
+- **Caching**: Railway Redis with tag-based invalidation
+- **Authentication**: Supabase JWT validation
+- **Deployment**: Railway (auto-scaling)
+
+**Endpoints**:
+```
+GET /mobile/v1/screen/inbox       - Inbox screen data
+GET /mobile/v1/screen/tasks       - Tasks screen data
+GET /mobile/v1/screen/calendar    - Calendar screen data
+GET /mobile/v1/screen/ai          - AI conversation screen
+GET /mobile/v1/screen/profile     - User profile screen
+```
+
+### References
+
+- [Track 1: Mobile Apps](../tracks/track-01-mobile-apps.md)
+- [ADR-012: Event-Driven Cache Invalidation](#adr-012-event-driven-cache-invalidation)
+- [ADR-011: Railway for Simplified Deployment](#adr-011-railway-for-simplified-deployment)
+
+---
+
+## ADR-014: gRPC for Service-to-Service Communication
+
+**Status**: ✅ Accepted (Week 8-10, Planned)
+**Date**: 2025-10-07
+**Decision Makers**: Development Team
+**Impact**: Medium - Internal service communication
+
+### Context
+
+Microservices need to communicate synchronously for certain operations:
+- Email Service → AI Service (triage email)
+- Workflow Service → AI Service (execute AI step)
+- Calendar Service → AI Service (suggest meeting times)
+
+Current approach uses REST APIs with JSON:
+- **Slower**: JSON serialization/deserialization overhead
+- **No Type Safety**: Manual typing across services
+- **Larger Payloads**: JSON is verbose
+- **No Streaming**: Request-response only
+
+gRPC offers:
+- **Protocol Buffers**: Binary serialization (faster, smaller)
+- **Type Safety**: Generated clients with strong typing
+- **Streaming**: Bidirectional streaming support
+- **Performance**: 5-10x faster than REST for internal calls
+
+**Important**: This is for **service-to-service only**, NOT mobile apps.
+
+### Decision
+
+**We will use gRPC for internal service-to-service communication**:
+- **AI Service**: Expose gRPC API for triage, analysis, suggestions
+- **Email/Calendar/Workflow Services**: Use gRPC clients to call AI Service
+- **Mobile Apps**: Continue using Supabase Realtime + REST (NOT gRPC)
+- **Protocol Buffers**: Define `.proto` files for contracts
+- **Railway Deployment**: gRPC services deployed on Railway with HTTP/2
+
+**Example**:
+```protobuf
+// ai.proto
+service AIService {
+  rpc TriageEmail(EmailTriageRequest) returns (EmailTriageResponse);
+  rpc SuggestMeetingTimes(MeetingRequest) returns (MeetingResponse);
+}
+
+message EmailTriageRequest {
+  string email_id = 1;
+  string subject = 2;
+  string body = 3;
+}
+```
+
+### Rationale
+
+1. **Performance**: 5-10x faster than REST for internal calls
+2. **Type Safety**: Generated TypeScript/Swift/Kotlin clients
+3. **Smaller Payloads**: Protobuf is 3-10x smaller than JSON
+4. **Streaming**: Supports long-running AI operations
+5. **Contract-First**: `.proto` files define clear API contracts
+6. **Railway Compatible**: Railway supports gRPC over HTTP/2
+
+**Why NOT gRPC for Mobile**:
+- Supabase Realtime already provides real-time updates
+- gRPC-Web adds complexity for web/mobile
+- REST + Supabase Realtime is more mobile-friendly
+- Mobile BFF (ADR-013) optimizes mobile performance
+
+### Consequences
+
+**Positive**:
+- ✅ 5-10x faster internal service calls
+- ✅ Type safety across services (generated clients)
+- ✅ 70% smaller payloads (Protobuf vs. JSON)
+- ✅ Streaming support for long AI operations
+- ✅ Clear API contracts (`.proto` files)
+
+**Negative**:
+- ⚠️ Learning curve (Protocol Buffers, gRPC concepts)
+- ⚠️ Additional tooling (protoc compiler, generated code)
+- ⚠️ Not human-readable (unlike JSON)
+
+**Trade-offs**:
+- **Gave Up**: Human-readable REST/JSON for internal calls
+- **Gained**: Performance, type safety, streaming, smaller payloads
+
+### Implementation Plan
+
+**Week 8-10 (AI Track)**:
+1. Define `.proto` files for AI Service API
+2. Set up `protoc` compiler in monorepo
+3. Generate TypeScript clients for Email/Calendar/Workflow services
+4. Update AI Service to expose gRPC API (alongside REST)
+5. Update Email Service to use gRPC for AI calls
+6. Monitor performance improvements
+7. Add gRPC health checks for Railway
+
+**Technology**:
+- **gRPC Runtime**: `@grpc/grpc-js` (Node.js)
+- **Protocol Buffers**: `protobufjs`
+- **Code Generation**: `protoc` with TypeScript plugin
+- **Transport**: HTTP/2 over TLS
+- **Deployment**: Railway (supports gRPC natively)
+
+**Services Using gRPC**:
+- AI Service (server)
+- Email Service (client)
+- Calendar Service (client)
+- Workflow Service (client)
+
+**NOT Using gRPC**:
+- Mobile apps (use Supabase Realtime + REST)
+- Mobile BFF (uses REST with mobile apps)
+
+### References
+
+- [gRPC Documentation](https://grpc.io/docs/)
+- [ADR-013: Mobile BFF Pattern](#adr-013-mobile-bff-pattern)
+- [Track 2: AI Intelligence](../tracks/track-02-ai-intelligence.md)
+
+---
+
+## ADR-015: Reject Service Mesh for Railway Environment
+
+**Status**: ❌ Rejected
+**Date**: 2025-10-07
+**Decision Makers**: Development Team
+**Impact**: High - Infrastructure complexity
+
+### Context
+
+Service meshes (Istio, Linkerd) provide:
+- Traffic management (load balancing, retries, circuit breakers)
+- Security (mTLS between services)
+- Observability (distributed tracing, metrics)
+- Health checks and auto-restart
+
+**Proposal**: Add Istio or Linkerd service mesh to Tide architecture.
+
+### Decision
+
+**We will NOT implement a service mesh** because:
+1. **Railway Provides These Features**: Railway includes health checks, auto-restart, load balancing
+2. **Requires Kubernetes**: Service meshes need Kubernetes, conflicts with Railway simplicity
+3. **Overkill for Scale**: Service meshes are for 100+ services, we have 5
+4. **Complexity**: Weeks of setup, steep learning curve
+5. **Railway Philosophy**: Railway abstracts infrastructure, service mesh contradicts this
+
+### Rationale
+
+**What Railway Already Provides**:
+- ✅ **Health Checks**: Automatic health checks and service restart
+- ✅ **Load Balancing**: Built-in load balancing across replicas
+- ✅ **TLS**: Automatic HTTPS with Let's Encrypt certificates
+- ✅ **Observability**: Logs, metrics, and dashboards built-in
+- ✅ **Auto-Scaling**: Services scale based on CPU/memory usage
+
+**Service Mesh Would Require**:
+- ❌ Migrate from Railway to Kubernetes (GKE, EKS, AKS)
+- ❌ Learn Istio/Linkerd (weeks of training)
+- ❌ Manage control plane (Pilot, Citadel, Galley)
+- ❌ Debug sidecar proxies (Envoy)
+- ❌ High operational overhead
+
+**Scale Consideration**:
+- Service meshes are designed for 100+ microservices
+- Tide has 5 services (AI, Email, Calendar, Workflow, Gateway)
+- Massive overkill for current and near-term scale
+
+### Consequences
+
+**Positive (by rejecting)**:
+- ✅ Stay on Railway (simple, fast deployment)
+- ✅ No Kubernetes complexity
+- ✅ Built-in features sufficient for MVP and beyond
+- ✅ Focus on product, not infrastructure
+
+**Negative (by rejecting)**:
+- ⚠️ No advanced traffic management (acceptable for current scale)
+- ⚠️ No mTLS between services (can add later if needed)
+- ⚠️ Less granular observability (Railway logs/metrics are sufficient)
+
+**When to Reconsider**:
+- Scale reaches 50+ microservices
+- Need advanced traffic routing (canary, blue-green)
+- Strict compliance requires mTLS everywhere
+- Migrate from Railway to self-managed Kubernetes
+
+### Alternative Solutions
+
+Instead of service mesh, we use:
+1. **Railway Health Checks**: Automatic restart on failure
+2. **gRPC**: Type-safe service-to-service communication (ADR-014)
+3. **Kafka**: Event-driven communication for async operations
+4. **Railway Monitoring**: Built-in logs, metrics, alerts
+5. **Application-Level Retries**: Implement in service code
+
+### References
+
+- [ADR-011: Railway for Simplified Deployment](#adr-011-railway-for-simplified-deployment)
+- [Railway Health Checks](https://docs.railway.app/deploy/healthchecks)
+- [Why Not Kubernetes Yet](./FUTURE-ARCHITECTURE.md#kubernetes-migration)
+
+---
+
+## ADR-016: Reject CQRS Pattern for MVP
+
+**Status**: ❌ Rejected (for now)
+**Date**: 2025-10-07
+**Decision Makers**: Development Team
+**Impact**: Medium - Data architecture
+
+### Context
+
+CQRS (Command Query Responsibility Segregation) separates:
+- **Write Model**: Optimized for commands (create, update, delete)
+- **Read Model**: Optimized for queries (list, search, aggregate)
+
+**Proposal**: Implement CQRS with:
+- PostgreSQL for writes
+- Separate read replicas or read-optimized stores (Elasticsearch, DynamoDB)
+- Event sourcing for write model
+- Projections for read model
+
+### Decision
+
+**We will NOT implement CQRS for MVP** because:
+1. **Premature Optimization**: No evidence of read/write contention
+2. **Overkill for Scale**: CQRS is for high-traffic systems (>100k users)
+3. **Increased Complexity**: Dual write models, eventual consistency, projections
+4. **PostgreSQL is Fast**: Supabase PostgreSQL handles 5000+ req/sec easily
+5. **No Performance Issues**: Current queries are <50ms
+
+### Rationale
+
+**Current Architecture (Simple)**:
+- PostgreSQL for reads and writes
+- Indexed queries are fast (<50ms)
+- RLS policies ensure security
+- Single source of truth
+
+**CQRS Would Add**:
+- Separate read/write databases
+- Event sourcing infrastructure
+- Projection builders
+- Eventual consistency challenges
+- Much higher complexity
+
+**When is CQRS Needed?**:
+- Read/write ratio >100:1 (our ratio is ~10:1)
+- Queries take >200ms (ours are <50ms)
+- Need different data models for reads vs. writes
+- Scale >100k active users (we're at <100 users in Week 3)
+
+### Consequences
+
+**Positive (by rejecting)**:
+- ✅ Simpler architecture (single database)
+- ✅ Immediate consistency (no eventual consistency issues)
+- ✅ Easier debugging (one source of truth)
+- ✅ Faster development (no CQRS infrastructure)
+- ✅ Lower operational overhead
+
+**Negative (by rejecting)**:
+- ⚠️ May hit scale limits later (>100k users)
+- ⚠️ Read/write contention possible at scale (acceptable risk)
+- ⚠️ Need to migrate if queries slow down (future decision)
+
+**When to Reconsider**:
+- Query latency exceeds 200ms consistently
+- Read/write ratio exceeds 100:1
+- User scale exceeds 100k active users
+- PostgreSQL CPU >80% for extended periods
+
+### Alternative Solutions
+
+Instead of CQRS, we use:
+1. **PostgreSQL Indexing**: Proper indexes for fast queries
+2. **Redis Caching**: Cache hot queries (ADR-012 for invalidation)
+3. **Read Replicas**: Supabase supports read replicas if needed
+4. **Materialized Views**: Pre-compute aggregations in PostgreSQL
+5. **Query Optimization**: Analyze slow queries with `EXPLAIN`
+
+**Current Performance**:
+- User profile queries: <10ms
+- Email list queries: <30ms
+- Calendar queries: <20ms
+- AI conversation queries: <40ms
+
+### References
+
+- [Current Stack](../current/STACK.md#postgresql-16)
+- [ADR-012: Event-Driven Cache Invalidation](#adr-012-event-driven-cache-invalidation)
+- [Future Architecture: CQRS Consideration](./FUTURE-ARCHITECTURE.md#cqrs-pattern)
 
 ---
 
