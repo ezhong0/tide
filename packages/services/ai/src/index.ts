@@ -27,8 +27,8 @@ async function main() {
     const server = new AIServer(port);
     await server.start();
 
-    // Start Kafka consumer (optional - disabled for Alpha)
-    const kafkaEnabled = process.env.KAFKA_ENABLED !== 'false';
+    // Start Kafka consumer (optional - disabled by default for Alpha)
+    const kafkaEnabled = process.env.KAFKA_ENABLED === 'true';
     let consumer: AIKafkaConsumer | null = null;
 
     if (kafkaEnabled) {
