@@ -78,16 +78,16 @@ class EmailService {
         }
 
         // Exchange auth code for tokens using Google OAuth2
+        // For iOS OAuth, use the iOS client ID (no secret required)
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
             code: authCode,
-            client_id: env.GOOGLE_CLIENT_ID,
-            client_secret: env.GOOGLE_CLIENT_SECRET,
-            redirect_uri: `com.googleusercontent.apps.${env.GOOGLE_IOS_CLIENT_ID?.split('.')[0]}:/oauth2redirect`,
+            client_id: env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID,
+            redirect_uri: `com.googleusercontent.apps.${(env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID)?.split('.')[0]}:/oauth2redirect`,
             grant_type: 'authorization_code',
-          }),
+          }).toString(),
         });
 
         if (!tokenResponse.ok) {
