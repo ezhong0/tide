@@ -1,0 +1,25 @@
+{
+  "name": "@tide/database",
+  "version": "0.1.0",
+  "description": "Database client and utilities for Tide platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "migrate": "node dist/migrate.js"
+  },
+  "dependencies": {
+    "@tide/config": "workspace:*",
+    "@tide/logger": "workspace:*",
+    "@tide/types": "workspace:*",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

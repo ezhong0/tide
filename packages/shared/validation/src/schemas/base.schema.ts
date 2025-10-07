@@ -69,7 +69,7 @@ export const PaginatedResponseSchema = <T extends z.ZodType>(dataSchema: T) => z
 /**
  * Common field validators
  */
-export const EmailSchema = z.string().email();
+export const EmailAddressSchema = z.string().email();
 export const UUIDSchema = z.string().uuid();
 export const URLSchema = z.string().url();
 export const DateTimeSchema = z.union([z.string().datetime(), z.date()]);

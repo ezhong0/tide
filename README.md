@@ -1,240 +1,371 @@
-# 🌊 Tide - Your Conversational AI Assistant
+# 🌊 Tide Platform - Developer Guide
 
-> ChatGPT that actually manages your work life - $30/month
+**An AI-powered productivity platform** that unifies messaging, email, calendar, tasks, and workflows into a seamless experience.
 
-## What is Tide?
+> **For Product Information:** See [`docs/PRODUCT-README.md`](docs/PRODUCT-README.md)
 
-Tide is a **conversational AI assistant** that handles your email, calendar, and tasks through natural text conversation. Unlike ChatGPT, Tide can take real actions. Unlike Siri, it works everywhere professionals actually work.
+---
 
-**Just type** (or speak - we'll convert to text):
-- "Schedule a meeting with Sarah next week"
-- "Draft a response to John's proposal"
-- "What's my day look like?"
-- "Move my 3pm to tomorrow"
-- "Find that contract from last month"
-
-**Tide shows you what it will do, then does it.** Full transparency. Full control.
-
-## Why Tide Exists
-
-**The Problem:**
-- Knowledge workers waste 2+ hours daily on email/calendar
-- Voice assistants don't work in offices (too disruptive)
-- ChatGPT can't actually do anything
-- Human assistants cost $5,000+/month
-
-**The Solution:**
-- Natural text conversation (works everywhere)
-- Real actions on your actual email/calendar
-- See and edit before anything happens
-- Just $30/month
-
-## Core Features
-
-### 📧 Email Management
-- Intelligent drafting with your tone
-- Smart categorization and prioritization
-- Automatic follow-up tracking
-- Meeting extraction and scheduling
-
-### 📅 Calendar Intelligence
-- Natural language scheduling
-- Conflict detection and resolution
-- Time zone management
-- Meeting preparation automation
-
-### ✅ Task Orchestration
-- Complex multi-step workflows
-- Deadline tracking and reminders
-- Priority management
-- Progress reporting
-
-### 🧠 Learning & Personalization
-- Learns your communication style
-- Remembers important contacts
-- Adapts to your preferences
-- Improves with every interaction
-
-## How It Works
-
-1. **You type** naturally, like messaging a colleague
-2. **Tide understands** and shows what it will do
-3. **You confirm** (or edit) the action
-4. **Tide executes** and updates you on progress
-
-```
-You: "Can you find a time for me to meet with the product team next week?"
-
-Tide: "I'll check calendars for you and the product team (John, Maria, David).
-Looking at next week...
-
-Found these options where everyone is free:
-📅 Monday 2-3pm
-📅 Tuesday 10-11am
-📅 Thursday 3-4pm
-
-Which works best for you?"
-
-You: "Tuesday at 10"
-
-Tide: "Perfect! Here's the meeting I'll create:
-
-Product Team Sync
-Tuesday, Jan 16, 10:00-11:00am
-Attendees: You, John, Maria, David
-Location: Conference Room A
-
-Should I add an agenda or Zoom link?"
-
-You: "Add zoom"
-
-Tide: "✓ Meeting created with Zoom link! Invites sent to all attendees."
-```
-
-## Technology Stack
-
-### Core Architecture
-- **Interface**: React Native (iOS/Android), Next.js (Web)
-- **AI Engine**: GPT-4 + Claude for understanding, Mixtral for speed
-- **Backend**: Node.js with event sourcing architecture
-- **Database**: PostgreSQL with pgvector for semantic search
-- **Infrastructure**: Edge computing for <200ms responses
-
-### Key Innovations
-- **Conversational Context Manager**: Maintains conversation state
-- **Action Preview System**: Shows before doing
-- **Trust Layer**: All actions reviewable and reversible
-- **Learning Engine**: Personalizes to each user
-
-## Getting Started
-
-### For Users
-
-1. **Sign up** at [tide.ai](https://tide.ai)
-2. **Connect** your email and calendar (Gmail, Outlook, Google Calendar)
-3. **Start chatting** - just type what you need
-4. **7-day free trial**, then $30/month
-
-### For Developers
+## 🚀 Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/tide-ai/tide.git
-
-# Install dependencies
+# 1. Install dependencies
 pnpm install
 
-# Set up environment variables
+# 2. Set up environment
 cp .env.example .env
+# Edit .env with your configuration
 
-# Run development server
-pnpm dev
+# 3. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
+pnpm dev:start
 
-# Run tests
+# 4. Run database migrations
+pnpm db:migrate
+
+# 5. Build all packages
+pnpm build
+
+# You're ready! 🎉
+```
+
+---
+
+## 📁 Project Structure
+
+```
+tide/
+├── packages/                    # Monorepo packages
+│   ├── shared/                  # Shared packages (all tracks)
+│   │   ├── config/              ✅ Environment & configuration
+│   │   ├── types/               ✅ TypeScript type definitions
+│   │   ├── errors/              ✅ Error handling
+│   │   ├── validation/          ✅ Zod schemas
+│   │   └── contracts/           ✅ Shared interfaces
+│   │
+│   ├── libraries/               # Reusable libraries
+│   │   ├── logger/              ✅ Structured logging (Pino)
+│   │   ├── database/            ✅ PostgreSQL client
+│   │   │   └── migrations/      ✅ Database migrations (11 tables)
+│   │   └── mocks/               ✅ Test mocks
+│   │
+│   └── services/                # Microservices (to be built by tracks)
+│       ├── auth/                ⏳ Authentication service
+│       ├── gateway/             ⏳ API Gateway (GraphQL Federation)
+│       ├── events/              ⏳ Event bus service
+│       └── realtime/            ⏳ WebSocket service
+│
+├── infrastructure/              # Infrastructure configuration
+│   └── docker/                  # Docker configs
+│       ├── prometheus/          # Metrics collection
+│       └── grafana/             # Metrics visualization
+│
+├── scripts/                     # Development scripts
+│   ├── dev-start.sh             # Start infrastructure
+│   ├── dev-stop.sh              # Stop infrastructure
+│   ├── dev-reset.sh             # Reset (wipes data)
+│   ├── db-migrate.sh            # Run migrations
+│   ├── check-health.sh          # Health checks
+│   └── test-api.sh              # API testing
+│
+├── docs/                        # Documentation
+│   ├── planning/                # Project planning docs
+│   ├── architecture/            # Architecture docs
+│   ├── guides/                  # Implementation guides
+│   └── tracks/                  # Track-specific docs
+│
+├── docker-compose.yml           # Local development stack
+├── .env.example                 # Environment template
+├── package.json                 # Root package.json
+└── pnpm-workspace.yaml          # Monorepo configuration
+```
+
+---
+
+## 🎯 Available Commands
+
+### Development
+
+```bash
+# Start/stop infrastructure
+pnpm dev:start              # Start PostgreSQL, Redis, Kafka, Prometheus, Grafana
+pnpm dev:stop               # Stop all services
+pnpm dev:reset              # Reset (WARNING: deletes all data)
+
+# Database
+pnpm db:migrate             # Run database migrations
+
+# Build & test
+pnpm install                # Install all dependencies
+pnpm build                  # Build all packages
+pnpm dev                    # Watch mode (all packages)
+pnpm test                   # Run all tests
+pnpm lint                   # Lint all code
+pnpm type-check             # Type check all packages
+```
+
+### Package-specific
+
+```bash
+# Build specific package
+pnpm --filter @tide/config build
+pnpm --filter @tide/logger build
+
+# Test specific package
+pnpm --filter @tide/database test
+```
+
+---
+
+## 🐳 Infrastructure Services
+
+After running `pnpm dev:start`, you'll have access to:
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| **PostgreSQL** | `localhost:5432` | tide / tide_password |
+| **Redis** | `localhost:6379` | No password |
+| **Kafka** | `localhost:9092` | No auth |
+| **Kafka UI** | http://localhost:8080 | - |
+| **Prometheus** | http://localhost:9090 | - |
+| **Grafana** | http://localhost:3001 | admin / admin |
+
+---
+
+## 📦 Core Packages
+
+### Shared Packages
+
+#### `@tide/config`
+Environment variable validation and configuration management.
+```typescript
+import { env, databaseConfig, features } from '@tide/config';
+
+console.log(env.DATABASE_URL);
+console.log(features.emailSync); // Feature flags
+```
+
+#### `@tide/types`
+TypeScript type definitions including branded types for ID safety.
+```typescript
+import { UserId, ConversationId, Paginated } from '@tide/types';
+
+function getUser(id: UserId) { }
+// getUser(conversationId); // ❌ Type error!
+```
+
+#### `@tide/errors`
+Standardized error handling with 90+ error codes.
+```typescript
+import { AuthErrors, EmailErrors } from '@tide/errors';
+
+throw AuthErrors.invalidCredentials();
+throw EmailErrors.notFound('email_123');
+```
+
+#### `@tide/validation`
+Zod schemas for all domain models with Express middleware.
+```typescript
+import { validate, UserRegistrationSchema, validateBody } from '@tide/validation';
+
+const user = validate(UserRegistrationSchema, data);
+app.post('/register', validateBody(UserRegistrationSchema), handler);
+```
+
+### Libraries
+
+#### `@tide/logger`
+Structured logging with automatic sensitive data redaction.
+```typescript
+import { logger, createRequestLogger } from '@tide/logger';
+
+logger.info('Application started');
+const reqLogger = createRequestLogger(requestId, userId);
+```
+
+#### `@tide/database`
+PostgreSQL client with query helpers and transactions.
+```typescript
+import { query, queryOne, transaction } from '@tide/database';
+
+const users = await query('SELECT * FROM tide.users');
+const user = await queryOne('SELECT * FROM tide.users WHERE id = $1', [id]);
+```
+
+---
+
+## 🗄️ Database Schema
+
+11 production-ready tables across 5 migrations:
+
+**Users & Authentication:**
+- `tide.users` - User accounts
+- `tide.user_profiles` - User profiles
+- `tide.refresh_tokens` - JWT refresh tokens
+- `tide.verification_tokens` - Email verification
+- `tide.password_reset_tokens` - Password resets
+- `tide.oauth_tokens` - OAuth credentials (encrypted)
+
+**Conversations:**
+- `tide.conversations` - User conversations
+- `tide.messages` - Conversation messages
+
+**Event Sourcing:**
+- `tide.events` - Event log
+- `tide.outbox` - Outbox pattern for reliable event publishing
+
+**Migrations:** `packages/libraries/database/migrations/`
+
+---
+
+## 🏗️ Architecture
+
+### Technology Stack
+
+- **Runtime:** Node.js 20+
+- **Language:** TypeScript (strict mode)
+- **Package Manager:** pnpm (monorepo)
+- **Database:** PostgreSQL 16
+- **Cache:** Redis 7
+- **Event Bus:** Kafka 7.5
+- **API:** GraphQL (Apollo Federation)
+- **Logging:** Pino
+- **Monitoring:** Prometheus + Grafana
+
+### Design Principles
+
+1. **Event-Driven:** Kafka for inter-service communication
+2. **Type-Safe:** TypeScript everywhere with branded types
+3. **Validated:** Zod schemas for all inputs
+4. **Monitored:** Structured logging, metrics, distributed tracing
+5. **Testable:** Isolated packages, dependency injection
+6. **Documented:** Comprehensive inline docs
+
+---
+
+## 🎯 Track Development
+
+Each track can now develop independently:
+
+### Track 1: Mobile Apps
+- ✅ Authentication ready (user schema, JWT)
+- ✅ Conversations ready (database tables)
+- ✅ Real-time ready (Kafka topics)
+
+### Track 2: AI Intelligence
+- ✅ AI config ready (OpenAI, Anthropic)
+- ✅ Event bus ready
+- ✅ Conversation storage ready
+
+### Track 3: Email & Calendar
+- ✅ OAuth ready (Gmail, Microsoft)
+- ✅ OAuth tokens table
+- ✅ Email event types defined
+
+### Track 4: Tasks & Workflow
+- ✅ Event-driven architecture ready
+- ✅ Task event types defined
+- ✅ Database extensible
+
+**See `docs/tracks/` for track-specific documentation.**
+
+---
+
+## 📚 Documentation
+
+- **Planning:** `docs/planning/` - Product vision, roadmaps, execution plans
+- **Architecture:** `docs/architecture/` - System architecture
+- **Guides:** `docs/guides/` - Implementation guides, foundation setup
+- **Tracks:** `docs/tracks/` - Track-specific requirements and plans
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
 pnpm test
+
+# Test specific package
+pnpm --filter @tide/database test
+
+# Integration tests (requires running infrastructure)
+pnpm dev:start
+pnpm test:integration
 ```
-
-## Project Structure
-
-```
-/
-├── apps/
-│   ├── web/          # Next.js web application
-│   ├── mobile/       # React Native mobile app
-│   └── api/          # Core API service
-├── packages/
-│   ├── contracts/    # TypeScript interfaces
-│   ├── conversation/ # Conversation engine
-│   ├── actions/      # Action execution layer
-│   └── ai/          # AI integration layer
-├── docs/
-│   ├── modules/      # Module documentation
-│   └── architecture/ # System design docs
-└── infrastructure/   # Deployment configs
-```
-
-## Documentation
-
-- [Architecture Overview](./docs/STREAMLINED-ARCHITECTURE-FINAL.md)
-- [Business Strategy](./docs/BUSINESS-STRATEGY-TEXT-FIRST.md)
-- [Module Documentation](./docs/modules/)
-- [Complex Task Handling](./docs/COMPLEX-TASK-ARCHITECTURE.md)
-
-## Roadmap
-
-### Phase 1: Foundation (Weeks 1-4) ✅
-- [x] Core conversation engine
-- [x] Natural language understanding
-- [x] Action preview system
-- [x] Basic email/calendar integration
-
-### Phase 2: Integration (Weeks 5-8) 🚧
-- [ ] Gmail/Outlook deep integration
-- [ ] Google Calendar/Outlook Calendar
-- [ ] Contact management
-- [ ] File search capabilities
-
-### Phase 3: Intelligence (Weeks 9-12) 📅
-- [ ] Learning system
-- [ ] Personalization engine
-- [ ] Complex task orchestration
-- [ ] Proactive suggestions
-
-### Phase 4: Launch (Weeks 13-16) 📅
-- [ ] Performance optimization
-- [ ] Security hardening
-- [ ] Beta testing program
-- [ ] Public launch
-
-## Pricing
-
-- **Free Trial**: 7 days, full features
-- **Professional**: $30/month
-- **Team**: $25/user/month (5+ seats)
-- **Enterprise**: Custom pricing
-
-## Security & Privacy
-
-- **End-to-end encryption** for sensitive data
-- **SOC 2 Type II** compliance (in progress)
-- **GDPR compliant** with data controls
-- **Your data is yours** - export anytime
-
-## Support
-
-- 📧 Email: support@tide.ai
-- 💬 Discord: [discord.gg/tide](https://discord.gg/tide)
-- 📚 Docs: [docs.tide.ai](https://docs.tide.ai)
-- 🐦 Twitter: [@tideai](https://twitter.com/tideai)
-
-## Contributing
-
-We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
-## License
-
-Copyright © 2024 Tide AI, Inc. All rights reserved.
-
-Private and confidential. This software is proprietary and not open source.
 
 ---
 
-## Why $30/month?
+## 🔒 Security
 
-**Simple math:** If Tide saves you just 1 hour per week, that's 4 hours per month. At any professional hourly rate, Tide pays for itself immediately.
+- ✅ Bcrypt password hashing (cost factor 12)
+- ✅ JWT with asymmetric signing
+- ✅ OAuth tokens encrypted at rest (AES-256)
+- ✅ Sensitive data redacted in logs
+- ✅ SQL injection prevention (parameterized queries)
+- ✅ Rate limiting configured
+- ✅ CORS properly configured
 
-But most users save 5-10 hours per week.
-
-**The real value:** Never miss an important email. Never double-book. Never forget a follow-up. Always be prepared for meetings. Get your evenings back.
-
-## The Vision
-
-We believe the future of work isn't about voice commands in quiet rooms - it's about natural conversation that works everywhere you do.
-
-Tide is building that future. One conversation at a time.
+**See `.env.example` for security-related configuration.**
 
 ---
 
-**Ready to get your time back?**
+## 🚨 Troubleshooting
 
-[Start your free trial →](https://tide.ai)
+### Services won't start
+```bash
+# Check if ports are in use
+lsof -i :5432  # PostgreSQL
+lsof -i :6379  # Redis
+lsof -i :9092  # Kafka
+
+# Reset everything
+pnpm dev:reset
+```
+
+### Migrations fail
+```bash
+# Check PostgreSQL
+docker exec -it tide-postgres psql -U tide -d tide -c "SELECT 1;"
+
+# Re-run migrations
+pnpm db:migrate
+```
+
+### Build errors
+```bash
+# Clean and rebuild
+rm -rf packages/*/dist node_modules
+pnpm install
+pnpm build
+```
+
+---
+
+## 🤝 Contributing
+
+1. Create a feature branch: `git checkout -b feature/my-feature`
+2. Make your changes
+3. Run tests: `pnpm test`
+4. Build: `pnpm build`
+5. Commit: `git commit -m "feat: add feature"`
+6. Push: `git push origin feature/my-feature`
+7. Create a Pull Request
+
+---
+
+## 📄 License
+
+MIT
+
+---
+
+## 🆘 Support
+
+- **Documentation:** See `docs/` folder
+- **Implementation Guides:** `docs/guides/`
+- **Track Guides:** `docs/tracks/`
+- **Issues:** Create a GitHub issue
+
+---
+
+**Built with ❤️ by the Tide Team**

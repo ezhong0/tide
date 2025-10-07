@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { EmailSchema as EmailAddressSchema } from './base.schema';
+import { EmailAddressSchema } from './base.schema';
 
 /**
  * Contact schema
