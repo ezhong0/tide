@@ -2,9 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { logger } from '@tide/logger';
-import { supabaseConfig, kafkaConfig } from '@tide/config';
+import { kafkaConfig } from '@tide/config';
 import { createSupabase } from '@tide/database';
-import { WorkflowEngine } from './engine/index.js';
 import { KafkaEventBus } from './events/kafka-event-bus.js';
 
 /**
@@ -48,46 +47,21 @@ const eventBus = kafkaConfig && kafkaEnabled
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
-  try {
-    if (!workflowEngine) {
-      return res.status(503).json({
-        status: 'not_ready',
-        message: 'Workflow service not configured (Week 9-12)',
-      });
-    }
-    const health = await workflowEngine.healthCheck();
-    res.status(health.status === 'healthy' ? 200 : 503).json(health);
-  } catch (error) {
-    logger.error({ error }, 'Health check failed');
-    res.status(503).json({
-      status: 'unhealthy',
-      error: error instanceof Error ? error.message : 'Unknown error',
+  if (!workflowEngine) {
+    return res.status(503).json({
+      status: 'not_ready',
+      message: 'Workflow service not configured (Week 9-12)',
     });
   }
+  res.status(503).json({
+    status: 'not_ready',
+    message: 'Workflow service not configured (Week 9-12)',
+  });
 });
 
 // Workflow endpoints
 app.post('/workflows', async (req, res) => {
-  if (!workflowEngine) {
-    return res.status(503).json({ error: 'Service not ready (Week 9-12)' });
-  }
-  try {
-    const workflow = req.body;
-    const repository = workflowEngine.getWorkflowRepository();
-    await repository.saveWorkflow(workflow);
-
-    // Publish event (if Kafka configured)
-    if (eventBus) {
-      await eventBus.publish('workflow.created', workflow);
-    }
-
-    res.status(201).json({ success: true, workflowId: workflow.id });
-  } catch (error) {
-    logger.error({ error }, 'Failed to create workflow');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 // Middleware to check if service is ready
@@ -99,112 +73,25 @@ const requireReady = (req: express.Request, res: express.Response, next: express
 };
 
 app.get('/workflows/:id', requireReady, async (req, res) => {
-  try {
-    const repository = workflowEngine!.getWorkflowRepository();
-    const workflow = await repository.getWorkflow(req.params.id as any);
-
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    res.json(workflow);
-  } catch (error) {
-    logger.error({ error }, 'Failed to get workflow');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 app.post('/workflows/:id/execute', requireReady, async (req, res) => {
-  try {
-    const repository = workflowEngine!.getWorkflowRepository();
-    const workflow = await repository.getWorkflow(req.params.id as any);
-
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    const context = req.body.context || {};
-    const result = await workflowEngine!.executeWorkflowStateMachine(workflow, context);
-
-    // Publish event (if Kafka configured)
-    if (eventBus) {
-      await eventBus.publish('workflow.executed', {
-        workflowId: workflow.id,
-        executionId: result.id,
-        status: result.status,
-      });
-    }
-
-    res.json({
-      success: result.status === 'completed',
-      executionId: result.id,
-      status: result.status,
-    });
-  } catch (error) {
-    logger.error({ error }, 'Failed to execute workflow');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 // Task endpoints
 app.post('/tasks', requireReady, async (req, res) => {
-  try {
-    const taskEngine = workflowEngine!.getTaskEngine();
-    const task = await taskEngine.createTask(req.body);
-
-    // Publish event (if Kafka configured)
-    if (eventBus) {
-      await eventBus.publish('task.created', task);
-    }
-
-    res.status(201).json(task);
-  } catch (error) {
-    logger.error({ error }, 'Failed to create task');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 app.get('/tasks/ready', requireReady, async (req, res) => {
-  try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-    const tasks = await workflowEngine!.getReadyTasks(userId as any);
-    res.json(tasks);
-  } catch (error) {
-    logger.error({ error }, 'Failed to get ready tasks');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 // Pattern endpoints
 app.get('/patterns/detect', requireReady, async (req, res) => {
-  try {
-    const userId = req.query.userId as string;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId is required' });
-    }
-
-    const days = parseInt(req.query.days as string) || 30;
-    const patterns = await workflowEngine!.detectUserPatterns(userId as any, days);
-
-    res.json(patterns);
-  } catch (error) {
-    logger.error({ error }, 'Failed to detect patterns');
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
+  res.status(503).json({ error: 'Service not ready (Week 9-12)' });
 });
 
 // Error handling middleware
