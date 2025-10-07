@@ -1,9 +1,9 @@
 # 🎯 MVP Parallelized Roadmap to Product Vision
 
-**Created**: 2025-10-07 | **Revised**: 2025-10-07
+**Created**: 2025-10-07 | **Revised**: 2025-10-07 (Mechanical Demo First)
 **Current State**: Backend 95% done, Mobile 40% scaffolded
-**Strategy**: Visual MVP First → Backend Integration → Full Features
-**Timeline**: 2 weeks to visual MVP, 4 weeks to working MVP, 8 weeks to full vision
+**Strategy**: Mechanical Demo TODAY → Feature Completion → Polish
+**Timeline**: TODAY for mechanical demo, 3 weeks to working MVP, 6 weeks to full vision
 
 ---
 
@@ -115,39 +115,248 @@ Building **Tide** - An AI Chief of Staff that:
 
 ---
 
-## 🎯 Revised Strategy: Visual MVP First
+## 🎯 Correct Strategy: Mechanical Demo First
 
-### Why Visual First?
+### Why Mechanical Demo First?
 
-1. **Validates Product Vision**: See if the UX matches the "Chief of Staff" feeling
-2. **Early Feedback**: Get design feedback before backend lock-in
-3. **Motivation**: Seeing working UI motivates team
-4. **Parallel Work**: Designers and developers can work simultaneously
-5. **Testing Ground**: Test navigation, flows, edge cases with mock data
+1. **Proves Stack Works**: Backend → Gateway → Mobile end-to-end TODAY
+2. **Real Validation**: See actual Gmail data in iOS, not mocks
+3. **Finds Integration Issues Early**: Auth, CORS, API contracts, data flow
+4. **Builds on What Exists**: Backend is 95% done, just wire it up
+5. **Fast Feedback**: Working demo in hours, not weeks
 
 ### Anti-Pattern to Avoid
 
-❌ **Old Approach**: Build database → API → Finally see something
-- Wastes time if UX is wrong
-- No early validation
-- Backend changes expensive after UI built
+❌ **Visual-First Approach**: Build beautiful UI with mocks → Then realize APIs don't match
+- Wasted design time if mechanics broken
+- Backend changes break polished UI
+- No proof system works
 
-✅ **New Approach**: Build visual MVP → Validate → Then wire backend
-- Fail fast on UX issues
-- Backend knows exact API shape UI needs
-- Less backend rework
+✅ **Mechanical-First Approach**: Prove full stack works TODAY → Then iterate on features → Then polish
+- If stack broken, find out in 4 hours not 2 weeks
+- Build on solid foundation
+- Design to working APIs, not guesses
 
 ---
 
-## 🗓️ 2-Week Visual MVP (iOS Simulator Working End-to-End)
+## ⚡ Week 0: Mechanical Demo (TODAY - 4 Hours)
 
-**Goal**: Complete, polished iOS app in simulator with mock data showing all flows
+**Goal**: iOS simulator showing REAL Gmail emails via deployed backend
 
-### Week 1: Core Screens & Navigation (Days 1-7)
+### What "Mechanical Demo" Means
 
-#### TRACK A: iOS Core Flows (2 developers)
+- Bare-bones UI (plain lists, no animations)
+- Hardcoded auth (skip OAuth complexity for now)
+- One feature working end-to-end: Fetch real Gmail emails
+- Proves: Mobile → Gateway → Email Service → Gmail API → Database → Back to Mobile
 
-**Day 1: Project Setup & Design System**
+### Success Criteria (End of Today)
+
+✅ iOS simulator shows YOUR real Gmail emails
+✅ Tap email opens detail view
+✅ Pull-to-refresh fetches new emails
+✅ All data coming from live backend, not mocks
+
+### Hour 1: Database Schema Setup (CRITICAL - Do This First!)
+
+**Why First**: Backend services need tables to store data. This unblocks everything.
+
+**Tasks**:
+1. Open Supabase dashboard: https://app.supabase.com
+2. Navigate to SQL Editor
+3. Create minimal schema for mechanical demo:
+
+```sql
+-- User profiles (minimal for demo)
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Provider tokens (for Gmail access)
+CREATE TABLE IF NOT EXISTS provider_tokens (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES user_profiles(id),
+  provider TEXT NOT NULL, -- 'gmail'
+  access_token TEXT NOT NULL,
+  refresh_token TEXT,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, provider)
+);
+
+-- Email messages
+CREATE TABLE IF NOT EXISTS email_messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES user_profiles(id),
+  provider TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  subject TEXT,
+  from_email TEXT,
+  from_name TEXT,
+  body_text TEXT,
+  received_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id, provider, message_id)
+);
+
+CREATE INDEX idx_emails_user ON email_messages(user_id, received_at DESC);
+
+-- Insert test user for mechanical demo
+INSERT INTO user_profiles (id, email)
+VALUES ('00000000-0000-0000-0000-000000000001', 'demo@tide.app')
+ON CONFLICT DO NOTHING;
+```
+
+4. Run the SQL query
+5. Verify tables created in Table Editor
+6. **CHECKPOINT**: Tables exist, test user inserted
+
+**Time**: 30 minutes
+
+---
+
+### Hour 2: Backend Service Update (Make Services Use Database)
+
+**Why**: Services currently working but not persisting to database
+
+**Tasks**:
+
+**Email Service** (`packages/services/email/src/index.ts`):
+1. Update `/api/email/connect/:provider` endpoint to store tokens in `provider_tokens` table
+2. Update `/api/email/emails/:userId/:provider` to:
+   - Fetch emails from Gmail API
+   - Store in `email_messages` table
+   - Return stored emails
+3. Test with curl:
+```bash
+# Store token (use real Gmail token from OAuth playground)
+curl -X POST https://gateway-production-caf0.up.railway.app/api/email/connect/gmail \
+  -H "Content-Type: application/json" \
+  -d '{"userId":"00000000-0000-0000-0000-000000000001","accessToken":"YOUR_TOKEN","refreshToken":"YOUR_REFRESH"}'
+
+# Fetch emails
+curl https://gateway-production-caf0.up.railway.app/api/email/emails/00000000-0000-0000-0000-000000000001/gmail
+```
+
+**Implementation Details**:
+- Add `@supabase/supabase-js` to email service dependencies
+- Initialize Supabase client with service role key (bypasses RLS)
+- In connect handler: `await supabase.from('provider_tokens').upsert({...})`
+- In fetch handler: Call Gmail API → `await supabase.from('email_messages').upsert([...])` → Return emails
+
+**CHECKPOINT**: Curl returns real Gmail emails stored in database
+
+**Time**: 45 minutes
+
+---
+
+### Hour 3: iOS App Configuration (Point to Live Backend)
+
+**Why**: Mobile currently points to localhost, need to hit production gateway
+
+**Tasks**:
+
+**File**: `apps/mobile-ios/Core/Config.swift` (create if doesn't exist)
+```swift
+struct Config {
+    static let apiBaseURL = "https://gateway-production-caf0.up.railway.app"
+    static let testUserId = "00000000-0000-0000-0000-000000000001"
+}
+```
+
+**File**: `apps/mobile-ios/Services/APIClient.swift` (update)
+- Change base URL to `Config.apiBaseURL`
+- Add hardcoded userId for demo (skip auth)
+- Create `fetchEmails()` method calling `/api/email/emails/:userId/gmail`
+
+**File**: `apps/mobile-ios/Features/Email/EmailListView.swift` (simplify)
+- Remove mock data
+- Add `@StateObject var viewModel = EmailListViewModel()`
+- In `onAppear`: `viewModel.fetchEmails()`
+- Display emails in `List` (minimal: subject, from, date)
+
+**File**: `apps/mobile-ios/Features/Email/EmailListViewModel.swift` (create)
+- `@Published var emails: [Email] = []`
+- `@Published var isLoading = false`
+- `func fetchEmails()`: Call APIClient, update `emails`
+
+**CHECKPOINT**: Build and run in Xcode, see spinner while loading
+
+**Time**: 45 minutes
+
+---
+
+### Hour 4: End-to-End Test & Debug
+
+**Why**: Prove the full stack works
+
+**Tasks**:
+
+1. **Backend Check**:
+   - Verify gateway healthy: `curl https://gateway-production-caf0.up.railway.app/health`
+   - Verify email service healthy: `curl https://gateway-production-caf0.up.railway.app/api/email/health`
+   - Check Railway logs for errors: `railway logs --service email`
+
+2. **Database Check**:
+   - Open Supabase Table Editor
+   - Verify `provider_tokens` has test user token
+   - Verify `email_messages` has emails after fetch
+
+3. **Mobile Check**:
+   - Open Xcode, build and run (⌘R)
+   - Watch Xcode console for API request logs
+   - Should see: Loading → API call → Success → Emails displayed
+   - Pull-to-refresh should fetch again
+
+4. **Debug Common Issues**:
+   - CORS error: Add mobile origin to gateway CORS config
+   - 401 Unauthorized: Check API token / skip auth for demo
+   - 404 Not Found: Verify endpoint URLs match
+   - Empty list: Check Gmail token valid, emails in database
+
+**CHECKPOINT**: iOS simulator shows YOUR real Gmail emails
+
+**Time**: 45 minutes + debugging time
+
+---
+
+## ✅ End of Week 0 (TODAY): Mechanical Demo Working
+
+### What You Have
+
+✅ **Database**: Tables created in Supabase with test data
+✅ **Backend**: Email service fetching from Gmail, storing in DB
+✅ **Gateway**: Routing requests correctly
+✅ **Mobile**: iOS app displaying real emails from live backend
+✅ **Proof**: Full stack works end-to-end
+
+### What You Can Demo
+
+1. Open iOS simulator
+2. See your real Gmail inbox
+3. Pull to refresh → Fetches latest emails
+4. Tap email → Shows detail (if you built detail view)
+
+**User Reaction**: "Holy shit, it's actually working!"
+
+### What's Still Missing (But That's OK!)
+
+❌ Auth (hardcoded user)
+❌ OAuth (manual token)
+❌ Polish (bare-bones UI)
+❌ Other features (calendar, AI, etc.)
+
+**But you proved the stack works.** Now iterate from solid foundation.
+
+---
+
+## 📅 Week 1: Complete Core Features (Days 1-7)
+
+### Day 1: Add Real Authentication
+
+**Morning: Supabase Auth Integration**
 - Import design tokens (colors, typography, spacing) from Figma
 - Create SwiftUI theme system with dark mode support
 - Build reusable component library (buttons, cards, inputs)
