@@ -1,5 +1,31 @@
 # 📧 SYSTEM PROMPT: TRACK 3 - EMAIL & CALENDAR ENGINE
 
+> **⚠️ TRACK STATUS**: ⏳ **PLANNED** (0% complete)
+
+**Last Updated**: 2025-10-07
+**Status**: Week 3 Alpha - Planned for Weeks 4-9
+
+**Current Progress**:
+- ✅ Week 0 Foundation Complete (Supabase, PostgreSQL, Redis, Kafka)
+- ✅ OAuth configurations ready (Gmail, Microsoft Exchange, Google Calendar)
+- ⏳ Email service implementation planned for Week 4-6
+- ⏳ Calendar service implementation planned for Week 4-6
+- ⏳ Smart composition planned for Week 7-9
+- ⏳ Meeting intelligence planned for Week 7-9
+
+**Architecture Changes**:
+- Using **Supabase PostgreSQL** for email/calendar metadata storage
+- OAuth tokens stored securely in Supabase (encrypted)
+- Email/calendar services integrate with **Kafka** for event publishing
+- See [Current Architecture](/Users/edwardzhong/Projects/tide/docs/architecture/CURRENT-ARCHITECTURE.md) for details
+
+**Documentation**:
+- Current Stack: [docs/current/STACK.md](/Users/edwardzhong/Projects/tide/docs/current/STACK.md)
+- Services: [docs/current/SERVICES.md](/Users/edwardzhong/Projects/tide/docs/current/SERVICES.md)
+- Integration: [docs/current/INTEGRATION.md](/Users/edwardzhong/Projects/tide/docs/current/INTEGRATION.md)
+
+---
+
 > **PASTE THIS ENTIRE SECTION INTO CLAUDE CODE TO EXECUTE THIS TRACK**
 
 ---
@@ -22,45 +48,50 @@ You're building the email and calendar engine that makes executives feel like th
 
 ---
 
-## 📦 Week 0 Foundation - READY FOR YOU
+## 📦 Week 0 Foundation - ✅ COMPLETE
 
-The infrastructure team has delivered a **production-ready foundation** so you can start building immediately:
+**Infrastructure delivered and operational** (completed as Week 0 Foundation - now Tracks 5-6):
 
 ### ✅ What's Ready
-- **Infrastructure**: PostgreSQL 16, Redis 7, Kafka 7.5, Monitoring (Prometheus, Grafana)
-- **Database**: OAuth tokens table (encrypted storage), event bus for email.*  & calendar.* events
+- **Supabase Platform**: PostgreSQL 16, Supabase Auth for OAuth token management
+- **Infrastructure**: Redis 7, Kafka 7.5, Monitoring (Prometheus, Grafana)
+- **Database**: OAuth tokens stored securely in Supabase with encryption
 - **OAuth Configuration**: Gmail OAuth, Microsoft Exchange OAuth, Google Calendar OAuth all configured
 - **Shared Packages**: @tide/config (OAuth configs), @tide/types, @tide/errors, @tide/validation (email schemas)
 - **Libraries**: @tide/logger, @tide/database
 - **Event Types**: email.*, calendar.* event types defined in @tide/config
-- **Testing**: Integration test framework ready (`docs/guides/INTEGRATION-TESTING.md`)
+- **Testing**: Integration test framework ready
 
 ### 📚 Essential Reading (Read These First!)
-1. **README.md** - Quick start and developer guide
-2. **WEEK-0-STATUS.md** - Complete foundation status (see Track 3 section)
-3. **docs/tracks/integration-milestones.md** - Updated integration plan (4 tracks + foundation)
-4. **packages/shared/config/src/index.ts** - Gmail/Exchange/Calendar OAuth configs
-5. **docs/guides/INTEGRATION-TESTING.md** - How to add integration tests
+1. **docs/architecture/CURRENT-ARCHITECTURE.md** - Current Supabase-first architecture
+2. **docs/architecture/FUTURE-ARCHITECTURE.md** - Future evolution plan
+3. **docs/current/STACK.md** - Technology stack (updated for Supabase)
+4. **docs/current/SERVICES.md** - Service architecture overview
+5. **docs/tracks/integration-milestones.md** - Integration plan with Week 3 Alpha status
+6. **docs/tracks/track-05-backend-infrastructure.md** - Week 0 Foundation details
+7. **packages/shared/config/src/auth.ts** - Gmail/Exchange/Calendar OAuth configs
 
 ### 🚀 Quick Start
 ```bash
-# 1. Start infrastructure (PostgreSQL, Redis, Kafka, Monitoring)
-pnpm dev:start
+# 1. Environment setup
+cp .env.example .env
+# Add your Supabase credentials + OAuth app credentials
 
-# 2. Run migrations
-pnpm db:migrate
+# 2. Start local infrastructure (Redis, Kafka, Monitoring)
+pnpm dev:start
 
 # 3. Build all packages
 pnpm build
 
-# 4. OAuth tokens table ready in database
+# 4. OAuth tokens stored in Supabase (encrypted)
 # 5. You're ready! Zero infrastructure blockers.
 ```
 
-### 🔗 Your Dependencies
-- **Email Service**: You'll build this (create in `packages/services/email/`)
-- **Calendar Service**: You'll build this (create in `packages/services/calendar/`)
-- **OAuth Flows**: Implement using configs from @tide/config
+### 🔗 Your Integration Points
+- **Email Service**: You'll build this (create in `packages/services/email/`) - Weeks 4-6
+- **Calendar Service**: You'll build this (create in `packages/services/calendar/`) - Weeks 4-6
+- **OAuth**: Use Supabase Auth for secure token storage with OAuth providers
+- **Events**: Kafka ready - publish to email.*, calendar.* topics
 - **GraphQL API**: Coordinate with Track 4 for API Gateway integration
 
 ---
