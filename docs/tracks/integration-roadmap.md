@@ -95,7 +95,7 @@ Each track is a **complete vertical slice** owning:
 - Mobile iOS: `apps/mobile-ios/TideApp/Features/Email/`
 - Mobile Android: `apps/mobile-android/app/src/main/kotlin/ai/tide/features/email/`
 - Database: Supabase PostgreSQL
-- AI: Claude API for triage and composition
+- AI: GPT-5-mini and GPT-5-nano for triage and composition
 
 ### Development Plan
 
@@ -131,7 +131,7 @@ CREATE TABLE email_messages (...)
 - Pull-to-refresh
 
 // AI:
-- Email triage agent with Claude
+- Email triage agent with GPT-5-nano
 - Category classification
 - Priority scoring
 ```
@@ -211,7 +211,7 @@ CREATE TABLE email_messages (...)
 - Mobile iOS: `apps/mobile-ios/TideApp/Features/Calendar/`
 - Mobile Android: `apps/mobile-android/app/src/main/kotlin/ai/tide/features/calendar/`
 - Database: Supabase PostgreSQL
-- AI: Claude API for meeting prep and scheduling
+- AI: GPT-5-mini for meeting prep and scheduling
 
 ### Development Plan
 
@@ -321,14 +321,14 @@ CREATE TABLE calendar_events (...)
 - Mobile iOS: `apps/mobile-ios/TideApp/Features/Chat/`
 - Mobile Android: `apps/mobile-android/app/src/main/kotlin/ai/tide/features/chat/`
 - Database: Supabase PostgreSQL
-- AI: Claude, GPT-4, local models
+- AI: GPT-5-mini and GPT-5-nano only
 
 ### Development Plan
 
 **Week 1**: Basic Chat
 ```typescript
 // Backend:
-- Claude integration ✅
+- GPT-5 integration ✅
 - Message processing ✅
 - Conversation storage ✅
 

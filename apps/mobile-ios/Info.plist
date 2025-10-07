@@ -20,6 +20,17 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.526055709746-golq3n9mgv1oh55sgim0s5qrqcped8j6</string>
+            </array>
+            <key>CFBundleURLName</key>
+            <string>com.tide.app</string>
+        </dict>
+    </array>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>UIApplicationSceneManifest</key>

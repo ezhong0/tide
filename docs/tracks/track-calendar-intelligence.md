@@ -15,7 +15,7 @@
 - **Mobile iOS**: `apps/mobile-ios/TideApp/Features/Calendar/`
 - **Mobile Android**: `apps/mobile-android/.../features/calendar/`
 - **Database**: `calendar_events` table
-- **AI Agents**: Meeting prep, smart scheduling, focus time protection
+- **AI Agents** (GPT-5-mini): Meeting prep, smart scheduling, focus time protection
 
 ---
 
@@ -82,7 +82,12 @@ Recent emails: ${relatedEmails.data.map(e => e.subject).join('\n')}
 
 Provide: Background, Key Topics, Talking Points`;
 
-  const brief = await claude.generateBrief(prompt);
+  const response = await openai.chat.completions.create({
+    model: 'gpt-5-mini',
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const brief = response.choices[0].message.content;
 
   await supabase
     .from('calendar_events')

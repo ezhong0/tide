@@ -1,2 +1,13 @@
 node_modules
-resume/
+resume/.build
+
+# macOS
+.DS_Store
+
+# Xcode
+*.xcuserstate
+.swiftpm/
+Package.resolved
+
+# Swift Package Manager
+.build/

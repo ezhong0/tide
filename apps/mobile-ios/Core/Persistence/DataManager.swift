@@ -58,7 +58,7 @@ class DataManager {
 
     // MARK: Conversation Operations
 
-    func saveConversation(_ conversation: Conversation) {
+    func saveConversation(_ conversation: TideConversation) {
         let context = viewContext
 
         // Check if conversation already exists
@@ -95,7 +95,7 @@ class DataManager {
         }
     }
 
-    func fetchConversations() -> [Conversation] {
+    func fetchConversations() -> [TideConversation] {
         let context = viewContext
         let fetchRequest: NSFetchRequest<ConversationEntity> = ConversationEntity.fetchRequest()
         fetchRequest.sortDescriptors = [NSSortDescriptor(key: "updatedAt", ascending: false)]
@@ -127,7 +127,7 @@ class DataManager {
 
     // MARK: Message Operations
 
-    private func saveMessage(_ message: Message, to conversation: ConversationEntity, in context: NSManagedObjectContext) {
+    private func saveMessage(_ message: TideMessage, to conversation: ConversationEntity, in context: NSManagedObjectContext) {
         // Check if message already exists
         let fetchRequest: NSFetchRequest<MessageEntity> = MessageEntity.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "id == %@", message.id)
@@ -189,7 +189,7 @@ class DataManager {
 // MARK: - CoreData Entity Extensions
 
 extension ConversationEntity {
-    func toModel() -> Conversation? {
+    func toModel() -> TideConversation? {
         guard let id = id,
               let title = title,
               let createdAt = createdAt,
@@ -199,7 +199,7 @@ extension ConversationEntity {
 
         let messages = (self.messages?.allObjects as? [MessageEntity])?.compactMap { $0.toModel() } ?? []
 
-        return Conversation(
+        return TideConversation(
             id: id,
             title: title,
             messages: messages,
@@ -211,7 +211,7 @@ extension ConversationEntity {
 }
 
 extension MessageEntity {
-    func toModel() -> Message? {
+    func toModel() -> TideMessage? {
         guard let id = id,
               let content = content,
               let roleString = role,
@@ -232,7 +232,7 @@ extension MessageEntity {
             actionPreview = try? JSONDecoder().decode(ActionPreview.self, from: actionPreviewJSON)
         }
 
-        return Message(
+        return TideMessage(
             id: id,
             content: content,
             role: role,

@@ -96,8 +96,8 @@ class SupabaseManager: ObservableObject {
     // MARK: - Conversations
 
     /// Fetch conversations
-    func fetchConversations() async throws -> [Conversation] {
-        let response: [Conversation] = try await client
+    func fetchConversations() async throws -> [DBConversation] {
+        let response: [DBConversation] = try await client
             .from("conversations")
             .select()
             .order("created_at", ascending: false)
@@ -108,13 +108,13 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Create conversation
-    func createConversation(title: String) async throws -> Conversation {
+    func createConversation(title: String) async throws -> DBConversation {
         let newConversation = CreateConversationRequest(
             title: title,
             userId: currentUser?.id ?? ""
         )
 
-        let response: Conversation = try await client
+        let response: DBConversation = try await client
             .from("conversations")
             .insert(newConversation)
             .select()
@@ -126,8 +126,8 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Fetch messages for conversation
-    func fetchMessages(conversationId: String) async throws -> [Message] {
-        let response: [Message] = try await client
+    func fetchMessages(conversationId: String) async throws -> [DBMessage] {
+        let response: [DBMessage] = try await client
             .from("messages")
             .select()
             .eq("conversation_id", value: conversationId)
@@ -139,14 +139,14 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Send message
-    func sendMessage(conversationId: String, content: String, role: MessageRole) async throws -> Message {
+    func sendMessage(conversationId: String, content: String, role: String) async throws -> DBMessage {
         let newMessage = CreateMessageRequest(
             conversationId: conversationId,
             content: content,
-            role: role.rawValue
+            role: role
         )
 
-        let response: Message = try await client
+        let response: DBMessage = try await client
             .from("messages")
             .insert(newMessage)
             .select()
@@ -160,7 +160,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - Realtime Subscriptions
 
     /// Subscribe to new messages in a conversation
-    func subscribeToMessages(conversationId: String, onMessage: @escaping (Message) -> Void) -> RealtimeChannel {
+    func subscribeToMessages(conversationId: String, onMessage: @escaping (DBMessage) -> Void) -> RealtimeChannel {
         let channel = client.channel("messages:\(conversationId)")
 
         let subscription = channel
@@ -169,7 +169,7 @@ class SupabaseManager: ObservableObject {
                    let record = payload["record"] as? [String: Any] {
                     do {
                         let data = try JSONSerialization.data(withJSONObject: record)
-                        let message = try JSONDecoder().decode(Message.self, from: data)
+                        let message = try JSONDecoder().decode(DBMessage.self, from: data)
                         onMessage(message)
                     } catch {
                         print("Error decoding message: \(error)")
@@ -190,8 +190,8 @@ class SupabaseManager: ObservableObject {
     // MARK: - Calendar Events
 
     /// Fetch calendar events
-    func fetchCalendarEvents(from: Date, to: Date) async throws -> [CalendarEvent] {
-        let response: [CalendarEvent] = try await client
+    func fetchCalendarEvents(from: Date, to: Date) async throws -> [DBCalendarEvent] {
+        let response: [DBCalendarEvent] = try await client
             .from("calendar_events")
             .select()
             .gte("start_time", value: from.iso8601)
@@ -206,7 +206,7 @@ class SupabaseManager: ObservableObject {
     // MARK: - Tasks
 
     /// Fetch tasks
-    func fetchTasks(status: TaskStatus? = nil) async throws -> [Task] {
+    func fetchTasks(status: TaskStatus? = nil) async throws -> [DBTask] {
         var query = client
             .from("tasks")
             .select()
@@ -215,7 +215,7 @@ class SupabaseManager: ObservableObject {
             query = query.eq("status", value: status.rawValue)
         }
 
-        let response: [Task] = try await query
+        let response: [DBTask] = try await query
             .order("created_at", ascending: false)
             .execute()
             .value
@@ -224,7 +224,7 @@ class SupabaseManager: ObservableObject {
     }
 
     /// Create task
-    func createTask(title: String, description: String?, dueAt: Date?) async throws -> Task {
+    func createTask(title: String, description: String?, dueAt: Date?) async throws -> DBTask {
         let newTask = CreateTaskRequest(
             title: title,
             description: description,
@@ -232,7 +232,7 @@ class SupabaseManager: ObservableObject {
             userId: currentUser?.id ?? ""
         )
 
-        let response: Task = try await client
+        let response: DBTask = try await client
             .from("tasks")
             .insert(newTask)
             .select()
@@ -256,17 +256,8 @@ class SupabaseManager: ObservableObject {
 
     // MARK: - OAuth Tokens
 
-    /// Get OAuth tokens for backend services
-    /// Note: This should only be called from backend via service_role
-    func getOAuthTokens(provider: OAuthProvider) async throws -> OAuthTokens {
-        guard let userId = currentUser?.id else {
-            throw TideError.notAuthenticated
-        }
-
-        // This requires service_role access, so it should be called via your backend
-        // Frontend should call your AI/Email/Calendar services instead
-        throw TideError.notImplemented("OAuth tokens should be accessed via backend services")
-    }
+    // Note: OAuth tokens are managed by backend services
+    // Frontend should call AI/Email/Calendar services directly
 
     // MARK: - Private Helpers
 
@@ -306,7 +297,7 @@ struct UserProfile: Codable {
     }
 }
 
-struct Conversation: Codable, Identifiable {
+struct DBConversation: Codable, Identifiable {
     let id: String
     let userId: String
     var title: String?
@@ -328,7 +319,7 @@ struct Conversation: Codable, Identifiable {
     }
 }
 
-struct Message: Codable, Identifiable {
+struct DBMessage: Codable, Identifiable {
     let id: String
     let conversationId: String
     let role: String
@@ -348,13 +339,7 @@ struct Message: Codable, Identifiable {
     }
 }
 
-enum MessageRole: String, Codable {
-    case user
-    case assistant
-    case system
-}
-
-struct CalendarEvent: Codable, Identifiable {
+struct DBCalendarEvent: Codable, Identifiable {
     let id: String
     let userId: String
     let provider: String
@@ -380,7 +365,7 @@ struct CalendarEvent: Codable, Identifiable {
     }
 }
 
-struct Task: Codable, Identifiable {
+struct DBTask: Codable, Identifiable {
     let id: String
     let userId: String
     var title: String
@@ -459,13 +444,6 @@ struct CreateTaskRequest: Codable {
 enum TideError: Error {
     case notAuthenticated
     case notImplemented(String)
-}
-
-// MARK: - Configuration
-
-struct Config {
-    static let supabaseURL = ProcessInfo.processInfo.environment["SUPABASE_URL"] ?? ""
-    static let supabaseAnonKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? ""
 }
 
 // MARK: - Date Extension

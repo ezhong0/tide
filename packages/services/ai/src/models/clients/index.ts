@@ -1,12 +1,13 @@
 /**
  * Model Client Factory
+ *
+ * Tide uses GPT-5 models exclusively (gpt-5-mini, gpt-5-nano)
  */
 
 import { createLogger } from '@tide/logger';
 import { aiServiceConfig } from '@tide/config';
 import type { ModelClient } from '../../types/index.js';
 import { OpenAIClient } from './openai-client.js';
-import { AnthropicClient } from './anthropic-client.js';
 
 const logger = createLogger({ component: 'ModelClientFactory' });
 
@@ -28,29 +29,23 @@ export class ModelClientFactory {
 
   /**
    * Create a new model client
+   *
+   * Tide uses GPT-5 models only:
+   * - gpt-5-mini: For complex tasks ($0.25/1M tokens)
+   * - gpt-5-nano: For fast, simple tasks ($0.05/1M tokens)
    */
   private static createClient(modelId: string): ModelClient {
-    // OpenAI models
+    // GPT-5 models (only supported models)
     if (modelId.startsWith('gpt-')) {
       const apiKey = aiServiceConfig.openai?.apiKey || process.env.OPENAI_API_KEY;
       if (!apiKey) {
         throw new Error('OpenAI API key not configured');
       }
-      logger.info('Creating OpenAI client', { model: modelId });
+      logger.info('Creating OpenAI GPT-5 client', { model: modelId });
       return new OpenAIClient(apiKey, modelId);
     }
 
-    // Anthropic models
-    if (modelId.startsWith('claude-')) {
-      const apiKey = aiServiceConfig.anthropic?.apiKey || process.env.ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error('Anthropic API key not configured');
-      }
-      logger.info('Creating Anthropic client', { model: modelId });
-      return new AnthropicClient(apiKey, modelId);
-    }
-
-    throw new Error(`Unsupported model: ${modelId}`);
+    throw new Error(`Unsupported model: ${modelId}. Tide uses GPT-5 models only (gpt-5-mini, gpt-5-nano)`);
   }
 
   /**
@@ -62,4 +57,3 @@ export class ModelClientFactory {
 }
 
 export { OpenAIClient } from './openai-client.js';
-export { AnthropicClient } from './anthropic-client.js';

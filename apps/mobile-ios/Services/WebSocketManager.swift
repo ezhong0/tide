@@ -269,9 +269,16 @@ struct WebSocketMessage: Codable {
     let messageId: String?
     let timestamp: String?
 
-    init(type: String, payload: (some Codable)? = nil, messageId: String? = nil, timestamp: String? = nil) {
+    init<T: Codable>(type: String, payload: T? = nil, messageId: String? = nil, timestamp: String? = nil) {
         self.type = type
         self.payload = payload.map { AnyCodable($0) }
+        self.messageId = messageId
+        self.timestamp = timestamp
+    }
+
+    init(type: String, messageId: String? = nil, timestamp: String? = nil) {
+        self.type = type
+        self.payload = nil
         self.messageId = messageId
         self.timestamp = timestamp
     }
@@ -298,7 +305,7 @@ struct TypingPayload: Codable {
 struct AnyCodable: Codable {
     let value: Any
 
-    init(_ value: some Codable) {
+    init<T: Codable>(_ value: T) {
         self.value = value
     }
 
@@ -334,10 +341,10 @@ struct AnyCodable: Codable {
             try container.encode(stringValue)
         case let boolValue as Bool:
             try container.encode(boolValue)
-        case let dictValue as [String: Any]:
-            try container.encode(dictValue.compactMapValues { AnyCodable($0 as! any Codable) })
-        case let arrayValue as [Any]:
-            try container.encode(arrayValue.map { AnyCodable($0 as! any Codable) })
+        case let dictValue as [String: AnyCodable]:
+            try container.encode(dictValue)
+        case let arrayValue as [AnyCodable]:
+            try container.encode(arrayValue)
         default:
             let context = EncodingError.Context(codingPath: [], debugDescription: "Value cannot be encoded")
             throw EncodingError.invalidValue(value, context)
