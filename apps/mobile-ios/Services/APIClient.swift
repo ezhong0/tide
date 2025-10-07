@@ -7,11 +7,8 @@ class APIClient {
     private let session: URLSession
 
     init() {
-        #if DEBUG
-        self.baseURL = "http://localhost:4001" // Auth service dev port
-        #else
-        self.baseURL = "https://api.tide.ai"
-        #endif
+        // Use live Railway gateway URL from Config
+        self.baseURL = Config.apiBaseURL
 
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30

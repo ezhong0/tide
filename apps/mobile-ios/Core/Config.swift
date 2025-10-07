@@ -13,6 +13,12 @@ enum Config {
     static let supabaseAnonKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"]
         ?? "YOUR_ANON_KEY_HERE" // Replace with actual key from Supabase dashboard
 
+    // MARK: - API Configuration
+
+    /// API Gateway base URL
+    static let apiBaseURL = ProcessInfo.processInfo.environment["API_BASE_URL"]
+        ?? "https://gateway-production-caf0.up.railway.app"
+
     // MARK: - App Configuration
 
     /// App version
