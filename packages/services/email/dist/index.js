@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
+import { createSupabase } from '@tide/database';
 import { GmailProvider } from './providers/gmail.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { EmailTriageEngine } from './triage/triage-engine.js';
@@ -16,6 +17,7 @@ class EmailService {
         this.triageEngine = new EmailTriageEngine();
         this.composer = new SmartComposer();
         this.providers = new Map();
+        this.db = createSupabase(true); // Use service role for backend operations
         this.setupMiddleware();
         this.setupRoutes();
     }
@@ -59,6 +61,24 @@ class EmailService {
                 const emailProvider = this.getProvider(provider);
                 await emailProvider.initialize(userId, tokens);
                 this.providers.set(`${userId}-${provider}`, emailProvider);
+                // Store OAuth tokens in database
+                const { error: dbError } = await this.db
+                    .from('oauth_tokens')
+                    .upsert({
+                    user_id: userId,
+                    provider: provider === 'gmail' ? 'google' : 'microsoft',
+                    service: 'email',
+                    access_token: tokens.accessToken,
+                    refresh_token: tokens.refreshToken,
+                    expires_at: tokens.expiresAt ? new Date(tokens.expiresAt).toISOString() : null,
+                    scope: tokens.scope || null,
+                }, {
+                    onConflict: 'user_id,provider,service',
+                });
+                if (dbError) {
+                    logger.error({ error: dbError }, 'Failed to store OAuth tokens');
+                    // Continue anyway - don't fail the request
+                }
                 logger.info({ userId, provider }, 'Email provider connected');
                 res.json({ success: true, provider });
             }
@@ -72,14 +92,69 @@ class EmailService {
             try {
                 const { userId, provider } = req.params;
                 const { limit, unreadOnly } = req.query;
-                const emailProvider = this.providers.get(`${userId}-${provider}`);
+                // Try to get provider from cache
+                let emailProvider = this.providers.get(`${userId}-${provider}`);
+                // If not in cache, retrieve from database and initialize
                 if (!emailProvider) {
-                    return res.status(404).json({ error: 'Provider not connected' });
+                    const { data: tokenData, error: tokenError } = await this.db
+                        .from('oauth_tokens')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .eq('provider', provider === 'gmail' ? 'google' : 'microsoft')
+                        .eq('service', 'email')
+                        .single();
+                    if (tokenError || !tokenData) {
+                        return res.status(404).json({ error: 'Provider not connected. Please connect your account first.' });
+                    }
+                    // Initialize provider with tokens from database
+                    emailProvider = this.getProvider(provider);
+                    await emailProvider.initialize(userId, {
+                        accessToken: tokenData.access_token,
+                        refreshToken: tokenData.refresh_token,
+                        expiresAt: tokenData.expires_at,
+                        scope: tokenData.scope || undefined,
+                    });
+                    this.providers.set(`${userId}-${provider}`, emailProvider);
                 }
                 const emails = await emailProvider.fetchEmails({
                     limit: limit ? parseInt(limit) : 50,
                     unreadOnly: unreadOnly === 'true',
                 });
+                // Store emails in database
+                for (const email of emails) {
+                    // Create or update thread
+                    await this.db
+                        .from('email_threads')
+                        .upsert({
+                        user_id: userId,
+                        provider: provider === 'gmail' ? 'google' : 'microsoft',
+                        external_thread_id: email.threadId || email.id,
+                        subject: email.subject,
+                        participants: email.from ? [email.from] : [],
+                        last_message_at: email.timestamp,
+                    }, {
+                        onConflict: 'user_id,external_thread_id',
+                    });
+                    // Store individual email message
+                    await this.db
+                        .from('email_messages')
+                        .upsert({
+                        user_id: userId,
+                        provider: provider === 'gmail' ? 'google' : 'microsoft',
+                        external_message_id: email.id,
+                        thread_id: email.threadId || email.id,
+                        from_address: email.from,
+                        to_addresses: email.to || [],
+                        cc_addresses: email.cc || [],
+                        subject: email.subject,
+                        body_text: email.body,
+                        body_html: email.htmlBody || null,
+                        received_at: email.timestamp,
+                        is_read: email.isRead || false,
+                    }, {
+                        onConflict: 'user_id,external_message_id',
+                    });
+                }
                 res.json({ emails, count: emails.length });
             }
             catch (error) {

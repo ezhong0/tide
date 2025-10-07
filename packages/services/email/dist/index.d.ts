@@ -6,6 +6,7 @@ declare class EmailService {
     private triageEngine;
     private composer;
     private providers;
+    private db;
     constructor();
     /**
      * Setup Express middleware
