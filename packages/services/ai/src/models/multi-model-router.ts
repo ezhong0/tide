@@ -168,23 +168,15 @@ export class MultiModelRouter {
   /**
    * Get actual model ID from ModelFamily
    *
-   * NOTE: GPT-5 models were released August 7, 2025
-   * API model names: gpt-5, gpt-5-mini, gpt-5-nano
+   * Tide uses GPT-5 models exclusively (released August 7, 2025)
+   * API model names: gpt-5-mini, gpt-5-nano
    */
   getModelId(family: ModelFamily): string {
     switch (family) {
-      // case 'gpt-5':
-      //   return 'gpt-5'; // NOT USED - too expensive for Alpha
       case 'gpt-5-mini':
-        return 'gpt-5-mini'; // GPT-5 mini (released Aug 2025)
+        return 'gpt-5-mini'; // GPT-5 mini - complex tasks ($0.25/1M)
       case 'gpt-5-nano':
-        return 'gpt-5-nano'; // GPT-5 nano (released Aug 2025)
-      case 'claude-3.5-opus':
-        return 'claude-3-opus-20240229';
-      case 'claude-3.5-sonnet':
-        return 'claude-3-sonnet-20240229';
-      case 'gemini-pro':
-        return 'gemini-pro';
+        return 'gpt-5-nano'; // GPT-5 nano - fast, simple tasks ($0.05/1M)
       default:
         return 'gpt-5-nano'; // Default to fastest, cheapest model
     }

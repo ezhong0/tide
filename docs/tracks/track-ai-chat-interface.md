@@ -11,17 +11,17 @@
 
 ## What You Own
 
-- **Backend**: `packages/services/ai/` - Claude integration, agent routing, context
+- **Backend**: `packages/services/ai/` - GPT-5 integration, agent routing, context
 - **Mobile iOS**: `apps/mobile-ios/TideApp/Features/Chat/`
 - **Mobile Android**: `apps/mobile-android/.../features/chat/`
 - **Database**: `conversations`, `messages` tables
-- **AI**: 16+ specialized agents, multi-model routing
+- **AI** (GPT-5-mini and GPT-5-nano): 16+ specialized agents, intelligent routing
 
 ---
 
 ## 4-Week Plan
 
-**Week 1**: Basic Chat (Claude integration, message storage)
+**Week 1**: Basic Chat (GPT-5 integration, message storage)
 **Week 2**: Multi-Agent (intent classification, 16+ agents, routing)
 **Week 3**: Context & Memory (conversation history, personalization)
 **Week 4**: Advanced (voice input, streaming, multi-turn reasoning)

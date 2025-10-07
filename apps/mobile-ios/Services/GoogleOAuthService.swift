@@ -9,7 +9,6 @@ class GoogleOAuthService: NSObject, ObservableObject {
     @Published var authError: String?
 
     private var authSession: ASWebAuthenticationSession?
-    private var presentationContext: ASWebAuthenticationPresentationContext?
 
     private override init() {
         super.init()
@@ -37,7 +36,7 @@ class GoogleOAuthService: NSObject, ObservableObject {
         // Google OAuth configuration
         // TODO: Move these to Config.swift and set in environment
         let clientId = Config.googleIOSClientId
-        let redirectScheme = "com.googleusercontent.apps.\(Config.googleIOSClientId.split(separator: ".").first ?? ""))"
+        let redirectScheme = "com.googleusercontent.apps.\(Config.googleIOSClientId.split(separator: ".").first ?? "")"
         let scope = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send"
 
         // Build OAuth URL

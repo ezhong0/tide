@@ -26,7 +26,7 @@
 - `email_threads` - Thread metadata
 - `email_messages` - Individual emails with AI analysis
 
-**AI Agents**:
+**AI Agents** (GPT-5-mini and GPT-5-nano):
 - Email triage agent (urgent/important/normal/low)
 - Composition agent (multi-draft generation)
 - VIP detection agent
@@ -286,15 +286,15 @@ class EmailConnectViewModel: ObservableObject {
 
 ```typescript
 // packages/services/email/src/triage/email-triage.ts
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { supabase } from '../supabase';
 
 export class EmailTriageService {
-  private anthropic: Anthropic;
+  private openai: OpenAI;
 
   constructor() {
-    this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
     });
   }
 
@@ -339,16 +339,17 @@ Respond with JSON:
   "reasoning": "why this category"
 }`;
 
-    const message = await this.anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-5-nano', // Fast, cheap triage
       max_tokens: 500,
+      response_format: { type: 'json_object' },
       messages: [{
         role: 'user',
         content: prompt
       }]
     });
 
-    const result = JSON.parse(message.content[0].text);
+    const result = JSON.parse(response.choices[0].message.content!);
 
     return {
       emailId: email.id,
@@ -484,15 +485,15 @@ Tone: ${tone}
 
 Generate ONLY the reply body, no subject.`;
 
-    const message = await this.anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+    const response = await this.openai.chat.completions.create({
+      model: 'gpt-5-mini', // Better quality for composition
       max_tokens: 1000,
       messages: [{ role: 'user', content: prompt }]
     });
 
     return {
       tone,
-      content: message.content[0].text
+      content: response.choices[0].message.content!
     };
   }
 }
@@ -548,7 +549,7 @@ Implement Gmail OAuth in Email Service. Create GmailOAuth class with getAuthUrl,
 
 **For AI triage:**
 ```
-Implement email triage using Claude API. For each email, send prompt with from/subject/body, get JSON response with category (urgent/important/normal/low), priority (1-10), and summary. Update email_messages table with AI analysis. Process 50 emails in <3 seconds using parallel requests.
+Implement email triage using GPT-5-nano. For each email, send prompt with from/subject/body, get JSON response with category (urgent/important/normal/low), priority (1-10), and summary. Update email_messages table with AI analysis. Process 50 emails in <3 seconds using parallel requests. Use gpt-5-nano for speed and cost efficiency.
 ```
 
 This track ships a complete, production-ready email intelligence feature.
