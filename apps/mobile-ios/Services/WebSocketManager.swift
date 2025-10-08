@@ -57,7 +57,8 @@ class WebSocketManager: ObservableObject {
         // Start heartbeat
         startHeartbeat()
 
-        isConnected = true
+        // Note: isConnected will be set to true when server sends "connected" message
+        // This ensures proper authentication validation
         connectionError = nil
 
         print("WebSocket connecting to: \(url.absoluteString)")

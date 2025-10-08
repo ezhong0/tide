@@ -118,12 +118,19 @@ export class EmailAutomation {
       thread: [email],
     });
 
-    const declineDraft = drafts[0]; // Use first (most formal) draft
+    const declineDraft = drafts[0] || {
+      subject: `Re: ${email.subject}`,
+      body: 'Thank you for the invitation. Unfortunately, I will not be able to attend.',
+      approach: 'formal',
+      tone: 'professional',
+      length: 50,
+      confidence: 0.5,
+    };
 
     return {
       type: 'send',
       email: declineDraft,
-      confidence: 0.85,
+      confidence: drafts.length > 0 ? 0.85 : 0.5,
       reasoning: 'Auto-declining meeting request due to low importance or scheduling conflicts',
     };
   }
