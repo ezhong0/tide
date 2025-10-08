@@ -3,7 +3,8 @@ import Supabase
 
 /// Tide Supabase Manager for iOS
 /// Handles authentication, database, and realtime subscriptions
-class SupabaseManager: ObservableObject {
+@MainActor
+class SupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Singleton
     static let shared = SupabaseManager()
@@ -16,9 +17,25 @@ class SupabaseManager: ObservableObject {
 
     // MARK: - Initialization
     private init() {
-        guard let supabaseURL = URL(string: Config.supabaseURL),
-              let supabaseKey = Config.supabaseAnonKey else {
-            fatalError("Missing Supabase configuration")
+        // Validate configuration
+        guard let supabaseURL = URL(string: Config.supabaseURL) else {
+            // Graceful error: Log and create a placeholder client
+            print("❌ CRITICAL: Invalid Supabase URL configuration. App will not function properly.")
+            // Create a minimal client to prevent crash, but app won't work
+            self.client = SupabaseClient(
+                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                supabaseKey: "placeholder-key"
+            )
+            return
+        }
+
+        guard let supabaseKey = Config.supabaseAnonKey, !supabaseKey.isEmpty else {
+            print("❌ CRITICAL: Missing Supabase anon key. App will not function properly.")
+            self.client = SupabaseClient(
+                supabaseURL: supabaseURL,
+                supabaseKey: "placeholder-key"
+            )
+            return
         }
 
         self.client = SupabaseClient(
@@ -31,6 +48,25 @@ class SupabaseManager: ObservableObject {
     }
 
     // MARK: - Authentication
+
+    /// Sign in with email and password
+    func signIn(email: String, password: String) async throws -> Session {
+        let session = try await client.auth.signIn(
+            email: email,
+            password: password
+        )
+        return session
+    }
+
+    /// Sign up with email and password
+    func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
+        let session = try await client.auth.signUp(
+            email: email,
+            password: password,
+            data: data
+        )
+        return session
+    }
 
     /// Sign in with Google OAuth
     func signInWithGoogle() async throws {
@@ -444,12 +480,4 @@ struct CreateTaskRequest: Codable {
 enum TideError: Error {
     case notAuthenticated
     case notImplemented(String)
-}
-
-// MARK: - Date Extension
-
-extension Date {
-    var iso8601: String {
-        ISO8601DateFormatter().string(from: self)
-    }
 }

@@ -3,7 +3,7 @@ export type { Env } from './env';
 export { databaseConfig, redisConfig, kafkaConfig } from './database';
 export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
 export { supabaseConfig, googleOAuthConfig, azureOAuthConfig } from './auth';
-export { aiServiceConfig, vectorConfig, monitoringConfig } from './services';
+export { aiServiceConfig, vectorConfig, monitoringConfig, serviceUrls } from './services';
 export type { AIServiceConfig } from './services';
 export { features, isFeatureEnabled, requireFeature } from './features';
 export { serverConfig } from './server';

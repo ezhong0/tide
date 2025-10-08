@@ -8,6 +8,7 @@ import { GmailProvider } from './providers/gmail.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { EmailTriageEngine } from './triage/triage-engine.js';
 import { SmartComposer } from './composer/smart-composer.js';
+import { emailSearch } from './search/email-search.js';
 /**
  * Email service main application
  */
@@ -59,16 +60,17 @@ class EmailService {
                     return res.status(400).json({ error: 'Missing userId or authCode' });
                 }
                 // Exchange auth code for tokens using Google OAuth2
+                // For iOS OAuth, use the iOS client ID (no secret required)
+                const clientId = env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
                 const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
                         code: authCode,
-                        client_id: env.GOOGLE_CLIENT_ID,
-                        client_secret: env.GOOGLE_CLIENT_SECRET,
-                        redirect_uri: `com.googleusercontent.apps.${env.GOOGLE_IOS_CLIENT_ID?.split('.')[0]}:/oauth2redirect`,
+                        client_id: clientId,
+                        redirect_uri: `com.googleusercontent.apps.${clientId.split('.')[0]}:/oauth2redirect`,
                         grant_type: 'authorization_code',
-                    }),
+                    }).toString(),
                 });
                 if (!tokenResponse.ok) {
                     const errorData = await tokenResponse.text();
@@ -179,6 +181,10 @@ class EmailService {
                         isRead: dbEmail.is_read,
                         isStarred: false,
                         hasAttachments: false,
+                        // Include AI triage fields from database
+                        aiCategory: dbEmail.ai_category,
+                        aiPriority: dbEmail.ai_priority,
+                        aiSummary: dbEmail.ai_summary,
                     }));
                     logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
                     return res.json({ emails, count: emails.length });
@@ -207,8 +213,8 @@ class EmailService {
                     await emailProvider.initialize(userId, {
                         accessToken: tokenData.access_token,
                         refreshToken: tokenData.refresh_token,
-                        expiresAt: tokenData.expires_at,
-                        scope: tokenData.scope || undefined,
+                        expiresAt: new Date(tokenData.expires_at), // Convert string to Date
+                        scope: tokenData.scope ? tokenData.scope.split(' ') : [], // Convert space-separated string to array
                     });
                     this.providers.set(`${userId}-${provider}`, emailProvider);
                 }
@@ -216,41 +222,71 @@ class EmailService {
                     limit: limit ? parseInt(limit) : 50,
                     unreadOnly: unreadOnly === 'true',
                 });
-                // Store emails in database
-                for (const email of emails) {
-                    // Create or update thread
-                    await this.db
-                        .from('email_threads')
-                        .upsert({
-                        user_id: userId,
-                        provider: provider === 'gmail' ? 'google' : 'microsoft',
-                        external_thread_id: email.threadId || email.id,
-                        subject: email.subject,
-                        participants: email.from ? [email.from] : [],
-                        last_message_at: email.timestamp,
-                    }, {
-                        onConflict: 'user_id,external_thread_id',
-                    });
-                    // Store individual email message
-                    await this.db
-                        .from('email_messages')
-                        .upsert({
-                        user_id: userId,
-                        provider: provider === 'gmail' ? 'google' : 'microsoft',
-                        external_message_id: email.id,
-                        thread_id: email.threadId || email.id,
-                        from_address: email.from,
-                        to_addresses: email.to || [],
-                        cc_addresses: email.cc || [],
-                        subject: email.subject,
-                        body_text: email.body,
-                        body_html: email.htmlBody || null,
-                        received_at: email.timestamp,
-                        is_read: email.isRead || false,
-                    }, {
-                        onConflict: 'user_id,external_message_id',
-                    });
-                }
+                // Store emails in database and triage them (parallel processing for performance)
+                await Promise.all(emails.map(async (email) => {
+                    // Run AI triage analysis
+                    const triageResult = await this.triageEngine.analyze(email);
+                    // Map urgency to category for database
+                    let aiCategory = 'normal';
+                    if (triageResult.urgency === 'immediate' || triageResult.importance > 0.8) {
+                        aiCategory = 'urgent';
+                    }
+                    else if (triageResult.importance > 0.6) {
+                        aiCategory = 'important';
+                    }
+                    else if (triageResult.importance < 0.3) {
+                        aiCategory = 'low';
+                    }
+                    // Calculate priority score (1-10)
+                    const aiPriority = Math.round(triageResult.importance * 10);
+                    // Generate AI summary
+                    const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
+                    // Parallel database writes for thread and message
+                    await Promise.all([
+                        // Create or update thread
+                        this.db
+                            .from('email_threads')
+                            .upsert({
+                            user_id: userId,
+                            provider: provider === 'gmail' ? 'google' : 'microsoft',
+                            external_thread_id: email.threadId || email.id,
+                            subject: email.subject,
+                            participants: email.from ? [email.from] : [],
+                            last_message_at: email.timestamp,
+                        }, {
+                            onConflict: 'user_id,external_thread_id',
+                        }),
+                        // Store individual email message with AI analysis
+                        this.db
+                            .from('email_messages')
+                            .upsert({
+                            user_id: userId,
+                            provider: provider === 'gmail' ? 'google' : 'microsoft',
+                            external_message_id: email.id,
+                            thread_id: email.threadId || email.id,
+                            from_address: email.from,
+                            to_addresses: email.to || [],
+                            cc_addresses: email.cc || [],
+                            subject: email.subject,
+                            body_text: email.body,
+                            body_html: email.htmlBody || null,
+                            received_at: email.timestamp,
+                            is_read: email.isRead || false,
+                            ai_category: aiCategory,
+                            ai_priority: aiPriority,
+                            ai_summary: aiSummary,
+                        }, {
+                            onConflict: 'user_id,external_message_id',
+                        }),
+                    ]);
+                    logger.info({
+                        emailId: email.id,
+                        aiCategory,
+                        aiPriority,
+                        urgency: triageResult.urgency,
+                        importance: triageResult.importance
+                    }, 'Email triaged and stored');
+                }));
                 res.json({ emails, count: emails.length });
             }
             catch (error) {
@@ -306,6 +342,59 @@ class EmailService {
             catch (error) {
                 logger.error({ error }, 'Failed to send email');
                 res.status(500).json({ error: 'Failed to send email' });
+            }
+        });
+        // Search emails
+        this.app.post('/search', async (req, res) => {
+            try {
+                const { query, userId, filters, limit, offset, sort, order } = req.body;
+                if (!userId) {
+                    return res.status(400).json({ error: 'Missing userId' });
+                }
+                const results = await emailSearch.search({
+                    query: query || '',
+                    userId: userId,
+                    filters,
+                    limit,
+                    offset,
+                    sort,
+                    order,
+                });
+                res.json(results);
+            }
+            catch (error) {
+                logger.error({ error }, 'Email search failed');
+                res.status(500).json({ error: 'Search failed' });
+            }
+        });
+        // Get search suggestions
+        this.app.get('/search/suggestions', async (req, res) => {
+            try {
+                const { userId, query, limit } = req.query;
+                if (!userId) {
+                    return res.status(400).json({ error: 'Missing userId' });
+                }
+                const suggestions = await emailSearch.getSuggestions(userId, query || '', limit ? parseInt(limit) : 5);
+                res.json({ suggestions });
+            }
+            catch (error) {
+                logger.error({ error }, 'Failed to get search suggestions');
+                res.status(500).json({ error: 'Failed to get suggestions' });
+            }
+        });
+        // Get popular searches
+        this.app.get('/search/popular', async (req, res) => {
+            try {
+                const { userId, limit } = req.query;
+                if (!userId) {
+                    return res.status(400).json({ error: 'Missing userId' });
+                }
+                const popular = await emailSearch.getPopularSearches(userId, limit ? parseInt(limit) : 10);
+                res.json({ queries: popular });
+            }
+            catch (error) {
+                logger.error({ error }, 'Failed to get popular searches');
+                res.status(500).json({ error: 'Failed to get popular searches' });
             }
         });
         // 404 handler

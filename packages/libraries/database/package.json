@@ -14,7 +14,8 @@
     "@supabase/supabase-js": "^2.74.0",
     "@tide/config": "workspace:*",
     "@tide/logger": "workspace:*",
-    "@tide/types": "workspace:*"
+    "@tide/types": "workspace:*",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

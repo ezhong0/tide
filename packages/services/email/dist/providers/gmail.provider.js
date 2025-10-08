@@ -46,17 +46,24 @@ export class GmailProvider {
             if (options.labels && options.labels.length > 0) {
                 query += ` label:${options.labels.join(' label:')}`;
             }
-            // Fetch message list
+            // Fetch message list with pagination support
             const response = await this.gmail.users.messages.list({
                 userId: 'me',
                 q: query.trim() || undefined,
                 maxResults: options.limit || 50,
+                pageToken: options.pageToken || undefined,
             });
             if (!response.data.messages || response.data.messages.length === 0) {
                 return [];
             }
+            // Log pagination info
+            if (response.data.nextPageToken) {
+                logger.debug({ userId: this.userId, nextPageToken: response.data.nextPageToken }, 'More emails available - use nextPageToken for pagination');
+            }
             // Fetch full message details in parallel
-            const emails = await Promise.all(response.data.messages.map((msg) => this.fetchFullEmail(msg.id)));
+            // Filter out messages without IDs before fetching
+            const validMessages = response.data.messages.filter((msg) => !!msg.id);
+            const emails = await Promise.all(validMessages.map((msg) => this.fetchFullEmail(msg.id)));
             return emails.filter((email) => email !== null);
         }
         catch (error) {
@@ -95,14 +102,18 @@ export class GmailProvider {
                 messageId: getHeader('message-id'),
                 threadId: message.threadId || undefined,
                 from: getHeader('from'),
-                to: getHeader('to').split(',').map((email) => email.trim()),
+                to: getHeader('to')
+                    ? getHeader('to').split(',').map((email) => email.trim()).filter(Boolean)
+                    : [],
                 cc: getHeader('cc')
-                    ? getHeader('cc').split(',').map((email) => email.trim())
+                    ? getHeader('cc').split(',').map((email) => email.trim()).filter(Boolean)
                     : undefined,
                 subject: getHeader('subject'),
                 body: body.text,
                 htmlBody: body.html || undefined,
-                timestamp: new Date(parseInt(message.internalDate || '0')),
+                timestamp: message.internalDate
+                    ? new Date(parseInt(message.internalDate))
+                    : new Date(), // fallback to current time if missing
                 labels: message.labelIds || undefined,
                 isRead: !(message.labelIds?.includes('UNREAD') ?? false),
                 isStarred: message.labelIds?.includes('STARRED') ?? false,

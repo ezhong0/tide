@@ -49,12 +49,14 @@ async function validateAsync(schema, data) {
  */
 function validateBody(schema) {
     return (req, res, next) => {
+        const r = req;
+        const n = next;
         try {
-            req.body = validate(schema, req.body);
-            next();
+            r.body = validate(schema, r.body);
+            n();
         }
         catch (error) {
-            next(error);
+            n(error);
         }
     };
 }
@@ -63,12 +65,14 @@ function validateBody(schema) {
  */
 function validateQuery(schema) {
     return (req, res, next) => {
+        const r = req;
+        const n = next;
         try {
-            req.query = validate(schema, req.query);
-            next();
+            r.query = validate(schema, r.query);
+            n();
         }
         catch (error) {
-            next(error);
+            n(error);
         }
     };
 }
@@ -77,12 +81,14 @@ function validateQuery(schema) {
  */
 function validateParams(schema) {
     return (req, res, next) => {
+        const r = req;
+        const n = next;
         try {
-            req.params = validate(schema, req.params);
-            next();
+            r.params = validate(schema, r.params);
+            n();
         }
         catch (error) {
-            next(error);
+            n(error);
         }
     };
 }

@@ -4,6 +4,12 @@ import helmet from 'helmet';
 import { logger } from '@tide/logger';
 import { kafkaConfig } from '@tide/config';
 import { createSupabase } from '@tide/database';
+import {
+  authenticateJWT,
+  moderateRateLimit,
+  errorHandler,
+  notFoundHandler,
+} from '@tide/middleware';
 import { KafkaEventBus } from './events/kafka-event-bus.js';
 
 /**
@@ -22,9 +28,16 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Rate limiting (100 req/min)
+app.use(moderateRateLimit);
+
 // Request logging
 app.use((req, res, next) => {
-  logger.info({ method: req.method, path: req.path }, 'Incoming request');
+  logger.info({
+    method: req.method,
+    path: req.path,
+    userId: req.user?.userId,
+  }, 'Incoming request');
   next();
 });
 
@@ -64,30 +77,7 @@ const eventBus = kafkaConfig && kafkaEnabled
     })
   : null;
 
-// Authentication middleware
-const requireAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' });
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return res.status(401).json({ error: 'Invalid token' });
-    }
-
-    // Attach user to request
-    (req as any).user = user;
-    next();
-  } catch (error) {
-    logger.error({ error }, 'Auth error');
-    return res.status(401).json({ error: 'Authentication failed' });
-  }
-};
+// Use centralized JWT authentication middleware from shared/middleware/auth.js
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
@@ -117,7 +107,7 @@ app.get('/health', async (req, res) => {
 // ============================================================================
 
 // Create task
-app.post('/tasks', requireAuth, async (req, res) => {
+app.post('/tasks', authenticateJWT, async (req, res) => {
   try {
     const user = (req as any).user;
     const { title, description, dueDate, tags, priority, project } = req.body;
@@ -143,7 +133,7 @@ app.post('/tasks', requireAuth, async (req, res) => {
 });
 
 // Get ready tasks
-app.get('/tasks/ready', requireAuth, async (req, res) => {
+app.get('/tasks/ready', authenticateJWT, async (req, res) => {
   try {
     const user = (req as any).user;
     const tasks = await taskEngine.getReadyTasks(user.id);
@@ -155,7 +145,7 @@ app.get('/tasks/ready', requireAuth, async (req, res) => {
 });
 
 // Get task by ID
-app.get('/tasks/:id', requireAuth, async (req, res) => {
+app.get('/tasks/:id', authenticateJWT, async (req, res) => {
   try {
     const task = await taskRepository.getTask(req.params.id);
     if (!task) {
@@ -176,7 +166,7 @@ app.get('/tasks/:id', requireAuth, async (req, res) => {
 });
 
 // Update task
-app.put('/tasks/:id', requireAuth, async (req, res) => {
+app.put('/tasks/:id', authenticateJWT, async (req, res) => {
   try {
     const task = await taskRepository.getTask(req.params.id);
     if (!task) {
@@ -202,7 +192,7 @@ app.put('/tasks/:id', requireAuth, async (req, res) => {
 });
 
 // Delete task
-app.delete('/tasks/:id', requireAuth, async (req, res) => {
+app.delete('/tasks/:id', authenticateJWT, async (req, res) => {
   try {
     const task = await taskRepository.getTask(req.params.id);
     if (!task) {
@@ -228,7 +218,7 @@ app.delete('/tasks/:id', requireAuth, async (req, res) => {
 // ============================================================================
 
 // Create workflow
-app.post('/workflows', requireAuth, async (req, res) => {
+app.post('/workflows', authenticateJWT, async (req, res) => {
   try {
     const user = (req as any).user;
     const { name, description, steps } = req.body;
@@ -257,7 +247,7 @@ app.post('/workflows', requireAuth, async (req, res) => {
 });
 
 // Get workflow
-app.get('/workflows/:id', requireAuth, async (req, res) => {
+app.get('/workflows/:id', authenticateJWT, async (req, res) => {
   try {
     const workflow = await workflowRepository.getWorkflow(req.params.id);
     if (!workflow) {
@@ -278,7 +268,7 @@ app.get('/workflows/:id', requireAuth, async (req, res) => {
 });
 
 // Execute workflow
-app.post('/workflows/:id/execute', requireAuth, async (req, res) => {
+app.post('/workflows/:id/execute', authenticateJWT, async (req, res) => {
   try {
     const user = (req as any).user;
     const workflow = await workflowRepository.getWorkflow(req.params.id);
@@ -318,7 +308,7 @@ app.post('/workflows/:id/execute', requireAuth, async (req, res) => {
 // ============================================================================
 
 // Detect patterns
-app.get('/patterns/detect', requireAuth, async (req, res) => {
+app.get('/patterns/detect', authenticateJWT, async (req, res) => {
   try {
     const user = (req as any).user;
     const days = parseInt(req.query.days as string) || 30;
@@ -331,17 +321,14 @@ app.get('/patterns/detect', requireAuth, async (req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error({ err, path: req.path }, 'Unhandled error');
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message,
-  });
-});
+// 404 handler - must be before error handler
+app.use(notFoundHandler);
+
+// Error handler - must be last
+app.use(errorHandler);
 
 // Start server
-const PORT = parseInt(process.env.PORT || '3004', 10);
+const PORT = parseInt(process.env.PORT || '3005', 10);
 
 async function start() {
   try {

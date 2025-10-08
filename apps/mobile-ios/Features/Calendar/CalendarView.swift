@@ -82,10 +82,14 @@ struct WeekCalendarView: View {
     private var weekDays: [Date] {
         let today = Date()
         let weekday = calendar.component(.weekday, from: today)
-        let startOfWeek = calendar.date(byAdding: .day, value: -(weekday - 1), to: today)!
+
+        guard let startOfWeek = today.safeAdd(.day, value: -(weekday - 1), calendar: calendar) else {
+            // Fallback to just showing today if calculation fails
+            return [today]
+        }
 
         return (0..<7).compactMap { day in
-            calendar.date(byAdding: .day, value: day, to: startOfWeek)
+            startOfWeek.safeAdd(.day, value: day, calendar: calendar)
         }
     }
 

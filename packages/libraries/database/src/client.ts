@@ -1,4 +1,4 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js';
 import { supabaseConfig } from '@tide/config';
 
 /**
@@ -11,7 +11,7 @@ import { supabaseConfig } from '@tide/config';
 /**
  * Create a Supabase client (recommended approach)
  */
-export function createSupabase(useServiceRole: boolean = true) {
+export function createSupabase(useServiceRole: boolean = true): SupabaseClient {
   const key = useServiceRole ? supabaseConfig.serviceRoleKey : supabaseConfig.anonKey;
   return createSupabaseClient(supabaseConfig.url, key);
 }

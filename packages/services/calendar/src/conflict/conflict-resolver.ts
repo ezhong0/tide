@@ -1,6 +1,7 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
 import type { CalendarEvent, TimeSlot } from '../types/index.js';
+import { createLock } from '@tide/database';
 
 export interface CalendarConflict {
   timeSlot: TimeSlot;
@@ -485,7 +486,7 @@ export class ConflictResolver {
 
   /**
    * Auto-resolve conflicts if possible
-   * Processes conflicts sequentially to prevent race conditions
+   * Processes conflicts sequentially with distributed locking to prevent race conditions
    */
   async autoResolve(conflicts: CalendarConflict[]): Promise<{
     resolved: Resolution[];
@@ -502,25 +503,38 @@ export class ConflictResolver {
       if (conflict.severity === 'low' || conflict.severity === 'medium') {
         try {
           // Get all event IDs involved in this conflict
-          const eventIds = [
-            ...conflict.events.map(e => e.id),
-            ...conflict.overlappingEvents.map(e => e.id)
-          ];
+          const eventIds = conflict.events.map((e) => e.id);
 
-          // Check if any of these events are currently being processed
-          // by another concurrent resolution (would need global lock state)
-          // For now, sequential processing within this function prevents
-          // most race conditions for the same user
+          // Acquire distributed locks for all events
+          const locks = await this.acquireEventLocks(eventIds);
 
-          const resolution = await this.resolve(conflict);
-
-          // Only auto-execute if all reschedules are auto-approved
-          const canAutoExecute = resolution.reschedule.every((r) => r.autoReschedule);
-
-          if (canAutoExecute) {
-            resolved.push(resolution);
-          } else {
+          if (!locks.acquired) {
+            logger.warn(
+              {
+                userId: this.userId,
+                conflictId: conflict.timeSlot,
+                eventIds,
+              },
+              'Could not acquire locks for all events, skipping conflict resolution'
+            );
             needsReview.push(conflict);
+            continue;
+          }
+
+          try {
+            const resolution = await this.resolve(conflict);
+
+            // Only auto-execute if all reschedules are auto-approved
+            const canAutoExecute = resolution.reschedule.every((r) => r.autoReschedule);
+
+            if (canAutoExecute) {
+              resolved.push(resolution);
+            } else {
+              needsReview.push(conflict);
+            }
+          } finally {
+            // Always release locks
+            await this.releaseEventLocks(locks.lockKeys);
           }
         } catch (error) {
           logger.error({ error }, 'Failed to auto-resolve conflict');
@@ -541,5 +555,53 @@ export class ConflictResolver {
     );
 
     return { resolved, needsReview };
+  }
+
+  /**
+   * Acquire distributed locks for multiple events
+   */
+  private async acquireEventLocks(
+    eventIds: string[]
+  ): Promise<{ acquired: boolean; lockKeys: string[] }> {
+    const lockKeys = eventIds.map((id) => `calendar:event:lock:${id}`);
+    const acquiredLocks: string[] = [];
+
+    try {
+      // Try to acquire all locks
+      for (const lockKey of lockKeys) {
+        const lock = createLock(lockKey, 30000); // 30 second TTL
+        const acquired = await lock.acquireWithRetry(3, 100);
+
+        if (!acquired) {
+          // Failed to acquire this lock, release all previously acquired locks
+          await this.releaseEventLocks(acquiredLocks);
+          return { acquired: false, lockKeys: [] };
+        }
+
+        acquiredLocks.push(lockKey);
+      }
+
+      return { acquired: true, lockKeys };
+    } catch (error) {
+      logger.error({ error, eventIds }, 'Error acquiring event locks');
+      // Release any locks we managed to acquire
+      await this.releaseEventLocks(acquiredLocks);
+      return { acquired: false, lockKeys: [] };
+    }
+  }
+
+  /**
+   * Release distributed locks
+   */
+  private async releaseEventLocks(lockKeys: string[]): Promise<void> {
+    for (const lockKey of lockKeys) {
+      try {
+        const lock = createLock(lockKey);
+        await lock.release();
+      } catch (error) {
+        logger.error({ error, lockKey }, 'Error releasing event lock');
+        // Continue releasing other locks even if one fails
+      }
+    }
   }
 }

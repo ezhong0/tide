@@ -188,5 +188,6 @@ export interface FetchOptions {
     unreadOnly?: boolean;
     after?: Date;
     labels?: string[];
+    pageToken?: string;
 }
 //# sourceMappingURL=index.d.ts.map

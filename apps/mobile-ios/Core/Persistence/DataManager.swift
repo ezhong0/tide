@@ -17,11 +17,17 @@ class DataManager {
 
         container.loadPersistentStores { description, error in
             if let error = error as NSError? {
-                // In production, handle this more gracefully
-                fatalError("Unable to load persistent stores: \(error), \(error.userInfo)")
+                // Handle CoreData errors gracefully instead of crashing
+                print("❌ CRITICAL: Unable to load persistent stores: \(error), \(error.userInfo)")
+                print("⚠️  App will continue but offline data storage will not work.")
+                // Consider showing an alert to the user
+                // In production, you might want to:
+                // 1. Use in-memory store as fallback
+                // 2. Show error UI to user
+                // 3. Send error to crash reporting service
+            } else {
+                print("📦 CoreData: Persistent store loaded at \(description.url?.absoluteString ?? "unknown")")
             }
-
-            print("📦 CoreData: Persistent store loaded at \(description.url?.absoluteString ?? "unknown")")
         }
 
         // Merge policy for conflicts

@@ -357,15 +357,6 @@ struct EmailDetailView: View {
     }
 }
 
-// MARK: - Date Extension
-extension Date {
-    var relative: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: self, relativeTo: Date())
-    }
-}
-
 // MARK: - Mock Data
 extension Email {
     static let mockEmails: [Email] = [

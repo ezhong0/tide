@@ -8,6 +8,7 @@ import type {
   EmailAction,
   IEmailProvider,
   ComposeRequest,
+  DraftApproach,
 } from '../types/index.js';
 
 export interface EmailActionResult {

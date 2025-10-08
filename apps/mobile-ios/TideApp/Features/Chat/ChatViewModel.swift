@@ -13,11 +13,18 @@ class ChatViewModel: ObservableObject {
     @Published var error: String?
     @Published var currentConversationId: String?
 
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let authManager: AuthManagerProtocol
     private var cancellables = Set<AnyCancellable>()
 
     // Serial queue for message operations to prevent race conditions
     private let messageQueue = DispatchQueue(label: "com.tide.chat.messageQueue")
+
+    // MARK: - Initialization
+    init(apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
+        self.apiClient = apiClient
+        self.authManager = authManager
+    }
 
     func loadConversation() async {
         // Load most recent conversation or create new one

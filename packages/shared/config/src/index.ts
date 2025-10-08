@@ -10,7 +10,7 @@ export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
 export { supabaseConfig, googleOAuthConfig, azureOAuthConfig } from './auth';
 
 // Export service configuration
-export { aiServiceConfig, vectorConfig, monitoringConfig } from './services';
+export { aiServiceConfig, vectorConfig, monitoringConfig, serviceUrls } from './services';
 export type { AIServiceConfig } from './services';
 
 // Export feature flags

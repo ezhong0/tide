@@ -5,7 +5,7 @@
 
 import Foundation
 
-class APIClient {
+class APIClient: APIClientProtocol {
     static let shared = APIClient()
 
     private let baseURL: String
@@ -51,48 +51,84 @@ class APIClient {
             conversationId: conversationId
         )
 
-        return try await post("/api/ai/chat", body: request)
+        return try await post(.aiChat, body: request)
     }
 
     func getConversations() async throws -> [Conversation] {
-        return try await get("/api/ai/conversations")
+        return try await get(.aiConversations)
     }
 
     func getConversationMessages(conversationId: String) async throws -> [ChatMessage] {
-        return try await get("/api/ai/conversations/\(conversationId)/messages")
+        return try await get(.aiConversationMessages(conversationId: conversationId))
     }
 
     // MARK: - Email
 
     func getEmails(category: String? = nil) async throws -> [Email] {
-        var path = "/api/email/messages"
-        if let category = category {
-            path += "?category=\(category)"
-        }
-        return try await get(path)
+        return try await get(.emailMessages(query: category))
     }
 
     func getEmailDetail(id: String) async throws -> Email {
-        return try await get("/api/email/messages/\(id)")
+        return try await get(.emailMessage(id: id))
     }
 
     func generateEmailDrafts(emailId: String) async throws -> [EmailDraft] {
-        return try await post("/api/email/compose/\(emailId)/drafts", body: EmptyBody())
+        return try await post(.emailComposeDrafts(emailId: emailId), body: EmptyBody())
+    }
+
+    func generateEmailDrafts(emailId: String, userId: String, context: EmailComposeContext? = nil) async throws -> [EmailDraft] {
+        let request = DraftRequest(emailId: emailId, userId: userId, context: context)
+        let response: DraftResponse = try await post(.emailCreateDraft, body: request)
+        return response.drafts
     }
 
     func sendEmail(to: [String], subject: String, body: String) async throws {
         let request = SendEmailRequest(to: to, subject: subject, body: body)
-        let _: EmptyResponse = try await post("/api/email/send", body: request)
+        let _: EmptyResponse = try await post(.emailSend, body: request)
     }
 
     func getGmailAuthURL() async throws -> String {
-        let response: AuthURLResponse = try await get("/api/email/oauth/google/url")
+        let response: AuthURLResponse = try await get(.emailOAuthGoogleURL)
         return response.url
     }
 
     func checkEmailConnection() async throws -> Bool {
-        let response: ConnectionStatus = try await get("/api/email/status")
+        let response: ConnectionStatus = try await get(.emailStatus)
         return response.connected
+    }
+
+    // Email Intelligence
+    func getRelationship(userId: String, contactEmail: String) async throws -> RelationshipIntelligence {
+        return try await get(.emailRelationship(userId: userId, email: contactEmail))
+    }
+
+    func getAutomatedEmailActions(userId: String) async throws -> [AutomatedEmailAction] {
+        let response: AutomatedActionsResponse = try await get(.emailAutomatedActions(userId: userId))
+        return response.actions
+    }
+
+    func getAutomatedActionsSummary(userId: String) async throws -> ActionsSummary {
+        return try await get(.emailAutomatedActionsSummary(userId: userId))
+    }
+
+    func getLearningInsights(userId: String) async throws -> [LearningInsight] {
+        let response: LearningInsightsResponse = try await get(.emailLearningInsights(userId: userId))
+        return response.insights
+    }
+
+    func undoAutomatedAction(actionId: String, userId: String) async throws {
+        let request = UndoAutomatedActionRequest(userId: userId)
+        let _: EmptyResponse = try await post(.emailAutomatedActionUndo(actionId: actionId), body: request)
+    }
+
+    func provideActionFeedback(actionId: String, userId: String, feedback: String) async throws {
+        let request = ActionFeedbackRequest(userId: userId, feedback: feedback)
+        let _: EmptyResponse = try await post(.emailAutomatedActionFeedback(actionId: actionId), body: request)
+    }
+
+    func markContactAsVIP(userId: String, contactEmail: String) async throws {
+        let request = MarkVIPRequest(contactEmail: contactEmail)
+        let _: EmptyResponse = try await post(.emailRelationshipVIP(userId: userId), body: request)
     }
 
     // MARK: - Calendar
@@ -101,46 +137,148 @@ class APIClient {
         let dateFormatter = ISO8601DateFormatter()
         let start = dateFormatter.string(from: startDate)
         let end = dateFormatter.string(from: endDate)
-        return try await get("/api/calendar/events?start=\(start)&end=\(end)")
+        return try await get(.calendarEvents(start: start, end: end))
     }
 
     func getMeetingBrief(eventId: String) async throws -> MeetingBrief {
-        return try await get("/api/calendar/events/\(eventId)/brief")
+        return try await get(.calendarEventBrief(eventId: eventId))
     }
 
     func createEvent(event: CreateEventRequest) async throws -> CalendarEvent {
-        return try await post("/api/calendar/events", body: event)
+        return try await post(.calendarCreateEvent, body: event)
+    }
+
+    // Calendar Intelligence
+    func getMeetingBriefs(userId: String) async throws -> [MeetingBrief] {
+        let response: MeetingBriefsResponse = try await get(.calendarBriefs(userId: userId))
+        return response.briefs
+    }
+
+    func generateMeetingBrief(eventId: String, userId: String) async throws -> MeetingBrief {
+        let request = GenerateBriefRequest(eventId: eventId, userId: userId)
+        return try await post(.calendarGenerateBrief, body: request)
+    }
+
+    func getCalendarOptimizations(userId: String) async throws -> [CalendarOptimization] {
+        let response: OptimizationsResponse = try await get(.calendarOptimizations(userId: userId))
+        return response.optimizations
+    }
+
+    func acceptOptimization(optimizationId: String, userId: String) async throws {
+        let request = OptimizationActionRequest(userId: userId, action: "accept")
+        let _: EmptyResponse = try await post(.calendarOptimizationAccept(optimizationId: optimizationId), body: request)
+    }
+
+    func rejectOptimization(optimizationId: String, userId: String) async throws {
+        let request = OptimizationActionRequest(userId: userId, action: "reject")
+        let _: EmptyResponse = try await post(.calendarOptimizationReject(optimizationId: optimizationId), body: request)
+    }
+
+    func getMeetingConflicts(userId: String) async throws -> [MeetingConflict] {
+        let response: ConflictsResponse = try await get(.calendarConflicts(userId: userId))
+        return response.conflicts
+    }
+
+    func resolveConflict(conflictId: String, userId: String, resolution: String) async throws {
+        let request = ResolveConflictRequest(userId: userId, resolution: resolution)
+        let _: EmptyResponse = try await post(.calendarConflictResolve(conflictId: conflictId), body: request)
+    }
+
+    func findOptimalTimeSlots(title: String, attendees: [String], durationMinutes: Int, userId: String) async throws -> [TimeSlot] {
+        let request = FindSlotsRequest(title: title, attendees: attendees, durationMinutes: durationMinutes, userId: userId)
+        let response: TimeSlotsResponse = try await post(.calendarFindTimeSlots, body: request)
+        return response.slots
     }
 
     // MARK: - Tasks
 
     func getTasks(status: String? = nil) async throws -> [Task] {
-        var path = "/api/workflow/tasks"
-        if let status = status {
-            path += "?status=\(status)"
-        }
-        return try await get(path)
+        return try await get(.workflowTasks(status: status, priority: nil))
     }
 
     func createTask(task: CreateTaskRequest) async throws -> Task {
-        return try await post("/api/workflow/tasks", body: task)
+        return try await post(.workflowCreateTask, body: task)
     }
 
     func updateTaskStatus(taskId: String, status: String) async throws {
         let request = UpdateTaskStatusRequest(status: status)
-        let _: EmptyResponse = try await put("/api/workflow/tasks/\(taskId)/status", body: request)
+        let _: EmptyResponse = try await put(.workflowTaskStatus(taskId: taskId), body: request)
+    }
+
+    // MARK: - Intelligence
+
+    func getDailySnapshot(userId: String) async throws -> DailySnapshot {
+        return try await get(.intelligenceDailySnapshot(userId: userId))
+    }
+
+    func refreshDailySnapshot(userId: String) async throws -> DailySnapshot {
+        let request = EmptyBody()
+        let response: DailySnapshotResponse = try await post(.intelligenceGenerateSnapshot(userId: userId), body: request)
+        return response.snapshot
+    }
+
+    func getPriorityItems(userId: String) async throws -> [PriorityItem] {
+        let response: PriorityItemsResponse = try await get(.intelligencePriorityItems(userId: userId))
+        return response.items
+    }
+
+    func getPendingDecisions(userId: String) async throws -> [PendingDecision] {
+        let response: PendingDecisionsResponse = try await get(.intelligencePendingDecisions(userId: userId))
+        return response.decisions
+    }
+
+    func getPredictions(userId: String) async throws -> [Prediction] {
+        let response: PredictionsResponse = try await get(.intelligencePredictions(userId: userId))
+        return response.predictions
     }
 
     // MARK: - Actions
 
     func executeAction(_ action: SuggestedAction) async throws {
-        let _: EmptyResponse = try await post("/api/ai/actions/execute", body: action)
+        let _: EmptyResponse = try await post(.aiActionsExecute, body: action)
+    }
+
+    func getPendingActions(userId: String) async throws -> [ActionSuggestion] {
+        let response: ActionsResponse = try await get(.actionsPending(userId: userId))
+        return response.actions
+    }
+
+    func approveAction(actionId: String, userId: String, approved: Bool, modifications: [String: AnyCodable]? = nil) async throws {
+        let request = ApproveActionRequest(userId: userId, approved: approved, modifications: modifications)
+        let _: EmptyResponse = try await post(.actionsApprove(actionId: actionId), body: request)
+    }
+
+    func undoAction(actionId: String, userId: String) async throws {
+        let request = UndoActionRequest(userId: userId)
+        let _: EmptyResponse = try await post(.actionsUndo(actionId: actionId), body: request)
+    }
+
+    func getActionHistory(userId: String) async throws -> [ActionSuggestion] {
+        let response: ActionsResponse = try await get(.actionsHistory(userId: userId))
+        return response.actions
+    }
+
+    // MARK: - Decisions
+
+    func getPendingDecisions(userId: String) async throws -> [Decision] {
+        let response: DecisionsResponse = try await get(.decisionsPending(userId: userId))
+        return response.decisions
+    }
+
+    func makeDecision(decisionId: String, userId: String, chosenOption: String?, reasoning: String?, status: String) async throws {
+        let request = MakeDecisionRequest(userId: userId, chosenOption: chosenOption, reasoning: reasoning, status: status)
+        let _: EmptyResponse = try await post(.decisionsDecide(decisionId: decisionId), body: request)
+    }
+
+    func getDecisionHistory(userId: String) async throws -> [Decision] {
+        let response: DecisionsResponse = try await get(.decisionsHistory(userId: userId))
+        return response.decisions
     }
 
     // MARK: - Generic HTTP Methods
 
-    private func get<T: Decodable>(_ path: String) async throws -> T {
-        guard let url = URL(string: baseURL + path) else {
+    private func get<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint.path) else {
             throw APIError.invalidURL
         }
         var request = URLRequest(url: url)
@@ -155,8 +293,10 @@ class APIClient {
         return try decoder.decode(T.self, from: data)
     }
 
-    private func post<T: Encodable, U: Decodable>(_ path: String, body: T) async throws -> U {
-        let url = URL(string: baseURL + path)!
+    private func post<T: Encodable, U: Decodable>(_ endpoint: Endpoint, body: T) async throws -> U {
+        guard let url = URL(string: baseURL + endpoint.path) else {
+            throw APIError.invalidURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -174,8 +314,10 @@ class APIClient {
         return try decoder.decode(U.self, from: data)
     }
 
-    private func put<T: Encodable, U: Decodable>(_ path: String, body: T) async throws -> U {
-        let url = URL(string: baseURL + path)!
+    private func put<T: Encodable, U: Decodable>(_ endpoint: Endpoint, body: T) async throws -> U {
+        guard let url = URL(string: baseURL + endpoint.path) else {
+            throw APIError.invalidURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -266,10 +408,124 @@ struct UpdateTaskStatusRequest: Encodable {
     let status: String
 }
 
+struct DailySnapshotResponse: Decodable {
+    let snapshot: DailySnapshot
+}
+
+struct PriorityItemsResponse: Decodable {
+    let items: [PriorityItem]
+}
+
+struct PendingDecisionsResponse: Decodable {
+    let decisions: [PendingDecision]
+}
+
+struct PredictionsResponse: Decodable {
+    let predictions: [Prediction]
+}
+
+struct ActionsResponse: Decodable {
+    let actions: [ActionSuggestion]
+}
+
+struct ApproveActionRequest: Encodable {
+    let userId: String
+    let approved: Bool
+    let modifications: [String: AnyCodable]?
+}
+
+struct UndoActionRequest: Encodable {
+    let userId: String
+}
+
+struct DecisionsResponse: Decodable {
+    let decisions: [Decision]
+}
+
+struct MakeDecisionRequest: Encodable {
+    let userId: String
+    let chosenOption: String?
+    let reasoning: String?
+    let status: String
+}
+
+// Email Intelligence
+struct AutomatedActionsResponse: Decodable {
+    let actions: [AutomatedEmailAction]
+}
+
+struct LearningInsightsResponse: Decodable {
+    let insights: [LearningInsight]
+}
+
+struct UndoAutomatedActionRequest: Encodable {
+    let userId: String
+}
+
+struct ActionFeedbackRequest: Encodable {
+    let userId: String
+    let feedback: String
+}
+
+struct MarkVIPRequest: Encodable {
+    let contactEmail: String
+}
+
+// Calendar Intelligence
+struct MeetingBriefsResponse: Decodable {
+    let briefs: [MeetingBrief]
+}
+
+struct GenerateBriefRequest: Encodable {
+    let eventId: String
+    let userId: String
+}
+
+struct OptimizationsResponse: Decodable {
+    let optimizations: [CalendarOptimization]
+}
+
+struct OptimizationActionRequest: Encodable {
+    let userId: String
+    let action: String
+}
+
+struct ConflictsResponse: Decodable {
+    let conflicts: [MeetingConflict]
+}
+
+struct ResolveConflictRequest: Encodable {
+    let userId: String
+    let resolution: String
+}
+
+struct FindSlotsRequest: Encodable {
+    let title: String
+    let attendees: [String]
+    let durationMinutes: Int
+    let userId: String
+}
+
+struct TimeSlotsResponse: Decodable {
+    let slots: [TimeSlot]
+}
+
+struct TimeSlot: Codable, Identifiable {
+    let start: Date
+    let end: Date
+    let score: Double
+    let reasoning: [String]
+    let conflicts: [String]
+    let attendeeAvailability: [String: Bool]
+
+    var id: String { start.ISO8601Format() + end.ISO8601Format() }
+}
+
 struct EmptyBody: Encodable {}
 struct EmptyResponse: Decodable {}
 
 enum APIError: Error {
+    case invalidURL
     case invalidResponse
     case httpError(statusCode: Int)
 }

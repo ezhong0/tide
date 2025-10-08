@@ -27,6 +27,19 @@ export declare const vectorConfig: {
     metric: string;
 };
 /**
+ * Internal service URLs configuration
+ */
+export declare const serviceUrls: {
+    readonly ai: string;
+    readonly email: string;
+    readonly calendar: string;
+    readonly workflow: string;
+    readonly gateway: string;
+    readonly intelligence: string;
+    readonly actions: string;
+    readonly decisions: string;
+};
+/**
  * Monitoring configuration
  */
 export declare const monitoringConfig: {

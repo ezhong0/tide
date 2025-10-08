@@ -50,6 +50,20 @@ export const vectorConfig = {
 };
 
 /**
+ * Internal service URLs configuration
+ */
+export const serviceUrls = {
+  ai: env.AI_SERVICE_URL,
+  email: env.EMAIL_SERVICE_URL,
+  calendar: env.CALENDAR_SERVICE_URL,
+  workflow: env.WORKFLOW_SERVICE_URL,
+  gateway: env.GATEWAY_SERVICE_URL,
+  intelligence: env.INTELLIGENCE_SERVICE_URL,
+  actions: env.ACTIONS_SERVICE_URL,
+  decisions: env.DECISIONS_SERVICE_URL,
+} as const;
+
+/**
  * Monitoring configuration
  */
 export const monitoringConfig = {
