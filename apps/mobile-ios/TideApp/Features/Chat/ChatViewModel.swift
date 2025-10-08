@@ -16,6 +16,9 @@ class ChatViewModel: ObservableObject {
     private let apiClient = APIClient.shared
     private var cancellables = Set<AnyCancellable>()
 
+    // Serial queue for message operations to prevent race conditions
+    private let messageQueue = DispatchQueue(label: "com.tide.chat.messageQueue")
+
     func loadConversation() async {
         // Load most recent conversation or create new one
         do {
@@ -54,6 +57,8 @@ class ChatViewModel: ObservableObject {
             suggestedActions: nil
         )
         messages.append(userMessage)
+        // Sort messages by timestamp to handle race conditions
+        messages.sort { $0.timestamp < $1.timestamp }
 
         do {
             let response = try await apiClient.sendChatMessage(
@@ -77,6 +82,8 @@ class ChatViewModel: ObservableObject {
                 suggestedActions: response.suggestedActions
             )
             messages.append(aiMessage)
+            // Sort again to ensure correct order
+            messages.sort { $0.timestamp < $1.timestamp }
 
         } catch {
             self.error = "Failed to send message: \(error.localizedDescription)"

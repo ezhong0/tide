@@ -77,10 +77,15 @@ export class AnthropicClient implements ModelClient {
         stream: true,
       });
 
-      for await (const event of stream) {
-        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          yield event.delta.text;
+      try {
+        for await (const event of stream) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+            yield event.delta.text;
+          }
         }
+      } catch (streamError) {
+        logger.error({ error: streamError, model: this.model }, 'Streaming error occurred');
+        throw new Error(`Stream failed: ${streamError instanceof Error ? streamError.message : 'Unknown error'}`);
       }
     } catch (error) {
       logger.error('Anthropic stream failed', { error, model: this.model });

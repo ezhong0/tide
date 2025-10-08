@@ -339,7 +339,8 @@ Body: [email body]`;
    * Summarize email thread for context
    */
   private summarizeThread(thread: Email[]): string {
-    if (thread.length === 0) return '';
+    // Null check on thread before accessing length
+    if (!thread || thread.length === 0) return '';
     if (thread.length === 1) return `Single email about: ${thread[0].subject}`;
 
     const subjects = new Set(thread.map(e => e.subject.replace(/^Re: /i, '').trim()));
@@ -625,14 +626,23 @@ Body: [email body]`;
    * Extract name from email address
    */
   private extractName(email: string): string {
-    // Try to extract name before @
+    // Handle "Name <email@domain.com>" format
+    const displayNameMatch = email.match(/^(.+?)\s*<.*>$/);
+    if (displayNameMatch) {
+      const displayName = displayNameMatch[1].trim().replace(/['"]/g, '');
+      // Return first name if multiple words
+      const names = displayName.split(/\s+/);
+      return names[0];
+    }
+
+    // Fall back to extracting from email local part
     const localPart = email.split('@')[0];
 
     // Split by dots or underscores
     const parts = localPart.split(/[._]/);
 
     // Capitalize first part
-    if (parts.length > 0) {
+    if (parts.length > 0 && parts[0]) {
       return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
     }
 

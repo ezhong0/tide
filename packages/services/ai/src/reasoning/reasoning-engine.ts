@@ -142,7 +142,11 @@ Provide detailed reasoning and output in JSON format.`;
       let output = {};
       try {
         output = JSON.parse(response.content);
-      } catch {
+      } catch (error) {
+        logger.warn(
+          { error, content: response.content.substring(0, 200) },
+          'Failed to parse AI response as JSON - using raw content'
+        );
         output = { result: response.content };
       }
 
@@ -168,7 +172,11 @@ Provide detailed reasoning and output in JSON format.`;
   }
 
   /**
-   * Find alternative reasoning approach
+   * Find alternative reasoning approach when a step fails verification
+   * @param link The reasoning chain link that failed
+   * @param verification The verification result with issues
+   * @param modelClient The AI model client to use
+   * @returns Alternative approach or null if none found
    */
   private async findAlternativeApproach(
     link: any,
@@ -238,6 +246,11 @@ Provide an alternative approach in JSON: { description: string, reasoning: strin
    * Synthesize conclusion from all steps
    */
   private synthesizeConclusion(steps: ReasoningStep[]): string {
+    // Ensure steps array is not empty (error boundary)
+    if (steps.length === 0) {
+      logger.warn('Attempting to synthesize conclusion from empty steps array');
+      return 'No reasoning steps to synthesize';
+    }
     const lastStep = steps[steps.length - 1];
     if (lastStep?.output?.conclusion) {
       return lastStep.output.conclusion;

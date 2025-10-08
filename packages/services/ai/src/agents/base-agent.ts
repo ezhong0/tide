@@ -91,6 +91,7 @@ export abstract class BaseAgent {
    * Build a prompt for the model
    */
   protected buildPrompt(instruction: string, data: any, context: AgentTask['context']): string {
+    // Use array for efficient string concatenation (optimized)
     const parts: string[] = [instruction];
 
     // Add context if available

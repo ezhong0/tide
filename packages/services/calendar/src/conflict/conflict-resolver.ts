@@ -277,8 +277,19 @@ export class ConflictResolver {
    * Check if email is external
    */
   private isExternal(email: string): boolean {
-    // Simplified - would check against company domain
-    return !email.endsWith('@example.com');
+    if (!email || !email.includes('@')) {
+      return true; // Invalid email is considered external
+    }
+
+    // Extract domain from email
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (!domain) {
+      return true;
+    }
+
+    // Check against known internal domains (would be configurable in production)
+    const internalDomains = ['example.com', 'internal.example.com', 'company.local'];
+    return !internalDomains.some(d => domain === d || domain.endsWith(`.${d}`));
   }
 
   /**
@@ -289,13 +300,24 @@ export class ConflictResolver {
     otherEvents: CalendarEvent[]
   ): Promise<{ slot: TimeSlot; score: number; reasoning: string }[]> {
     const duration = (event.end.getTime() - event.start.getTime()) / (1000 * 60);
+
+    // Validate duration (15 minutes to 8 hours)
+    if (duration < 15 || duration > 480) {
+      logger.warn({ duration }, 'Invalid slot duration detected');
+      return [];
+    }
+
     const alternatives: { slot: TimeSlot; score: number; reasoning: string }[] = [];
 
     // Generate candidate slots (next 7 days, working hours)
     const candidates = this.generateCandidateSlots(event.start, duration, 7);
 
+    // Filter to future slots only
+    const now = new Date();
+    const futureCandidates = candidates.filter(slot => slot.start > now);
+
     // Score each candidate
-    for (const candidate of candidates) {
+    for (const candidate of futureCandidates) {
       // Check if slot conflicts with other events
       const hasConflict = otherEvents.some(
         (other) =>
@@ -311,10 +333,20 @@ export class ConflictResolver {
       const score = this.scoreTimeSlot(candidate, event);
       const reasoning = this.explainSlotScore(candidate, score);
 
-      alternatives.push({ slot: candidate, score, reasoning });
+      // Bounds check: only keep top alternatives (prevent memory issues with large candidate sets)
+      if (alternatives.length < 100) {
+        alternatives.push({ slot: candidate, score, reasoning });
+      } else {
+        // If we have too many, only add if score is better than worst alternative
+        const worstScore = Math.min(...alternatives.map(a => a.score));
+        if (score > worstScore) {
+          const worstIndex = alternatives.findIndex(a => a.score === worstScore);
+          alternatives[worstIndex] = { slot: candidate, score, reasoning };
+        }
+      }
     }
 
-    // Sort by score
+    // Sort by score and limit to top 5
     return alternatives.sort((a, b) => b.score - a.score).slice(0, 5);
   }
 

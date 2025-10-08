@@ -228,4 +228,5 @@ export interface FetchOptions {
   unreadOnly?: boolean;
   after?: Date;
   labels?: string[];
+  pageToken?: string; // For pagination - get this from previous response
 }
