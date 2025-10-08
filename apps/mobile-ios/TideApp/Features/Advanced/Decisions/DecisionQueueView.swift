@@ -519,7 +519,13 @@ class DecisionQueueViewModel: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
 
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let authManager: AuthManagerProtocol
+
+    init(apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
+        self.apiClient = apiClient
+        self.authManager = authManager
+    }
 
     func loadDecisions() async {
         isLoading = true
@@ -568,6 +574,6 @@ class DecisionQueueViewModel: ObservableObject {
     }
 
     private func getCurrentUserId() async -> String? {
-        return await SupabaseManager.shared.getCurrentUserId()
+        return authManager.currentUser?.id
     }
 }

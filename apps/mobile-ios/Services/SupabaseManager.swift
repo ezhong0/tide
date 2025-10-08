@@ -7,6 +7,7 @@ import Supabase
 class SupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Singleton
+    @available(*, deprecated, message: "Use dependency injection instead of shared instance")
     static let shared = SupabaseManager()
 
     // MARK: - Properties
@@ -16,32 +17,38 @@ class SupabaseManager: ObservableObject, SupabaseManagerProtocol {
     @Published var isAuthenticated: Bool = false
 
     // MARK: - Initialization
-    private init() {
-        // Validate configuration
-        guard let supabaseURL = URL(string: Config.supabaseURL) else {
-            // Graceful error: Log and create a placeholder client
-            print("❌ CRITICAL: Invalid Supabase URL configuration. App will not function properly.")
-            // Create a minimal client to prevent crash, but app won't work
-            self.client = SupabaseClient(
-                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
-                supabaseKey: "placeholder-key"
-            )
-            return
-        }
 
-        guard let supabaseKey = Config.supabaseAnonKey, !supabaseKey.isEmpty else {
-            print("❌ CRITICAL: Missing Supabase anon key. App will not function properly.")
+    /// Initialize with custom Supabase client (for DI and testing)
+    init(client: SupabaseClient? = nil) {
+        if let client = client {
+            self.client = client
+        } else {
+            // Validate configuration
+            guard let supabaseURL = URL(string: Config.supabaseURL) else {
+                // Graceful error: Log and create a placeholder client
+                print("❌ CRITICAL: Invalid Supabase URL configuration. App will not function properly.")
+                // Create a minimal client to prevent crash, but app won't work
+                self.client = SupabaseClient(
+                    supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                    supabaseKey: "placeholder-key"
+                )
+                return
+            }
+
+            guard let supabaseKey = Config.supabaseAnonKey, !supabaseKey.isEmpty else {
+                print("❌ CRITICAL: Missing Supabase anon key. App will not function properly.")
+                self.client = SupabaseClient(
+                    supabaseURL: supabaseURL,
+                    supabaseKey: "placeholder-key"
+                )
+                return
+            }
+
             self.client = SupabaseClient(
                 supabaseURL: supabaseURL,
-                supabaseKey: "placeholder-key"
+                supabaseKey: supabaseKey
             )
-            return
         }
-
-        self.client = SupabaseClient(
-            supabaseURL: supabaseURL,
-            supabaseKey: supabaseKey
-        )
 
         // Listen for auth state changes
         setupAuthStateListener()

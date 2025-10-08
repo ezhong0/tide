@@ -330,15 +330,39 @@ class CalendarGridViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            // Calculate start and end of month for API call
+            guard let startOfMonth = currentMonth.startOfMonth(calendar: calendar),
+                  let endOfMonth = currentMonth.endOfMonth(calendar: calendar) else {
+                print("⚠️ Failed to calculate month boundaries")
+                return
+            }
 
-            // Mock events
-            allEvents = generateMockEvents()
+            // Fetch real events from API
+            let fetchedEvents = try await apiClient.getCalendarEvents(
+                startDate: startOfMonth,
+                endDate: endOfMonth
+            )
+
+            // Convert API CalendarEvent to local CalendarEvent model
+            allEvents = fetchedEvents.map { apiEvent in
+                CalendarEvent(
+                    id: apiEvent.id,
+                    title: apiEvent.title,
+                    startTime: apiEvent.startTime,
+                    endTime: apiEvent.endTime,
+                    location: apiEvent.location,
+                    color: .blue, // TODO: Add color logic based on event type
+                    hasConflict: false // TODO: Check for conflicts
+                )
+            }
+
             generateCalendarDays()
 
         } catch {
             print("Error loading events: \(error)")
+            // On error, show empty calendar instead of mock data
+            allEvents = []
+            generateCalendarDays()
         }
     }
 
@@ -450,72 +474,6 @@ class CalendarGridViewModel: ObservableObject {
         calendarDays = days
     }
 
-    private func generateMockEvents() -> [CalendarEvent] {
-        // Mock events for the current month (with safe date operations)
-        let today = Date()
-
-        // Safely create event times, filter out any that fail
-        var events: [CalendarEvent] = []
-
-        // Event 1: Team Standup
-        if let startTime = today.safeSet(hour: 9, minute: 0, second: 0, calendar: calendar),
-           let endTime = today.safeSet(hour: 9, minute: 30, second: 0, calendar: calendar) {
-            events.append(CalendarEvent(
-                id: "1",
-                title: "Team Standup",
-                startTime: startTime,
-                endTime: endTime,
-                location: nil,
-                color: .blue,
-                hasConflict: false
-            ))
-        }
-
-        // Event 2: Product Review
-        if let startTime = today.safeSet(hour: 14, minute: 0, second: 0, calendar: calendar),
-           let endTime = today.safeSet(hour: 15, minute: 0, second: 0, calendar: calendar) {
-            events.append(CalendarEvent(
-                id: "2",
-                title: "Product Review",
-                startTime: startTime,
-                endTime: endTime,
-                location: "Conference Room A",
-                color: .green,
-                hasConflict: false
-            ))
-        }
-
-        // Event 3: 1:1 with Sarah (tomorrow)
-        if let tomorrowStart = today.safeAdd(.day, value: 1, calendar: calendar),
-           let tomorrowEnd = tomorrowStart.safeAdd(.hour, value: 1, calendar: calendar) {
-            events.append(CalendarEvent(
-                id: "3",
-                title: "1:1 with Sarah",
-                startTime: tomorrowStart,
-                endTime: tomorrowEnd,
-                location: nil,
-                color: .purple,
-                hasConflict: false
-            ))
-        }
-
-        // Event 4: Dentist Appointment (in 2 days at 10 AM)
-        if let dayAfterTomorrow = today.safeAdd(.day, value: 2, calendar: calendar),
-           let startTime = dayAfterTomorrow.safeSet(hour: 10, minute: 0, second: 0, calendar: calendar),
-           let endTime = dayAfterTomorrow.safeSet(hour: 11, minute: 0, second: 0, calendar: calendar) {
-            events.append(CalendarEvent(
-                id: "4",
-                title: "Dentist Appointment",
-                startTime: startTime,
-                endTime: endTime,
-                location: "123 Main St",
-                color: .orange,
-                hasConflict: false
-            ))
-        }
-
-        return events
-    }
 }
 
 // MARK: - Models

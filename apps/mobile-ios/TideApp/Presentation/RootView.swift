@@ -54,8 +54,16 @@ struct RootView: View {
                             EventDetailView(eventId: eventId)
                                 .environmentObject(container)
                         case .edit(let eventId):
-                            EventEditView(eventId: eventId)
-                                .environmentObject(container)
+                            if let eventId = eventId {
+                                // Edit existing event - need to load event first
+                                // For now, just show create mode
+                                // TODO: Load event and create edit mode
+                                EventEditView(mode: .create)
+                                    .environmentObject(container)
+                            } else {
+                                EventEditView(mode: .create)
+                                    .environmentObject(container)
+                            }
                         }
                     }
             }

@@ -202,4 +202,140 @@ extension Date {
             return formatted()
         }
     }
+
+    // MARK: - Component Extraction
+
+    /// Get day of month (1-31)
+    func day(calendar: Calendar = .current) -> Int {
+        return calendar.component(.day, from: self)
+    }
+
+    /// Get month (1-12)
+    func month(calendar: Calendar = .current) -> Int {
+        return calendar.component(.month, from: self)
+    }
+
+    /// Get year
+    func year(calendar: Calendar = .current) -> Int {
+        return calendar.component(.year, from: self)
+    }
+
+    /// Get hour (0-23)
+    func hour(calendar: Calendar = .current) -> Int {
+        return calendar.component(.hour, from: self)
+    }
+
+    /// Get minute (0-59)
+    func minute(calendar: Calendar = .current) -> Int {
+        return calendar.component(.minute, from: self)
+    }
+}
+
+// MARK: - Calendar Day Model
+
+/// Represents a day in a calendar grid
+struct CalendarDay: Identifiable {
+    let id = UUID()
+    let date: Date
+    let isToday: Bool
+    let isCurrentMonth: Bool
+    let isSelected: Bool
+    let isWeekend: Bool
+
+    init(date: Date, currentMonth: Date, selectedDate: Date?, calendar: Calendar = .current) {
+        self.date = date
+        self.isToday = calendar.isDateInToday(date)
+        self.isCurrentMonth = date.isSameMonth(as: currentMonth, calendar: calendar)
+        self.isSelected = selectedDate.map { date.isSameDay(as: $0, calendar: calendar) } ?? false
+
+        let weekday = calendar.component(.weekday, from: date)
+        self.isWeekend = weekday == 1 || weekday == 7 // Sunday or Saturday
+    }
+}
+
+// MARK: - Calendar Extensions
+
+extension Calendar {
+    /// Safely generate days for a month grid (including padding from prev/next months)
+    /// Returns 42 days (6 weeks) for consistent grid display
+    func generateMonthDays(for date: Date, selectedDate: Date? = nil) -> [CalendarDay] {
+        guard let startOfMonth = date.startOfMonth(calendar: self) else {
+            return []
+        }
+
+        // Find the first day to display (could be from previous month)
+        let firstWeekday = component(.weekday, from: startOfMonth)
+        let daysFromPrevMonth = firstWeekday - self.firstWeekday
+        let firstDisplayDate = startOfMonth.adding(.day, value: -daysFromPrevMonth, calendar: self)
+
+        // Generate 42 days (6 weeks) for consistent grid
+        var days: [CalendarDay] = []
+        var currentDate = firstDisplayDate
+
+        for _ in 0..<42 {
+            days.append(CalendarDay(date: currentDate, currentMonth: date, selectedDate: selectedDate, calendar: self))
+            currentDate = currentDate.adding(.day, value: 1, calendar: self)
+        }
+
+        return days
+    }
+
+    /// Safely generate week days for a given date
+    func generateWeekDays(for date: Date, selectedDate: Date? = nil) -> [CalendarDay] {
+        let startOfWeek = date.startOfWeek(calendar: self)
+        var days: [CalendarDay] = []
+        var currentDate = startOfWeek
+
+        for _ in 0..<7 {
+            days.append(CalendarDay(date: currentDate, currentMonth: date, selectedDate: selectedDate, calendar: self))
+            currentDate = currentDate.adding(.day, value: 1, calendar: self)
+        }
+
+        return days
+    }
+
+    /// Get weekday symbols starting from first day of week
+    var orderedWeekdaySymbols: [String] {
+        let symbols = shortWeekdaySymbols
+        let firstWeekdayIndex = firstWeekday - 1
+        return Array(symbols[firstWeekdayIndex...]) + Array(symbols[..<firstWeekdayIndex])
+    }
+}
+
+// MARK: - Date Range
+
+/// Represents a date range
+struct DateRange {
+    let start: Date
+    let end: Date
+
+    /// Check if a date falls within this range
+    func contains(_ date: Date) -> Bool {
+        return date >= start && date <= end
+    }
+
+    /// Check if this range overlaps with another range
+    func overlaps(with other: DateRange) -> Bool {
+        return start <= other.end && end >= other.start
+    }
+
+    /// Get all dates in the range
+    func dates(calendar: Calendar = .current) -> [Date] {
+        var dates: [Date] = []
+        var currentDate = start.startOfDay(calendar: calendar)
+        let endDate = end.startOfDay(calendar: calendar)
+
+        while currentDate <= endDate {
+            dates.append(currentDate)
+            currentDate = currentDate.adding(.day, value: 1, calendar: calendar)
+        }
+
+        return dates
+    }
+
+    /// Duration in days
+    func durationInDays(calendar: Calendar = .current) -> Int {
+        let components = calendar.dateComponents([.day], from: start.startOfDay(calendar: calendar), to: end.startOfDay(calendar: calendar))
+        return (components.day ?? 0) + 1
+    }
 }

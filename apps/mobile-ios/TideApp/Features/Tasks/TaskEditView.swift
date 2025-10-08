@@ -216,22 +216,24 @@ class TaskEditViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            let apiTask = try await apiClient.getTask(id: taskId)
 
-            // Mock task
-            title = "Review pull requests"
-            description = "Review team's PRs from this morning. Focus on the authentication refactor and the new API endpoints."
-            status = .inProgress
-            priority = .high
-            hasDueDate = true
-            dueDate = Date()
-            tags = ["code-review", "urgent"]
+            // Load task data into form
+            title = apiTask.title
+            description = apiTask.description ?? ""
+            status = TaskStatus(rawValue: apiTask.status) ?? .todo
+            priority = TaskPriority(rawValue: apiTask.priority) ?? .none
+            hasDueDate = apiTask.dueDate != nil
+            if let dueDate = apiTask.dueDate {
+                self.dueDate = dueDate
+            }
+            tags = [] // TODO: Add tags support in API
 
             // Store initial state
             initialState = "\(title)\(description)\(status)\(priority)\(hasDueDate)\(dueDate)\(tags)"
 
         } catch {
+            print("Error loading task: \(error)")
             self.error = error
             self.showError = true
         }
@@ -244,13 +246,26 @@ class TaskEditViewModel: ObservableObject {
         defer { isSaving = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            let taskRequest = CreateTaskRequest(
+                title: title,
+                description: description.isEmpty ? nil : description,
+                status: status.rawValue,
+                priority: priority.rawValue,
+                dueDate: hasDueDate ? dueDate : nil
+            )
 
-            // Mock save
+            if let taskId = taskId {
+                // Update existing task
+                _ = try await apiClient.updateTask(id: taskId, task: taskRequest)
+            } else {
+                // Create new task
+                _ = try await apiClient.createTask(task: taskRequest)
+            }
+
             saveSuccess = true
 
         } catch {
+            print("Error saving task: \(error)")
             self.error = error
             self.showError = true
         }

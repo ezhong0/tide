@@ -75,6 +75,26 @@ struct EventDetailView: View {
                         }
                     }
 
+                    // Meeting Link
+                    if let meetingLink = event.meetingLink {
+                        Link(destination: URL(string: meetingLink)!) {
+                            HStack {
+                                Image(systemName: "video.fill")
+                                    .foregroundColor(.white)
+                                Text("Join Meeting")
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                            }
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(12)
+                        }
+                    }
+
                     // Conflict warning
                     if event.hasConflict {
                         HStack {
@@ -193,29 +213,34 @@ class EventDetailViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            let calendarEvent = try await apiClient.getCalendarEvent(id: eventId)
 
-            // Mock event
+            // Convert CalendarEvent to EventDetail
             event = EventDetail(
-                id: eventId,
-                title: "Team Standup",
-                startTime: Date(),
-                endTime: Date().addingTimeInterval(1800), // 30 min
-                location: "Conference Room A",
-                description: "Daily standup to sync on progress and blockers",
-                attendees: ["john@example.com", "sarah@example.com", "mike@example.com"],
-                hasConflict: false
+                id: calendarEvent.id,
+                title: calendarEvent.title,
+                startTime: calendarEvent.startTime,
+                endTime: calendarEvent.endTime,
+                location: calendarEvent.location,
+                description: calendarEvent.description,
+                attendees: calendarEvent.attendees?.map { $0.email },
+                hasConflict: false, // TODO: Add conflict detection
+                meetingLink: nil // TODO: Extract meeting link from description or location
             )
 
         } catch {
+            print("Error loading event: \(error)")
             self.error = error
         }
     }
 
     func deleteEvent() async {
-        // TODO: Implement actual API call
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+        do {
+            try await apiClient.deleteEvent(id: eventId)
+        } catch {
+            print("Error deleting event: \(error)")
+            self.error = error
+        }
     }
 }
 
@@ -229,6 +254,7 @@ struct EventDetail: Identifiable {
     let description: String?
     let attendees: [String]?
     let hasConflict: Bool
+    let meetingLink: String?
 }
 
 // MARK: - Preview

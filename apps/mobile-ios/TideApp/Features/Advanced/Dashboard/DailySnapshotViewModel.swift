@@ -17,7 +17,13 @@ class DailySnapshotViewModel: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
 
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let authManager: AuthManagerProtocol
+
+    init(apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
+        self.apiClient = apiClient
+        self.authManager = authManager
+    }
 
     var isEmpty: Bool {
         priorityItems.isEmpty &&
@@ -96,7 +102,6 @@ class DailySnapshotViewModel: ObservableObject {
     }
 
     private func getCurrentUserId() async -> String? {
-        // Get current user from Supabase
-        return await SupabaseManager.shared.getCurrentUserId()
+        return authManager.currentUser?.id
     }
 }

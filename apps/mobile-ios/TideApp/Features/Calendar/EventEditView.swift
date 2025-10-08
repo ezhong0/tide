@@ -5,104 +5,77 @@
 
 import SwiftUI
 
+enum EventEditMode {
+    case create
+    case edit(CalendarEvent)
+}
+
 struct EventEditView: View {
-    let eventId: String?
+    let mode: EventEditMode
     @StateObject private var viewModel: EventEditViewModel
     @EnvironmentObject var container: DependencyContainer
-    @EnvironmentObject var navigationState: NavigationState
     @Environment(\.dismiss) private var dismiss
+
+    @State private var showDeleteConfirmation = false
     @State private var showCancelConfirmation = false
-    @FocusState private var focusedField: Field?
 
-    enum Field {
-        case title, location, description
-    }
-
-    init(eventId: String? = nil, dependencies: DependencyContainer = .shared) {
-        self.eventId = eventId
-        self._viewModel = StateObject(wrappedValue: dependencies.makeEventEditViewModel(eventId: eventId))
+    init(mode: EventEditMode, dependencies: DependencyContainer = .shared) {
+        self.mode = mode
+        self._viewModel = StateObject(wrappedValue: EventEditViewModel(
+            mode: mode,
+            apiClient: dependencies.apiClient,
+            authManager: dependencies.authManager
+        ))
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationView {
             Form {
                 // Title
-                Section {
-                    TextField("Event Title", text: $viewModel.title)
-                        .focused($focusedField, equals: .title)
+                Section(header: Text("Event Details")) {
+                    TextField("Title", text: $viewModel.title)
+
+                    TextField("Description (optional)", text: $viewModel.description, axis: .vertical)
+                        .lineLimit(3...6)
                 }
 
                 // Date & Time
-                Section {
-                    DatePicker(
-                        "Starts",
-                        selection: $viewModel.startTime,
-                        displayedComponents: [.date, .hourAndMinute]
-                    )
+                Section(header: Text("Date & Time")) {
+                    DatePicker("Start", selection: $viewModel.startTime, displayedComponents: [.date, .hourAndMinute])
 
-                    DatePicker(
-                        "Ends",
-                        selection: $viewModel.endTime,
-                        displayedComponents: [.date, .hourAndMinute]
-                    )
-
-                    Toggle("All Day", isOn: $viewModel.isAllDay)
+                    DatePicker("End", selection: $viewModel.endTime, displayedComponents: [.date, .hourAndMinute])
                 }
 
-                // Location
-                Section {
-                    TextField("Location", text: $viewModel.location)
-                        .focused($focusedField, equals: .location)
-                } header: {
-                    Text("Location")
+                // Location (optional)
+                Section(header: Text("Location")) {
+                    TextField("Add location", text: $viewModel.location)
                 }
 
-                // Attendees
-                Section {
-                    ForEach(viewModel.attendees, id: \.self) { attendee in
-                        HStack {
-                            Text(attendee)
-                            Spacer()
-                            Button {
-                                viewModel.removeAttendee(attendee)
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .foregroundColor(.red)
+                // Delete button (edit mode only)
+                if case .edit = mode {
+                    Section {
+                        Button(role: .destructive) {
+                            showDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Label("Delete Event", systemImage: "trash")
+                                Spacer()
                             }
                         }
                     }
-
-                    Button {
-                        viewModel.showAddAttendee = true
-                    } label: {
-                        Label("Add Attendee", systemImage: "plus.circle.fill")
-                    }
-                } header: {
-                    Text("Attendees")
                 }
 
-                // Description
-                Section {
-                    TextEditor(text: $viewModel.description)
-                        .frame(minHeight: 100)
-                        .focused($focusedField, equals: .description)
-                } header: {
-                    Text("Description")
-                }
-
-                // Conflict warning
-                if viewModel.hasConflict {
+                // Validation error
+                if let error = viewModel.validationError {
                     Section {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("This event conflicts with another event")
-                                .font(.callout)
-                        }
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
                     }
                 }
             }
-            .navigationTitle(eventId == nil ? "New Event" : "Edit Event")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -127,20 +100,26 @@ struct EventEditView: View {
                     .disabled(!viewModel.canSave || viewModel.isSaving)
                 }
             }
+            .alert("Delete Event?", isPresented: $showDeleteConfirmation) {
+                Button("Delete", role: .destructive) {
+                    Task {
+                        await viewModel.delete()
+                        if viewModel.deleteSuccess {
+                            dismiss()
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Are you sure you want to delete this event? This action cannot be undone.")
+            }
             .alert("Discard Changes?", isPresented: $showCancelConfirmation) {
                 Button("Discard", role: .destructive) {
                     dismiss()
                 }
                 Button("Keep Editing", role: .cancel) { }
             } message: {
-                Text("Are you sure you want to discard your changes?")
-            }
-            .alert("Add Attendee", isPresented: $viewModel.showAddAttendee) {
-                TextField("Email", text: $viewModel.newAttendeeEmail)
-                Button("Add") {
-                    viewModel.addAttendee()
-                }
-                Button("Cancel", role: .cancel) { }
+                Text("You have unsaved changes. Are you sure you want to discard them?")
             }
             .alert("Error", isPresented: $viewModel.showError) {
                 Button("OK", role: .cancel) { }
@@ -149,11 +128,22 @@ struct EventEditView: View {
                     Text(error.localizedDescription)
                 }
             }
-            .task {
-                if eventId != nil {
-                    await viewModel.loadEvent()
+            .overlay {
+                if viewModel.isSaving {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black.opacity(0.2))
                 }
             }
+        }
+    }
+
+    private var navigationTitle: String {
+        switch mode {
+        case .create:
+            return "New Event"
+        case .edit:
+            return "Edit Event"
         }
     }
 }
@@ -162,31 +152,40 @@ struct EventEditView: View {
 @MainActor
 class EventEditViewModel: ObservableObject {
     @Published var title: String = ""
-    @Published var startTime: Date = Date()
-    @Published var endTime: Date = Date().addingTimeInterval(3600) // 1 hour later
-    @Published var isAllDay: Bool = false
-    @Published var location: String = ""
     @Published var description: String = ""
-    @Published var attendees: [String] = []
-    @Published var showAddAttendee: Bool = false
-    @Published var newAttendeeEmail: String = ""
+    @Published var startTime: Date = Date()
+    @Published var endTime: Date
+    @Published var location: String = ""
 
-    @Published var hasConflict: Bool = false
-    @Published var isLoading: Bool = false
-    @Published var isSaving: Bool = false
-    @Published var saveSuccess: Bool = false
-    @Published var showError: Bool = false
+    @Published var isSaving = false
+    @Published var saveSuccess = false
+    @Published var deleteSuccess = false
+    @Published var showError = false
     @Published var error: Error?
+    @Published var validationError: String?
 
-    private let eventId: String?
+    private let mode: EventEditMode
     private let apiClient: APIClientProtocol
     private let authManager: AuthManagerProtocol
     private var initialState: String = ""
 
-    init(eventId: String?, apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
-        self.eventId = eventId
+    init(mode: EventEditMode, apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
+        self.mode = mode
         self.apiClient = apiClient
         self.authManager = authManager
+
+        // Set default end time to 1 hour after start
+        self.endTime = Date().addingTimeInterval(3600)
+
+        // Pre-fill if editing
+        if case .edit(let event) = mode {
+            self.title = event.title
+            self.description = event.description ?? ""
+            self.startTime = event.startTime
+            self.endTime = event.endTime
+            self.location = event.location ?? ""
+            self.initialState = "\(title)\(description)\(startTime)\(endTime)\(location)"
+        }
     }
 
     var canSave: Bool {
@@ -194,82 +193,88 @@ class EventEditViewModel: ObservableObject {
     }
 
     var hasChanges: Bool {
-        let currentState = "\(title)\(startTime)\(endTime)\(isAllDay)\(location)\(description)\(attendees)"
-        return currentState != initialState && currentState.count > 0
+        let currentState = "\(title)\(description)\(startTime)\(endTime)\(location)"
+        return currentState != initialState
     }
 
-    func loadEvent() async {
-        guard let eventId = eventId else { return }
+    func save() async {
+        // Validate
+        guard !title.isEmpty else {
+            validationError = "Title is required"
+            return
+        }
 
-        isLoading = true
-        defer { isLoading = false }
+        guard endTime > startTime else {
+            validationError = "End time must be after start time"
+            return
+        }
+
+        validationError = nil
+        isSaving = true
+        defer { isSaving = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            let eventRequest = CreateEventRequest(
+                title: title,
+                startTime: startTime,
+                endTime: endTime,
+                description: description.isEmpty ? nil : description
+            )
 
-            // Mock event
-            title = "Team Standup"
-            startTime = Date()
-            endTime = Date().addingTimeInterval(1800) // 30 min
-            location = "Conference Room A"
-            description = "Daily standup to sync on progress and blockers"
-            attendees = ["john@example.com", "sarah@example.com"]
+            switch mode {
+            case .create:
+                _ = try await apiClient.createEvent(event: eventRequest)
+            case .edit(let event):
+                _ = try await apiClient.updateEvent(id: event.id, event: eventRequest)
+            }
 
-            // Store initial state
-            initialState = "\(title)\(startTime)\(endTime)\(isAllDay)\(location)\(description)\(attendees)"
+            saveSuccess = true
 
         } catch {
+            print("Error saving event: \(error)")
             self.error = error
             self.showError = true
         }
     }
 
-    func save() async {
-        guard canSave else { return }
+    func delete() async {
+        guard case .edit(let event) = mode else { return }
 
         isSaving = true
         defer { isSaving = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
-
-            // Check for conflicts
-            await checkConflicts()
-
-            // Mock save
-            saveSuccess = true
-
+            try await apiClient.deleteEvent(id: event.id)
+            deleteSuccess = true
         } catch {
+            print("Error deleting event: \(error)")
             self.error = error
             self.showError = true
         }
     }
-
-    func addAttendee() {
-        guard !newAttendeeEmail.isEmpty else { return }
-        attendees.append(newAttendeeEmail)
-        newAttendeeEmail = ""
-    }
-
-    func removeAttendee(_ attendee: String) {
-        attendees.removeAll { $0 == attendee }
-    }
-
-    private func checkConflicts() async {
-        // TODO: Implement actual conflict detection
-        hasConflict = false
-    }
 }
 
 // MARK: - Preview
-#Preview("New Event") {
-    EventEditView()
-        .environmentObject(NavigationState())
+#Preview("Create") {
+    EventEditView(mode: .create)
+        .environmentObject(DependencyContainer.shared)
 }
 
-#Preview("Edit Event") {
-    EventEditView(eventId: "test-event-123")
-        .environmentObject(NavigationState())
+#Preview("Edit") {
+    let mockEvent = CalendarEvent(
+        id: "1",
+        title: "Team Standup",
+        startTime: Date(),
+        endTime: Date().addingTimeInterval(1800),
+        location: "Conference Room A",
+        description: "Daily team sync",
+        attendees: nil,
+        color: .blue,
+        hasConflict: false,
+        hasPrep: false,
+        meetingPrep: nil
+    )
+
+    return EventEditView(mode: .edit(mockEvent))
+        .environmentObject(DependencyContainer.shared)
 }

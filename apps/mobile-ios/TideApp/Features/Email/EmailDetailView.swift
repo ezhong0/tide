@@ -318,8 +318,8 @@ struct EmailDetail: Identifiable {
     let subject: String
     let body: String
     let receivedAt: Date
-    let isRead: Bool
-    let isStarred: Bool
+    var isRead: Bool
+    var isStarred: Bool
     let isVIP: Bool
     let aiSummary: String?
     let attachments: [Attachment]?
@@ -355,33 +355,72 @@ class EmailDetailViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            // For now, mock data
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            // Fetch email details from API
+            let fetchedEmail = try await apiClient.getEmailDetail(id: emailId)
 
-            // Mock email
+            // Convert API Email to EmailDetail
             email = EmailDetail(
-                id: emailId,
-                from: "john@example.com",
-                fromName: "John Doe",
-                to: ["me@example.com"],
-                cc: nil,
-                subject: "Re: Project Update",
-                body: "Thanks for the update! Everything looks good. Let's schedule a follow-up meeting next week.\n\nBest,\nJohn",
-                receivedAt: Date(),
-                isRead: true,
-                isStarred: false,
-                isVIP: false,
-                aiSummary: "John approves the project update and suggests scheduling a follow-up meeting.",
-                attachments: nil
+                id: fetchedEmail.id,
+                from: fetchedEmail.from.email,
+                fromName: fetchedEmail.from.name,
+                to: fetchedEmail.to.map { $0.email },
+                cc: nil, // TODO: Add CC support to Email model
+                subject: fetchedEmail.subject,
+                body: fetchedEmail.body,
+                receivedAt: fetchedEmail.timestamp,
+                isRead: fetchedEmail.isRead,
+                isStarred: fetchedEmail.isStarred,
+                isVIP: false, // TODO: Determine VIP status
+                aiSummary: fetchedEmail.aiSummary,
+                attachments: nil // TODO: Add attachments support
             )
+
+            // Load thread messages
+            await loadThread()
+
         } catch {
+            print("Error loading email: \(error)")
             self.error = error
+        }
+    }
+
+    func loadThread() async {
+        do {
+            let threadEmails = try await apiClient.getEmailThread(id: emailId)
+
+            // Convert to EmailDetail array, excluding the current email
+            threadMessages = threadEmails
+                .filter { $0.id != emailId }
+                .map { email in
+                    EmailDetail(
+                        id: email.id,
+                        from: email.from.email,
+                        fromName: email.from.name,
+                        to: email.to.map { $0.email },
+                        cc: nil,
+                        subject: email.subject,
+                        body: email.body,
+                        receivedAt: email.timestamp,
+                        isRead: email.isRead,
+                        isStarred: email.isStarred,
+                        isVIP: false,
+                        aiSummary: email.aiSummary,
+                        attachments: nil
+                    )
+                }
+                .sorted { $0.receivedAt < $1.receivedAt } // Sort chronologically
+        } catch {
+            print("Error loading thread: \(error)")
+            // Don't set error for thread - email is already loaded
+            threadMessages = []
         }
     }
 
     func toggleRead() async {
         guard var email = email else { return }
+        let wasRead = email.isRead
+
+        // Optimistic update
         email = EmailDetail(
             id: email.id,
             from: email.from,
@@ -398,11 +437,26 @@ class EmailDetailViewModel: ObservableObject {
             attachments: email.attachments
         )
         self.email = email
-        // TODO: API call
+
+        // API call
+        do {
+            if wasRead {
+                try await apiClient.markEmailUnread(id: emailId)
+            } else {
+                try await apiClient.markEmailRead(id: emailId)
+            }
+        } catch {
+            print("Error toggling read status: \(error)")
+            // Rollback on error
+            self.email?.isRead = wasRead
+        }
     }
 
     func toggleStar() async {
         guard var email = email else { return }
+        let wasStarred = email.isStarred
+
+        // Optimistic update
         email = EmailDetail(
             id: email.id,
             from: email.from,
@@ -419,15 +473,37 @@ class EmailDetailViewModel: ObservableObject {
             attachments: email.attachments
         )
         self.email = email
-        // TODO: API call
+
+        // API call
+        do {
+            if wasStarred {
+                try await apiClient.unstarEmail(id: emailId)
+            } else {
+                try await apiClient.starEmail(id: emailId)
+            }
+        } catch {
+            print("Error toggling star: \(error)")
+            // Rollback on error
+            self.email?.isStarred = wasStarred
+        }
     }
 
     func archive() async {
-        // TODO: API call
+        do {
+            try await apiClient.archiveEmail(id: emailId)
+        } catch {
+            print("Error archiving email: \(error)")
+            self.error = error
+        }
     }
 
     func delete() async {
-        // TODO: API call
+        do {
+            try await apiClient.deleteEmail(id: emailId)
+        } catch {
+            print("Error deleting email: \(error)")
+            self.error = error
+        }
     }
 }
 
