@@ -72,7 +72,7 @@ echo "Project root: ${PROJECT_ROOT}"
 echo ""
 
 # Deploy services
-echo "Starting deployment of 5 services..."
+echo "Starting deployment of 9 services..."
 echo ""
 
 deploy_service "Gateway Service" "${PROJECT_ROOT}/packages/services/gateway"
@@ -80,10 +80,14 @@ deploy_service "AI Service" "${PROJECT_ROOT}/packages/services/ai"
 deploy_service "Email Service" "${PROJECT_ROOT}/packages/services/email"
 deploy_service "Calendar Service" "${PROJECT_ROOT}/packages/services/calendar"
 deploy_service "Workflow Service" "${PROJECT_ROOT}/packages/services/workflow"
+deploy_service "Intelligence Service" "${PROJECT_ROOT}/packages/services/intelligence"
+deploy_service "Actions Service" "${PROJECT_ROOT}/packages/services/actions"
+deploy_service "Decisions Service" "${PROJECT_ROOT}/packages/services/decisions"
+deploy_service "Mobile BFF" "${PROJECT_ROOT}/packages/services/mobile-bff"
 
 echo ""
 echo "═══════════════════════════════════════"
-echo -e "${GREEN}✓ All services deployed!${NC}"
+echo -e "${GREEN}✓ All 9 services deployed!${NC}"
 echo "═══════════════════════════════════════"
 echo ""
 

@@ -8,6 +8,10 @@ export declare class SmartComposer {
      */
     compose(request: ComposeRequest): Promise<EmailDraft[]>;
     /**
+     * Regenerate drafts with more variation
+     */
+    private regenerateWithVariation;
+    /**
      * Generate a single draft with specific approach
      */
     private generateDraft;
@@ -29,11 +33,15 @@ export declare class SmartComposer {
      */
     private buildEnhancedContext;
     /**
-     * Build AI prompt for email composition
+     * Build improved AI prompt with more context
+     */
+    private buildImprovedAIPrompt;
+    /**
+     * Build AI prompt for email composition (legacy method)
      */
     private buildAIPrompt;
     /**
-     * Generate content using AI (integration point for AI Service)
+     * Generate content using AI (integration with AI Service)
      */
     private generateWithAI;
     /**
@@ -92,9 +100,5 @@ export declare class SmartComposer {
      * Extract name from email address
      */
     private extractName;
-    /**
-     * Get user's writing style (would analyze sent emails)
-     */
-    private getUserStyle;
 }
 //# sourceMappingURL=smart-composer.d.ts.map

@@ -1,4 +1,7 @@
 import { logger } from '@tide/logger';
+import { serviceUrls } from '@tide/config';
+import { styleAnalyzer } from './style-analyzer.js';
+import { draftValidator } from './validation.js';
 /**
  * Smart email composer that generates multiple draft options
  */
@@ -13,16 +16,32 @@ export class SmartComposer {
             subject: request.subject,
         }, 'Composing email drafts');
         try {
-            // Get user's writing style
-            const style = await this.getUserStyle(request.userId);
+            // Get user's writing style (now analyzes actual sent emails)
+            const style = await styleAnalyzer.getUserStyleCached(request.userId);
             // Generate three different drafts in parallel
             const [detailedDraft, conciseDraft, friendlyDraft] = await Promise.all([
                 this.generateDraft('detailed', request, style),
                 this.generateDraft('concise', request, style),
                 this.generateDraft('friendly', request, style),
             ]);
-            const drafts = [detailedDraft, conciseDraft, friendlyDraft];
-            logger.info({ userId: request.userId, draftCount: drafts.length }, 'Email drafts generated');
+            let drafts = [detailedDraft, conciseDraft, friendlyDraft];
+            // Validate each draft
+            for (const draft of drafts) {
+                const validation = draftValidator.validate(draft);
+                if (!validation.isValid) {
+                    logger.warn({ userId: request.userId, approach: draft.approach, errors: validation.errors }, 'Draft validation failed');
+                }
+                // Update confidence based on validation score
+                draft.confidence = draft.confidence * validation.score;
+            }
+            // Validate distinctness
+            const distinctnessCheck = draftValidator.validateDistinctness(drafts);
+            if (!distinctnessCheck.isValid) {
+                logger.warn({ userId: request.userId, errors: distinctnessCheck.errors }, 'Drafts are too similar, regenerating');
+                // Regenerate with more variation
+                drafts = await this.regenerateWithVariation(request, style);
+            }
+            logger.info({ userId: request.userId, draftCount: drafts.length }, 'Email drafts generated and validated');
             return drafts;
         }
         catch (error) {
@@ -31,25 +50,62 @@ export class SmartComposer {
         }
     }
     /**
+     * Regenerate drafts with more variation
+     */
+    async regenerateWithVariation(request, style) {
+        // Generate with more distinct approaches
+        const [detailedDraft, conciseDraft, casualDraft] = await Promise.all([
+            this.generateDraft('detailed', request, style, 'very thorough and comprehensive'),
+            this.generateDraft('concise', request, style, 'extremely brief and direct'),
+            this.generateDraft('friendly', request, style, 'warm and personal'),
+        ]);
+        return [detailedDraft, conciseDraft, casualDraft];
+    }
+    /**
      * Generate a single draft with specific approach
      */
-    async generateDraft(approach, request, style) {
-        // Build context from thread
-        const context = this.buildContext(request);
+    async generateDraft(approach, request, style, variation) {
+        // Build enhanced context from thread
+        const context = this.buildEnhancedContext(request);
         // Generate subject if not provided
         const subject = request.subject || this.generateSubject(request, approach);
-        // Generate body
-        const body = this.generateBody(approach, request, style, context);
-        // Analyze tone
-        const tone = this.analyzeTone(body, approach);
-        return {
-            approach,
-            subject,
-            body,
-            tone,
-            length: body.length,
-            confidence: this.calculateDraftConfidence(approach, request),
-        };
+        // Try AI-enhanced generation first
+        try {
+            const aiDraft = await this.generateWithAI(this.buildImprovedAIPrompt(request, context, style, approach, variation), request);
+            const parsedResponse = this.parseAIResponse(aiDraft, request);
+            // Validate the generated draft
+            const body = parsedResponse.body;
+            const validation = draftValidator.validate({
+                approach,
+                subject: parsedResponse.subject,
+                body,
+                tone: this.analyzeTone(body, approach),
+                length: body.length,
+                confidence: 0.85,
+            });
+            return {
+                approach,
+                subject: parsedResponse.subject,
+                body,
+                tone: this.analyzeTone(body, approach),
+                length: body.length,
+                confidence: this.calculateDraftConfidence(approach, request) * validation.score,
+            };
+        }
+        catch (error) {
+            logger.warn({ error, approach, userId: request.userId }, 'AI draft generation failed, using template fallback');
+            // Fallback to template-based generation
+            const body = this.generateBody(approach, request, style, context);
+            const tone = this.analyzeTone(body, approach);
+            return {
+                approach,
+                subject,
+                body,
+                tone,
+                length: body.length,
+                confidence: this.calculateDraftConfidence(approach, request) * 0.7, // Lower confidence for templates
+            };
+        }
     }
     /**
      * Generate email subject
@@ -105,11 +161,10 @@ export class SmartComposer {
         try {
             // Build context from thread and user history
             const context = this.buildEnhancedContext(request);
-            const style = await this.getUserStyle(request.userId);
+            const style = await styleAnalyzer.getUserStyleCached(request.userId);
             // Prepare AI prompt for email composition
             const prompt = this.buildAIPrompt(request, context, style);
-            // Call AI Service for draft generation (would integrate with actual AI service)
-            // For now, use enhanced template-based approach
+            // Call AI Service for draft generation
             const aiGeneratedContent = await this.generateWithAI(prompt, request);
             // Extract subject and body from AI response
             const { subject, body } = this.parseAIResponse(aiGeneratedContent, request);
@@ -125,7 +180,8 @@ export class SmartComposer {
         catch (error) {
             logger.error({ userId: request.userId, error }, 'AI draft generation failed');
             // Fallback to standard generation
-            return this.generateDraft('detailed', request, await this.getUserStyle(request.userId));
+            const style = await styleAnalyzer.getUserStyleCached(request.userId);
+            return this.generateDraft('detailed', request, style);
         }
     }
     /**
@@ -148,43 +204,96 @@ export class SmartComposer {
         return contextParts.join('\n');
     }
     /**
-     * Build AI prompt for email composition
+     * Build improved AI prompt with more context
      */
-    buildAIPrompt(request, context, style) {
-        return `You are an AI email assistant helping compose a professional email.
+    buildImprovedAIPrompt(request, context, style, approach, variation) {
+        const approachGuidelines = {
+            detailed: '400-500 words with comprehensive explanations, multiple paragraphs, and thorough context',
+            concise: '75-100 words, direct and to the point, single paragraph preferred',
+            friendly: '150-200 words with warm tone, personal touch, and engaging language',
+            formal: '200-300 words with formal language, respectful tone, and proper structure',
+            'ai-enhanced': '250-350 words with balanced detail and clarity',
+        };
+        const threadContext = request.thread && request.thread.length > 0
+            ? `\nThis is a reply in an ongoing thread about: ${request.thread[0].subject}\nPrevious emails: ${request.thread.length}`
+            : '\nThis is a new email thread.';
+        const formalityLabel = style.formalityLevel > 0.7 ? 'formal' : style.formalityLevel > 0.5 ? 'professional' : 'casual';
+        return `You are an expert email composer creating a ${approach} email response.
 
-Context:
-${context}
+CONTEXT:
+${context}${threadContext}
 
-User's writing style:
-- Formality level: ${style.formalityLevel * 100}%
+USER'S WRITING STYLE (learned from their sent emails):
+- Formality level: ${Math.round(style.formalityLevel * 100)}% (${formalityLabel})
 - Average sentence length: ${style.averageSentenceLength} words
-- Preferred greetings: ${style.preferredGreetings.join(', ')}
-- Preferred closings: ${style.preferredClosings.join(', ')}
+- Preferred greetings: ${style.preferredGreetings.slice(0, 3).join(' OR ')}
+- Preferred closings: ${style.preferredClosings.slice(0, 3).join(' OR ')}
+- Tone profile: ${Math.round(style.toneProfile.professional * 100)}% professional, ${Math.round(style.toneProfile.casual * 100)}% casual
 
-Task: Compose a ${request.subject ? 'reply' : 'new'} email that:
-1. Matches the user's writing style
-2. Addresses the context appropriately
-3. Is professional and clear
-4. Includes a clear call-to-action if needed
+DRAFT REQUIREMENTS (${approach} approach):
+- Length: ${approachGuidelines[approach] || 'flexible based on context'}
+${variation ? `- Variation emphasis: ${variation}` : ''}
+- Match the user's natural writing style EXACTLY
+- Use their preferred greetings and closings
+- Maintain their typical sentence structure and formality
+- Address all points from the context
+- Include appropriate call-to-action if needed
+- Be authentic and sound like the user wrote it
 
-Generate the email in this format:
-Subject: [subject line]
-Body: [email body]`;
+IMPORTANT:
+- Start with greeting (using user's preferred style)
+- End with closing (using user's preferred style)
+- NO placeholders like [Your Name] - assume user will add signature
+- NO markdown formatting
+- Make it sound natural and conversational
+
+Generate the email in this exact format:
+Subject: [subject line without "Re:" prefix]
+Body: [complete email body with greeting and closing]`;
     }
     /**
-     * Generate content using AI (integration point for AI Service)
+     * Build AI prompt for email composition (legacy method)
+     */
+    buildAIPrompt(request, context, style) {
+        return this.buildImprovedAIPrompt(request, context, style, 'detailed');
+    }
+    /**
+     * Generate content using AI (integration with AI Service)
      */
     async generateWithAI(prompt, request) {
-        // TODO: Integrate with actual AI Service endpoint
-        // const response = await fetch(`${process.env.AI_SERVICE_URL}/compose`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ prompt, userId: request.userId })
-        // });
-        // return await response.json();
-        // For now, use enhanced template with context awareness
-        return this.generateEnhancedTemplate(prompt, request);
+        try {
+            logger.debug({ userId: request.userId }, 'Calling AI service for email composition');
+            const response = await fetch(`${serviceUrls.ai}/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: request.userId,
+                    type: 'email_compose',
+                    input: {
+                        prompt,
+                        maxTokens: 800,
+                        temperature: 0.7,
+                    },
+                }),
+                signal: AbortSignal.timeout(30000), // 30 second timeout
+            });
+            if (!response.ok) {
+                throw new Error(`AI service returned ${response.status}`);
+            }
+            const result = (await response.json());
+            // Extract content from response
+            const content = result.content || result.output?.content;
+            if (!content) {
+                throw new Error('AI service returned empty content');
+            }
+            logger.debug({ userId: request.userId, contentLength: content.length }, 'AI draft generated');
+            return content;
+        }
+        catch (error) {
+            logger.warn({ userId: request.userId, error }, 'AI service call failed, using fallback');
+            // Fallback to enhanced template
+            return this.generateEnhancedTemplate(prompt, request);
+        }
     }
     /**
      * Enhanced template generation with better context awareness
@@ -251,16 +360,34 @@ Body: [email body]`;
                 bodyLines.push(line);
             }
         }
+        // Sanitize generated body to prevent injection attacks
+        const sanitizeEmailContent = (content) => {
+            return content
+                .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+                .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframe tags
+                .replace(/javascript:/gi, '') // Remove javascript: protocol
+                .trim();
+        };
+        const body = bodyLines.join('\n').trim() ||
+            this.generateBody('detailed', request, {
+                preferredGreetings: [],
+                preferredClosings: [],
+                averageSentenceLength: 15,
+                formalityLevel: 0.6,
+                commonPhrases: [],
+                toneProfile: { professional: 0.7, casual: 0.2, formal: 0.1 }
+            }, '');
         return {
             subject,
-            body: bodyLines.join('\n').trim() || this.generateBody('detailed', request, { preferredGreetings: [], preferredClosings: [], averageSentenceLength: 15, formalityLevel: 0.6, commonPhrases: [], toneProfile: { professional: 0.7, casual: 0.2, formal: 0.1 } }, ''),
+            body: sanitizeEmailContent(body),
         };
     }
     /**
      * Summarize email thread for context
      */
     summarizeThread(thread) {
-        if (thread.length === 0)
+        // Null check on thread before accessing length
+        if (!thread || thread.length === 0)
             return '';
         if (thread.length === 1)
             return `Single email about: ${thread[0].subject}`;
@@ -460,34 +587,23 @@ Body: [email body]`;
      * Extract name from email address
      */
     extractName(email) {
-        // Try to extract name before @
+        // Handle "Name <email@domain.com>" format
+        const displayNameMatch = email.match(/^(.+?)\s*<.*>$/);
+        if (displayNameMatch) {
+            const displayName = displayNameMatch[1].trim().replace(/['"]/g, '');
+            // Return first name if multiple words
+            const names = displayName.split(/\s+/);
+            return names[0];
+        }
+        // Fall back to extracting from email local part
         const localPart = email.split('@')[0];
         // Split by dots or underscores
         const parts = localPart.split(/[._]/);
         // Capitalize first part
-        if (parts.length > 0) {
+        if (parts.length > 0 && parts[0]) {
             return parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
         }
         return 'there';
-    }
-    /**
-     * Get user's writing style (would analyze sent emails)
-     */
-    async getUserStyle(userId) {
-        // In a real implementation, this would analyze the user's sent emails
-        // For now, return a default style
-        return {
-            preferredGreetings: ['Hi {name},', 'Hello {name},'],
-            preferredClosings: ['Best,', 'Thanks,', 'Best regards,'],
-            averageSentenceLength: 15,
-            formalityLevel: 0.6,
-            commonPhrases: [],
-            toneProfile: {
-                professional: 0.7,
-                casual: 0.2,
-                formal: 0.1,
-            },
-        };
     }
 }
 //# sourceMappingURL=smart-composer.js.map

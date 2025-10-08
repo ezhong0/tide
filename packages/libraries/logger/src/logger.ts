@@ -34,7 +34,7 @@ export const logger = pino({
 /**
  * Create a child logger with additional context
  */
-export function createLogger(context: pino.Bindings) {
+export function createLogger(context: pino.Bindings): pino.Logger {
   return logger.child(context);
 }
 
@@ -45,7 +45,7 @@ export function createRequestLogger(
   requestId: string,
   userId?: string,
   additionalContext?: pino.Bindings
-) {
+): pino.Logger {
   return logger.child({
     requestId,
     userId,
@@ -59,7 +59,7 @@ export function createRequestLogger(
 export function createServiceLogger(
   serviceName: string,
   additionalContext?: pino.Bindings
-) {
+): pino.Logger {
   return logger.child({
     service: serviceName,
     ...additionalContext,

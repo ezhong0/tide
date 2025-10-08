@@ -4,6 +4,12 @@ import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
+import {
+  authenticateJWT,
+  moderateRateLimit,
+  errorHandler,
+  notFoundHandler,
+} from '@tide/middleware';
 import { GoogleCalendarProvider } from './providers/google-calendar.provider.js';
 import { SmartScheduler } from './scheduler/smart-scheduler.js';
 import type { CalendarProvider, OAuthTokens, MeetingRequest } from './types/index.js';
@@ -33,6 +39,9 @@ class CalendarService {
     this.app.use(cors());
     this.app.use(express.json());
 
+    // Rate limiting (100 req/min)
+    this.app.use(moderateRateLimit);
+
     // Request logging
     this.app.use((req, res, next) => {
       logger.info(
@@ -40,6 +49,7 @@ class CalendarService {
           method: req.method,
           path: req.path,
           ip: req.ip,
+          userId: req.user?.userId,
         },
         'Incoming request'
       );
@@ -61,7 +71,7 @@ class CalendarService {
     });
 
     // Connect calendar provider
-    this.app.post('/connect/:provider', async (req, res) => {
+    this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {
       try {
         const { provider } = req.params;
         const { userId, tokens } = req.body;
@@ -85,7 +95,7 @@ class CalendarService {
     });
 
     // Fetch events
-    this.app.get('/events/:userId/:provider', async (req, res) => {
+    this.app.get('/events/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { start, end } = req.query;
@@ -112,7 +122,7 @@ class CalendarService {
     });
 
     // Get availability
-    this.app.get('/availability/:userId/:provider', async (req, res) => {
+    this.app.get('/availability/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { start, end } = req.query;
@@ -139,7 +149,7 @@ class CalendarService {
     });
 
     // Schedule meeting
-    this.app.post('/schedule', async (req, res) => {
+    this.app.post('/schedule', authenticateJWT, async (req, res) => {
       try {
         const request = req.body as MeetingRequest;
 
@@ -161,7 +171,7 @@ class CalendarService {
     });
 
     // Create event
-    this.app.post('/events/:userId/:provider', async (req, res) => {
+    this.app.post('/events/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { event } = req.body;
@@ -185,7 +195,7 @@ class CalendarService {
     });
 
     // Update event
-    this.app.patch('/events/:userId/:provider/:eventId', async (req, res) => {
+    this.app.patch('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider, eventId } = req.params;
         const { updates } = req.body;
@@ -209,7 +219,7 @@ class CalendarService {
     });
 
     // Delete event
-    this.app.delete('/events/:userId/:provider/:eventId', async (req, res) => {
+    this.app.delete('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider, eventId } = req.params;
 
@@ -227,23 +237,11 @@ class CalendarService {
       }
     });
 
-    // 404 handler
-    this.app.use((req, res) => {
-      res.status(404).json({ error: 'Not found' });
-    });
+    // 404 handler - must be before error handler
+    this.app.use(notFoundHandler);
 
-    // Error handler
-    this.app.use(
-      (
-        err: Error,
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction
-      ) => {
-        logger.error({ error: err }, 'Unhandled error');
-        res.status(500).json({ error: 'Internal server error' });
-      }
-    );
+    // Error handler - must be last
+    this.app.use(errorHandler);
   }
 
   /**

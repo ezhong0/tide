@@ -11,15 +11,15 @@ export declare function validateAsync<T extends z.ZodType>(schema: T, data: unkn
 /**
  * Validation middleware for Express
  */
-export declare function validateBody<T extends z.ZodType>(schema: T): (req: any, res: any, next: any) => void;
+export declare function validateBody<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void;
 /**
  * Validation middleware for query parameters
  */
-export declare function validateQuery<T extends z.ZodType>(schema: T): (req: any, res: any, next: any) => void;
+export declare function validateQuery<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void;
 /**
  * Validation middleware for route parameters
  */
-export declare function validateParams<T extends z.ZodType>(schema: T): (req: any, res: any, next: any) => void;
+export declare function validateParams<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void;
 /**
  * Check if data matches schema without throwing
  */

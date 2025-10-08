@@ -2,8 +2,9 @@ import SwiftUI
 
 @main
 struct TideApp: App {
+    // MARK: - Dependency Injection
+    @StateObject private var container = DependencyContainer.shared
     @StateObject private var appState = AppState()
-    @StateObject private var tideCore = TideCore.shared
 
     init() {
         // Configure app on launch
@@ -12,9 +13,14 @@ struct TideApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            TideRootView()
+                .environmentObject(container)
+                .environmentObject(container.authManager as! AuthManager)
                 .environmentObject(appState)
-                .environmentObject(tideCore)
+                .onOpenURL { url in
+                    // Handle OAuth callback URLs
+                    handleOAuthCallback(url)
+                }
         }
     }
 
@@ -26,94 +32,65 @@ struct TideApp: App {
         print("🌊 Tide App Launching (Release)")
         #endif
     }
+
+    private func handleOAuthCallback(_ url: URL) {
+        print("🔐 Received OAuth callback: \(url)")
+
+        // Handle Supabase OAuth callbacks
+        if url.scheme == "com.tide.app" {
+            Task {
+                do {
+                    try await container.authManager.handleOAuthCallback(url: url)
+                    print("✅ OAuth callback handled successfully")
+                } catch {
+                    print("❌ OAuth callback error: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
 }
 
 // MARK: - App State
 class AppState: ObservableObject {
-    @Published var isAuthenticated: Bool = false
-    @Published var currentUser: User?
+    @Published var hasCompletedOnboarding: Bool
 
     init() {
-        checkAuthStatus()
+        // Check if user has completed onboarding
+        self.hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
     }
 
-    private func checkAuthStatus() {
-        // Check if we have valid tokens in Keychain
-        if let token = KeychainService.shared.getAccessToken(),
-           !token.isEmpty {
-            isAuthenticated = true
-        }
+    func completeOnboarding() {
+        hasCompletedOnboarding = true
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
     }
 }
 
-// MARK: - Root View
-struct RootView: View {
+// MARK: - Root View with Auth State
+struct TideRootView: View {
+    @EnvironmentObject var container: DependencyContainer
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authManager: AuthManager
 
     var body: some View {
         Group {
-            if appState.isAuthenticated {
-                MainTabView()
+            if authManager.isAuthenticated {
+                // User is authenticated - show main app
+                if !appState.hasCompletedOnboarding {
+                    // First time user - show onboarding
+                    OnboardingView(dependencies: container)
+                        .environmentObject(appState)
+                } else {
+                    // Returning user - show main app with full navigation
+                    RootView()
+                }
             } else {
-                AuthenticationView()
+                // User not authenticated - show login
+                LoginView(dependencies: container)
             }
         }
-        .preferredColorScheme(.light) // Will be dynamic later
+        .animation(.easeInOut, value: authManager.isAuthenticated)
+        .animation(.easeInOut, value: appState.hasCompletedOnboarding)
     }
 }
 
-// MARK: - Main Tab View (Placeholder)
-struct MainTabView: View {
-    var body: some View {
-        TabView {
-            ChatView()
-                .tabItem {
-                    Label("Chat", systemImage: "message.fill")
-                }
-
-            EmailView()
-                .tabItem {
-                    Label("Email", systemImage: "envelope.fill")
-                }
-
-            CalendarView()
-                .tabItem {
-                    Label("Calendar", systemImage: "calendar")
-                }
-
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
-        }
-        .tint(TideTheme.primary)
-    }
-}
-
-// Feature views are now in their respective feature folders:
-// - Features/Chat/ChatView.swift
-// - Features/Email/EmailView.swift
-// - Features/Calendar/CalendarView.swift
-
-struct SettingsView: View {
-    @EnvironmentObject var appState: AppState
-
-    var body: some View {
-        NavigationView {
-            List {
-                Section {
-                    Button("Sign Out", role: .destructive) {
-                        signOut()
-                    }
-                }
-            }
-            .navigationTitle("Settings")
-        }
-    }
-
-    private func signOut() {
-        KeychainService.shared.deleteTokens()
-        appState.isAuthenticated = false
-        appState.currentUser = nil
-    }
-}
+// Simple settings view - full implementation in TideApp/Features/Settings/SettingsView.swift

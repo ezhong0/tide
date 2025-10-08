@@ -1,3 +1,4 @@
+import { type SupabaseClient } from '@supabase/supabase-js';
 /**
  * Database Client
  *
@@ -7,5 +8,5 @@
 /**
  * Create a Supabase client (recommended approach)
  */
-export declare function createSupabase(useServiceRole?: boolean): import("@supabase/supabase-js").SupabaseClient<any, "public", "public", any, any>;
+export declare function createSupabase(useServiceRole?: boolean): SupabaseClient;
 //# sourceMappingURL=client.d.ts.map

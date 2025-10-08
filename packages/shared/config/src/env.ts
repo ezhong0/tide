@@ -35,6 +35,16 @@ const EnvSchema = z.object({
   OPENAI_ORG_ID: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // Internal Service URLs
+  AI_SERVICE_URL: z.string().url().default('http://localhost:3001'),
+  EMAIL_SERVICE_URL: z.string().url().default('http://localhost:3003'),
+  CALENDAR_SERVICE_URL: z.string().url().default('http://localhost:3004'),
+  WORKFLOW_SERVICE_URL: z.string().url().default('http://localhost:3005'),
+  GATEWAY_SERVICE_URL: z.string().url().default('http://localhost:4000'),
+  INTELLIGENCE_SERVICE_URL: z.string().url().default('http://localhost:3002'),
+  ACTIONS_SERVICE_URL: z.string().url().default('http://localhost:3006'),
+  DECISIONS_SERVICE_URL: z.string().url().default('http://localhost:3007'),
+
   // OAuth - Google (configured in Supabase Dashboard)
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),

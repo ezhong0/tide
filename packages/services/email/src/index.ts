@@ -5,10 +5,17 @@ import { env } from '@tide/config';
 import { logger } from '@tide/logger';
 import { createSupabase } from '@tide/database';
 import type { UserId } from '@tide/types';
+import {
+  authenticateJWT,
+  moderateRateLimit,
+  errorHandler,
+  notFoundHandler,
+} from '@tide/middleware';
 import { GmailProvider } from './providers/gmail.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { EmailTriageEngine } from './triage/triage-engine.js';
 import { SmartComposer } from './composer/smart-composer.js';
+import { emailSearch } from './search/email-search.js';
 import type { EmailProvider, OAuthTokens, ComposeRequest } from './types/index.js';
 
 /**
@@ -40,6 +47,9 @@ class EmailService {
     this.app.use(cors());
     this.app.use(express.json());
 
+    // Rate limiting (100 req/min)
+    this.app.use(moderateRateLimit);
+
     // Request logging
     this.app.use((req, res, next) => {
       logger.info(
@@ -47,6 +57,7 @@ class EmailService {
           method: req.method,
           path: req.path,
           ip: req.ip,
+          userId: req.user?.userId,
         },
         'Incoming request'
       );
@@ -68,7 +79,7 @@ class EmailService {
     });
 
     // Exchange OAuth code for tokens (new endpoint for mobile OAuth)
-    this.app.post('/connect/:provider/oauth', async (req, res) => {
+    this.app.post('/connect/:provider/oauth', authenticateJWT, async (req, res) => {
       try {
         const { provider } = req.params;
         const { authCode, userId } = req.body;
@@ -79,13 +90,14 @@ class EmailService {
 
         // Exchange auth code for tokens using Google OAuth2
         // For iOS OAuth, use the iOS client ID (no secret required)
+        const clientId = env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
             code: authCode,
-            client_id: env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID,
-            redirect_uri: `com.googleusercontent.apps.${(env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID)?.split('.')[0]}:/oauth2redirect`,
+            client_id: clientId,
+            redirect_uri: `com.googleusercontent.apps.${clientId.split('.')[0]}:/oauth2redirect`,
             grant_type: 'authorization_code',
           }).toString(),
         });
@@ -143,7 +155,7 @@ class EmailService {
     });
 
     // Connect email provider (legacy endpoint - keep for backwards compatibility)
-    this.app.post('/connect/:provider', async (req, res) => {
+    this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {
       try {
         const { provider } = req.params;
         const { userId, tokens } = req.body;
@@ -187,7 +199,7 @@ class EmailService {
     });
 
     // Fetch emails
-    this.app.get('/emails/:userId/:provider', async (req, res) => {
+    this.app.get('/emails/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { limit, unreadOnly } = req.query;
@@ -350,7 +362,7 @@ class EmailService {
     });
 
     // Triage email
-    this.app.post('/triage', async (req, res) => {
+    this.app.post('/triage', authenticateJWT, async (req, res) => {
       try {
         const { email } = req.body;
 
@@ -368,7 +380,7 @@ class EmailService {
     });
 
     // Compose email drafts
-    this.app.post('/compose', async (req, res) => {
+    this.app.post('/compose', authenticateJWT, async (req, res) => {
       try {
         const request = req.body as ComposeRequest;
 
@@ -386,7 +398,7 @@ class EmailService {
     });
 
     // Send email
-    this.app.post('/send/:userId/:provider', async (req, res) => {
+    this.app.post('/send/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { draft, to } = req.body;
@@ -409,23 +421,80 @@ class EmailService {
       }
     });
 
-    // 404 handler
-    this.app.use((req, res) => {
-      res.status(404).json({ error: 'Not found' });
+    // Search emails
+    this.app.post('/search', authenticateJWT, async (req, res) => {
+      try {
+        const { query, userId, filters, limit, offset, sort, order } = req.body;
+
+        if (!userId) {
+          return res.status(400).json({ error: 'Missing userId' });
+        }
+
+        const results = await emailSearch.search({
+          query: query || '',
+          userId: userId as UserId,
+          filters,
+          limit,
+          offset,
+          sort,
+          order,
+        });
+
+        res.json(results);
+      } catch (error) {
+        logger.error({ error }, 'Email search failed');
+        res.status(500).json({ error: 'Search failed' });
+      }
     });
 
-    // Error handler
-    this.app.use(
-      (
-        err: Error,
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction
-      ) => {
-        logger.error({ error: err }, 'Unhandled error');
-        res.status(500).json({ error: 'Internal server error' });
+    // Get search suggestions
+    this.app.get('/search/suggestions', authenticateJWT, async (req, res) => {
+      try {
+        const { userId, query, limit } = req.query;
+
+        if (!userId) {
+          return res.status(400).json({ error: 'Missing userId' });
+        }
+
+        const suggestions = await emailSearch.getSuggestions(
+          userId as UserId,
+          (query as string) || '',
+          limit ? parseInt(limit as string) : 5
+        );
+
+        res.json({ suggestions });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get search suggestions');
+        res.status(500).json({ error: 'Failed to get suggestions' });
       }
-    );
+    });
+
+    // Get popular searches
+    this.app.get('/search/popular', authenticateJWT, async (req, res) => {
+      try {
+        const { userId, limit } = req.query;
+
+        if (!userId) {
+          return res.status(400).json({ error: 'Missing userId' });
+        }
+
+        const popular = await emailSearch.getPopularSearches(
+          userId as UserId,
+          limit ? parseInt(limit as string) : 10
+        );
+
+        res.json({ queries: popular });
+      } catch (error) {
+        logger.error({ error }, 'Failed to get popular searches');
+        res.status(500).json({ error: 'Failed to get popular searches' });
+      }
+    });
+
+    // 404 handler - must be before error handler
+    this.app.use(notFoundHandler);
+
+    // Error handler - must be last
+    this.app.use(errorHandler);
   }
 
   /**

@@ -39,13 +39,15 @@ export async function validateAsync<T extends z.ZodType>(
 /**
  * Validation middleware for Express
  */
-export function validateBody<T extends z.ZodType>(schema: T) {
-  return (req: any, res: any, next: any) => {
+export function validateBody<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void {
+  return (req: unknown, res: unknown, next: unknown): void => {
+    const r = req as { body: unknown };
+    const n = next as (err?: unknown) => void;
     try {
-      req.body = validate(schema, req.body);
-      next();
+      r.body = validate(schema, r.body);
+      n();
     } catch (error) {
-      next(error);
+      n(error);
     }
   };
 }
@@ -53,13 +55,15 @@ export function validateBody<T extends z.ZodType>(schema: T) {
 /**
  * Validation middleware for query parameters
  */
-export function validateQuery<T extends z.ZodType>(schema: T) {
-  return (req: any, res: any, next: any) => {
+export function validateQuery<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void {
+  return (req: unknown, res: unknown, next: unknown): void => {
+    const r = req as { query: unknown };
+    const n = next as (err?: unknown) => void;
     try {
-      req.query = validate(schema, req.query);
-      next();
+      r.query = validate(schema, r.query);
+      n();
     } catch (error) {
-      next(error);
+      n(error);
     }
   };
 }
@@ -67,13 +71,15 @@ export function validateQuery<T extends z.ZodType>(schema: T) {
 /**
  * Validation middleware for route parameters
  */
-export function validateParams<T extends z.ZodType>(schema: T) {
-  return (req: any, res: any, next: any) => {
+export function validateParams<T extends z.ZodType>(schema: T): (req: unknown, res: unknown, next: unknown) => void {
+  return (req: unknown, res: unknown, next: unknown): void => {
+    const r = req as { params: unknown };
+    const n = next as (err?: unknown) => void;
     try {
-      req.params = validate(schema, req.params);
-      next();
+      r.params = validate(schema, r.params);
+      n();
     } catch (error) {
-      next(error);
+      n(error);
     }
   };
 }

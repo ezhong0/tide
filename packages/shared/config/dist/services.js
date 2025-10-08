@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.monitoringConfig = exports.vectorConfig = exports.aiServiceConfig = void 0;
+exports.monitoringConfig = exports.serviceUrls = exports.vectorConfig = exports.aiServiceConfig = void 0;
 const env_1 = require("./env");
 /**
  * AI service configuration
@@ -33,6 +33,19 @@ exports.vectorConfig = {
     dimension: 1536, // OpenAI embedding dimension
     metric: 'cosine',
     // pgvector is available via Supabase PostgreSQL
+};
+/**
+ * Internal service URLs configuration
+ */
+exports.serviceUrls = {
+    ai: env_1.env.AI_SERVICE_URL,
+    email: env_1.env.EMAIL_SERVICE_URL,
+    calendar: env_1.env.CALENDAR_SERVICE_URL,
+    workflow: env_1.env.WORKFLOW_SERVICE_URL,
+    gateway: env_1.env.GATEWAY_SERVICE_URL,
+    intelligence: env_1.env.INTELLIGENCE_SERVICE_URL,
+    actions: env_1.env.ACTIONS_SERVICE_URL,
+    decisions: env_1.env.DECISIONS_SERVICE_URL,
 };
 /**
  * Monitoring configuration

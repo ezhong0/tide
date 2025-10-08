@@ -3,11 +3,17 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import { logger } from './simple-logger.js';
+import {
+  authenticateJWT,
+  moderateRateLimit,
+  errorHandler,
+  notFoundHandler,
+} from '@tide/middleware';
 
 /**
  * API Gateway (REST Proxy)
  *
- * For Alpha: Simple REST proxy to backend services
+ * For Alpha: Simple REST proxy to backend services with authentication
  * GraphQL gateway will be added in later weeks
  */
 
@@ -27,12 +33,16 @@ app.use(cors({
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 
+// Rate limiting (100 req/min per user)
+app.use(moderateRateLimit);
+
 // Request logging
 app.use((req, res, next) => {
   logger.info({
     method: req.method,
     path: req.path,
     ip: req.ip,
+    userId: req.user?.userId,
   }, 'Incoming request');
   next();
 });
@@ -120,30 +130,11 @@ app.all('/graphql', (req, res) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Not found',
-    path: req.path,
-    availableEndpoints: [
-      '/health',
-      '/api/services',
-      '/api/ai/*',
-      '/api/email/*',
-      '/api/calendar/*',
-      '/api/workflow/*',
-    ],
-  });
-});
+// 404 handler - must be registered before error handler
+app.use(notFoundHandler);
 
-// Error handler
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error({ err, path: req.path }, 'Unhandled error');
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message,
-  });
-});
+// Error handler - must be registered LAST
+app.use(errorHandler);
 
 // Start server
 const PORT = parseInt(process.env.GATEWAY_PORT || '4000', 10);

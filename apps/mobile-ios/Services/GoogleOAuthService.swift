@@ -42,7 +42,10 @@ class GoogleOAuthService: NSObject, ObservableObject {
         // Build OAuth URL
         let redirectUri = "\(redirectScheme):/oauth2redirect"
 
-        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        guard var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth") else {
+            throw OAuthError.invalidURL
+        }
+
         components.queryItems = [
             URLQueryItem(name: "client_id", value: clientId),
             URLQueryItem(name: "redirect_uri", value: redirectUri),
