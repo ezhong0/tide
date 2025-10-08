@@ -10,8 +10,9 @@ enum Config {
         ?? "https://ozrocykjomgcuphicqpg.supabase.co"
 
     /// Supabase anon/public key (safe for client-side use)
+    /// This key is safe to expose in client-side code - it only allows authenticated requests
     static let supabaseAnonKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"]
-        ?? "YOUR_ANON_KEY_HERE" // Replace with actual key from Supabase dashboard
+        ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cm9jeWtqb21nY3VwaGljcXBnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1MzAwMDgsImV4cCI6MjA3MTEwNjAwOH0.0B4"
 
     // MARK: - API Configuration
 
