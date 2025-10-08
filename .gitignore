@@ -1,13 +1,42 @@
 node_modules
 resume/.build
 
+# Build outputs
+dist/
+*.js.map
+*.d.ts.map
+
 # macOS
 .DS_Store
+*.swp
+*.swo
+*~
 
 # Xcode
 *.xcuserstate
+*.xcuserdatad
+xcuserdata/
 .swiftpm/
 Package.resolved
+DerivedData/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
 
 # Swift Package Manager
 .build/
+
+# iOS Build artifacts
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Environment files
+.env.local
+.env.*.local
