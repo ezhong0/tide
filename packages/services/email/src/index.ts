@@ -220,6 +220,10 @@ class EmailService {
             isRead: dbEmail.is_read,
             isStarred: false,
             hasAttachments: false,
+            // Include AI triage fields from database
+            aiCategory: dbEmail.ai_category,
+            aiPriority: dbEmail.ai_priority,
+            aiSummary: dbEmail.ai_summary,
           }));
 
           logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
@@ -254,8 +258,8 @@ class EmailService {
           await emailProvider.initialize(userId as UserId, {
             accessToken: tokenData.access_token,
             refreshToken: tokenData.refresh_token,
-            expiresAt: tokenData.expires_at,
-            scope: tokenData.scope || undefined,
+            expiresAt: new Date(tokenData.expires_at), // Convert string to Date
+            scope: tokenData.scope ? tokenData.scope.split(' ') : [], // Convert space-separated string to array
           } as OAuthTokens);
 
           this.providers.set(`${userId}-${provider}`, emailProvider);
@@ -266,72 +270,77 @@ class EmailService {
           unreadOnly: unreadOnly === 'true',
         });
 
-        // Store emails in database and triage them
-        for (const email of emails) {
-          // Create or update thread
-          await this.db
-            .from('email_threads')
-            .upsert({
-              user_id: userId,
-              provider: provider === 'gmail' ? 'google' : 'microsoft',
-              external_thread_id: email.threadId || email.id,
-              subject: email.subject,
-              participants: email.from ? [email.from] : [],
-              last_message_at: email.timestamp,
-            }, {
-              onConflict: 'user_id,external_thread_id',
-            });
+        // Store emails in database and triage them (parallel processing for performance)
+        await Promise.all(
+          emails.map(async (email) => {
+            // Run AI triage analysis
+            const triageResult = await this.triageEngine.analyze(email);
 
-          // Run AI triage analysis
-          const triageResult = await this.triageEngine.analyze(email);
+            // Map urgency to category for database
+            let aiCategory = 'normal';
+            if (triageResult.urgency === 'immediate' || triageResult.importance > 0.8) {
+              aiCategory = 'urgent';
+            } else if (triageResult.importance > 0.6) {
+              aiCategory = 'important';
+            } else if (triageResult.importance < 0.3) {
+              aiCategory = 'low';
+            }
 
-          // Map urgency to category for database
-          let aiCategory = 'normal';
-          if (triageResult.urgency === 'immediate' || triageResult.importance > 0.8) {
-            aiCategory = 'urgent';
-          } else if (triageResult.importance > 0.6) {
-            aiCategory = 'important';
-          } else if (triageResult.importance < 0.3) {
-            aiCategory = 'low';
-          }
+            // Calculate priority score (1-10)
+            const aiPriority = Math.round(triageResult.importance * 10);
 
-          // Calculate priority score (1-10)
-          const aiPriority = Math.round(triageResult.importance * 10);
+            // Generate AI summary
+            const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
 
-          // Generate AI summary
-          const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
+            // Parallel database writes for thread and message
+            await Promise.all([
+              // Create or update thread
+              this.db
+                .from('email_threads')
+                .upsert({
+                  user_id: userId,
+                  provider: provider === 'gmail' ? 'google' : 'microsoft',
+                  external_thread_id: email.threadId || email.id,
+                  subject: email.subject,
+                  participants: email.from ? [email.from] : [],
+                  last_message_at: email.timestamp,
+                }, {
+                  onConflict: 'user_id,external_thread_id',
+                }),
 
-          // Store individual email message with AI analysis
-          await this.db
-            .from('email_messages')
-            .upsert({
-              user_id: userId,
-              provider: provider === 'gmail' ? 'google' : 'microsoft',
-              external_message_id: email.id,
-              thread_id: email.threadId || email.id,
-              from_address: email.from,
-              to_addresses: email.to || [],
-              cc_addresses: email.cc || [],
-              subject: email.subject,
-              body_text: email.body,
-              body_html: email.htmlBody || null,
-              received_at: email.timestamp,
-              is_read: email.isRead || false,
-              ai_category: aiCategory,
-              ai_priority: aiPriority,
-              ai_summary: aiSummary,
-            }, {
-              onConflict: 'user_id,external_message_id',
-            });
+              // Store individual email message with AI analysis
+              this.db
+                .from('email_messages')
+                .upsert({
+                  user_id: userId,
+                  provider: provider === 'gmail' ? 'google' : 'microsoft',
+                  external_message_id: email.id,
+                  thread_id: email.threadId || email.id,
+                  from_address: email.from,
+                  to_addresses: email.to || [],
+                  cc_addresses: email.cc || [],
+                  subject: email.subject,
+                  body_text: email.body,
+                  body_html: email.htmlBody || null,
+                  received_at: email.timestamp,
+                  is_read: email.isRead || false,
+                  ai_category: aiCategory,
+                  ai_priority: aiPriority,
+                  ai_summary: aiSummary,
+                }, {
+                  onConflict: 'user_id,external_message_id',
+                }),
+            ]);
 
-          logger.info({
-            emailId: email.id,
-            aiCategory,
-            aiPriority,
-            urgency: triageResult.urgency,
-            importance: triageResult.importance
-          }, 'Email triaged and stored');
-        }
+            logger.info({
+              emailId: email.id,
+              aiCategory,
+              aiPriority,
+              urgency: triageResult.urgency,
+              importance: triageResult.importance
+            }, 'Email triaged and stored');
+          })
+        );
 
         res.json({ emails, count: emails.length });
       } catch (error) {
