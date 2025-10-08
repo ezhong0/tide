@@ -326,14 +326,26 @@ class TaskListViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 500_000_000) // 0.5s
+            // Fetch real tasks from API
+            let fetchedTasks = try await apiClient.getTasks(status: nil)
 
-            // Mock tasks
-            allTasks = generateMockTasks()
+            // Convert API Task to TideTask
+            allTasks = fetchedTasks.map { apiTask in
+                TideTask(
+                    id: apiTask.id,
+                    title: apiTask.title,
+                    description: apiTask.description,
+                    status: TaskStatus(rawValue: apiTask.status) ?? .todo,
+                    priority: TaskPriority(rawValue: apiTask.priority) ?? .none,
+                    dueDate: apiTask.dueDate,
+                    tags: nil // TODO: Add tags support to API
+                )
+            }
 
         } catch {
             print("Error loading tasks: \(error)")
+            // On error, show empty list instead of mock data
+            allTasks = []
         }
     }
 
@@ -390,6 +402,7 @@ class TaskListViewModel: ObservableObject {
             newStatus = .todo
         }
 
+        // Update local state optimistically
         allTasks[index] = TideTask(
             id: task.id,
             title: task.title,
@@ -400,63 +413,30 @@ class TaskListViewModel: ObservableObject {
             tags: task.tags
         )
 
-        // TODO: API call
+        // Update via API
+        do {
+            try await apiClient.updateTaskStatus(taskId: task.id, status: newStatus.rawValue)
+        } catch {
+            print("Error updating task status: \(error)")
+            // Revert on error
+            allTasks[index] = task
+        }
     }
 
     func deleteTask(_ task: TideTask) async {
+        // Remove locally optimistically
         allTasks.removeAll { $0.id == task.id }
-        // TODO: API call
+
+        // Delete via API
+        do {
+            try await apiClient.deleteTask(id: task.id)
+        } catch {
+            print("Error deleting task: \(error)")
+            // Reload to restore on error
+            await loadTasks()
+        }
     }
 
-    private func generateMockTasks() -> [TideTask] {
-        [
-            TideTask(
-                id: "1",
-                title: "Review pull requests",
-                description: "Review team's PRs from this morning",
-                status: .todo,
-                priority: .high,
-                dueDate: Date(),
-                tags: ["code-review", "urgent"]
-            ),
-            TideTask(
-                id: "2",
-                title: "Update documentation",
-                description: "Update API docs with new endpoints",
-                status: .inProgress,
-                priority: .medium,
-                dueDate: Date().addingTimeInterval(86400),
-                tags: ["docs"]
-            ),
-            TideTask(
-                id: "3",
-                title: "Finish quarterly report",
-                description: nil,
-                status: .todo,
-                priority: .high,
-                dueDate: Date().addingTimeInterval(172800),
-                tags: ["reports"]
-            ),
-            TideTask(
-                id: "4",
-                title: "Fix bug in login flow",
-                description: "Users can't login with special characters in email",
-                status: .inProgress,
-                priority: .critical,
-                dueDate: Date(),
-                tags: ["bug", "urgent"]
-            ),
-            TideTask(
-                id: "5",
-                title: "Schedule team meeting",
-                description: nil,
-                status: .done,
-                priority: .low,
-                dueDate: Date().addingTimeInterval(-86400),
-                tags: nil
-            )
-        ]
-    }
 }
 
 // MARK: - Models

@@ -14,9 +14,18 @@ enum Endpoint {
     // MARK: - Email Service
     case emailMessages(query: String? = nil)
     case emailMessage(id: String)
+    case emailThread(id: String)
+    case emailMarkRead(id: String)
+    case emailMarkUnread(id: String)
+    case emailStar(id: String)
+    case emailUnstar(id: String)
+    case emailArchive(id: String)
+    case emailDelete(id: String)
     case emailComposeDrafts(emailId: String)
     case emailCreateDraft
     case emailSend
+    case emailReply(id: String)
+    case emailForward(id: String)
     case emailOAuthGoogleURL
     case emailStatus
     case emailRelationship(userId: String, email: String)
@@ -29,8 +38,11 @@ enum Endpoint {
 
     // MARK: - Calendar Service
     case calendarEvents(start: String? = nil, end: String? = nil)
+    case calendarEvent(id: String)
     case calendarEventBrief(eventId: String)
     case calendarCreateEvent
+    case calendarUpdateEvent(id: String)
+    case calendarDeleteEvent(id: String)
     case calendarBriefs(userId: String)
     case calendarGenerateBrief
     case calendarOptimizations(userId: String)
@@ -42,7 +54,10 @@ enum Endpoint {
 
     // MARK: - Workflow Service
     case workflowTasks(status: String? = nil, priority: String? = nil)
+    case workflowTask(id: String)
     case workflowCreateTask
+    case workflowUpdateTask(id: String)
+    case workflowDeleteTask(id: String)
     case workflowTaskStatus(taskId: String)
 
     // MARK: - Intelligence Service
@@ -84,12 +99,30 @@ enum Endpoint {
             return path
         case .emailMessage(let id):
             return "/api/email/messages/\(id)"
+        case .emailThread(let id):
+            return "/api/email/messages/\(id)/thread"
+        case .emailMarkRead(let id):
+            return "/api/email/messages/\(id)/read"
+        case .emailMarkUnread(let id):
+            return "/api/email/messages/\(id)/unread"
+        case .emailStar(let id):
+            return "/api/email/messages/\(id)/star"
+        case .emailUnstar(let id):
+            return "/api/email/messages/\(id)/unstar"
+        case .emailArchive(let id):
+            return "/api/email/messages/\(id)/archive"
+        case .emailDelete(let id):
+            return "/api/email/messages/\(id)"
         case .emailComposeDrafts(let emailId):
             return "/api/email/compose/\(emailId)/drafts"
         case .emailCreateDraft:
             return "/api/email/compose/drafts"
         case .emailSend:
             return "/api/email/send"
+        case .emailReply(let id):
+            return "/api/email/messages/\(id)/reply"
+        case .emailForward(let id):
+            return "/api/email/messages/\(id)/forward"
         case .emailOAuthGoogleURL:
             return "/api/email/oauth/google/url"
         case .emailStatus:
@@ -117,10 +150,16 @@ enum Endpoint {
                 path += "?start=\(start)&end=\(end)"
             }
             return path
+        case .calendarEvent(let id):
+            return "/api/calendar/events/\(id)"
         case .calendarEventBrief(let eventId):
             return "/api/calendar/events/\(eventId)/brief"
         case .calendarCreateEvent:
             return "/api/calendar/events"
+        case .calendarUpdateEvent(let id):
+            return "/api/calendar/events/\(id)"
+        case .calendarDeleteEvent(let id):
+            return "/api/calendar/events/\(id)"
         case .calendarBriefs(let userId):
             return "/api/calendar/briefs/\(userId)"
         case .calendarGenerateBrief:
@@ -152,8 +191,14 @@ enum Endpoint {
                 path += "?" + queryParams.joined(separator: "&")
             }
             return path
+        case .workflowTask(let id):
+            return "/api/workflow/tasks/\(id)"
         case .workflowCreateTask:
             return "/api/workflow/tasks"
+        case .workflowUpdateTask(let id):
+            return "/api/workflow/tasks/\(id)"
+        case .workflowDeleteTask(let id):
+            return "/api/workflow/tasks/\(id)"
         case .workflowTaskStatus(let taskId):
             return "/api/workflow/tasks/\(taskId)/status"
 

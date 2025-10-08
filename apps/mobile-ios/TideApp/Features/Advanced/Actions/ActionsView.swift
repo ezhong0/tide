@@ -314,7 +314,15 @@ class ActionsViewModel: ObservableObject {
     @Published var showError = false
     @Published var errorMessage = ""
 
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let authManager: AuthManagerProtocol
+    private let supabaseManager: SupabaseManagerProtocol
+
+    init(apiClient: APIClientProtocol, authManager: AuthManagerProtocol, supabaseManager: SupabaseManagerProtocol) {
+        self.apiClient = apiClient
+        self.authManager = authManager
+        self.supabaseManager = supabaseManager
+    }
 
     func loadActions() async {
         isLoading = true
@@ -391,6 +399,6 @@ class ActionsViewModel: ObservableObject {
     }
 
     private func getCurrentUserId() async -> String? {
-        return await SupabaseManager.shared.getCurrentUserId()
+        return authManager.currentUser?.id
     }
 }

@@ -8,7 +8,9 @@ import Security
 
 @MainActor
 class AuthManager: ObservableObject, AuthManagerProtocol {
-    static let shared = AuthManager()
+    // Keep shared for backward compatibility, but deprecate
+    @available(*, deprecated, message: "Use dependency injection instead of shared instance")
+    static let shared = AuthManager(supabaseManager: SupabaseManager.shared)
 
     @Published var isAuthenticated = false
     @Published var currentUser: User?
@@ -17,32 +19,38 @@ class AuthManager: ObservableObject, AuthManagerProtocol {
     private let accessTokenKey = "access_token"
     private let refreshTokenKey = "refresh_token"
 
-    private let supabaseManager: SupabaseManager
+    private let supabaseManager: SupabaseManagerProtocol
     private let oauthService: OAuthService
 
-    private init() {
-        // Initialize dependencies
-        self.supabaseManager = SupabaseManager.shared
+    // MARK: - Initialization
 
-        // Create Supabase client for OAuth service
-        guard let supabaseURL = URL(string: Config.supabaseURL),
-              let anonKey = Config.supabaseAnonKey, !anonKey.isEmpty else {
-            print("❌ CRITICAL: Invalid Supabase configuration in AuthManager")
-            // Create placeholder to prevent crash
-            let placeholderURL = URL(string: "https://placeholder.supabase.co")!
+    init(supabaseManager: SupabaseManagerProtocol, oauthService: OAuthService? = nil) {
+        self.supabaseManager = supabaseManager
+
+        // Create OAuth service if not provided
+        if let oauthService = oauthService {
+            self.oauthService = oauthService
+        } else {
+            // Create Supabase client for OAuth service
+            guard let supabaseURL = URL(string: Config.supabaseURL),
+                  let anonKey = Config.supabaseAnonKey, !anonKey.isEmpty else {
+                print("❌ CRITICAL: Invalid Supabase configuration in AuthManager")
+                // Create placeholder to prevent crash
+                let placeholderURL = URL(string: "https://placeholder.supabase.co")!
+                let supabaseClient = SupabaseClient(
+                    supabaseURL: placeholderURL,
+                    supabaseKey: "placeholder-key"
+                )
+                self.oauthService = OAuthService(supabaseClient: supabaseClient)
+                return
+            }
+
             let supabaseClient = SupabaseClient(
-                supabaseURL: placeholderURL,
-                supabaseKey: "placeholder-key"
+                supabaseURL: supabaseURL,
+                supabaseKey: anonKey
             )
             self.oauthService = OAuthService(supabaseClient: supabaseClient)
-            return
         }
-
-        let supabaseClient = SupabaseClient(
-            supabaseURL: supabaseURL,
-            supabaseKey: anonKey
-        )
-        self.oauthService = OAuthService(supabaseClient: supabaseClient)
 
         // Check if user is already authenticated on init
         Task {

@@ -137,15 +137,21 @@ struct EmailInboxView: View {
     }
 
     private func deleteEmail(_ email: EmailMessage) {
-        // TODO: Implement delete
+        Task {
+            await viewModel.deleteEmail(email)
+        }
     }
 
     private func archiveEmail(_ email: EmailMessage) {
-        // TODO: Implement archive
+        Task {
+            await viewModel.archiveEmail(email)
+        }
     }
 
     private func toggleRead(_ email: EmailMessage) {
-        // TODO: Implement toggle read
+        Task {
+            await viewModel.toggleRead(email)
+        }
     }
 }
 
@@ -304,7 +310,7 @@ struct EmailMessage: Identifiable {
     let subject: String
     let body: String
     let receivedAt: Date
-    let isRead: Bool
+    var isRead: Bool // Mutable for optimistic updates
     let isVIP: Bool
     let hasAttachments: Bool
     let aiCategory: String?
@@ -528,6 +534,58 @@ class EmailInboxViewModel: ObservableObject {
         showUnreadOnly = false
         showWithAttachmentsOnly = false
         selectedTimeRange = 0
+    }
+
+    // Email Actions
+    func deleteEmail(_ email: EmailMessage) async {
+        do {
+            // Remove optimistically
+            emails.removeAll { $0.id == email.id }
+
+            // Delete via API
+            try await apiClient.deleteEmail(id: email.id)
+        } catch {
+            print("Error deleting email: \(error)")
+            self.error = "Failed to delete email"
+            // Reload to restore if needed
+            // await loadEmails(category: "inbox")
+        }
+    }
+
+    func archiveEmail(_ email: EmailMessage) async {
+        do {
+            // Remove optimistically
+            emails.removeAll { $0.id == email.id }
+
+            // Archive via API
+            try await apiClient.archiveEmail(id: email.id)
+        } catch {
+            print("Error archiving email: \(error)")
+            self.error = "Failed to archive email"
+            // Reload to restore if needed
+        }
+    }
+
+    func toggleRead(_ email: EmailMessage) async {
+        guard let index = emails.firstIndex(where: { $0.id == email.id }) else { return }
+
+        let wasRead = emails[index].isRead
+
+        // Optimistic update
+        emails[index].isRead = !wasRead
+
+        // API call
+        do {
+            if wasRead {
+                try await apiClient.markEmailUnread(id: email.id)
+            } else {
+                try await apiClient.markEmailRead(id: email.id)
+            }
+        } catch {
+            print("Error toggling read status: \(error)")
+            // Rollback on error
+            emails[index].isRead = wasRead
+        }
     }
 
     private func extractName(from email: String) -> String? {

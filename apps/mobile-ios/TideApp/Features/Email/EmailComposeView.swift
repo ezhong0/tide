@@ -378,23 +378,23 @@ class EmailComposeViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            // Fetch original email from API
+            let fetchedEmail = try await apiClient.getEmailDetail(id: emailId)
 
-            // Mock original email
+            // Convert to EmailDetail
             originalEmail = EmailDetail(
-                id: emailId,
-                from: "john@example.com",
-                fromName: "John Doe",
-                to: ["me@example.com"],
+                id: fetchedEmail.id,
+                from: fetchedEmail.from.email,
+                fromName: fetchedEmail.from.name,
+                to: fetchedEmail.to.map { $0.email },
                 cc: nil,
-                subject: "Project Update",
-                body: "Thanks for the update! Everything looks good. Let's schedule a follow-up meeting next week.\n\nBest,\nJohn",
-                receivedAt: Date().addingTimeInterval(-86400), // 1 day ago
-                isRead: true,
-                isStarred: false,
+                subject: fetchedEmail.subject,
+                body: fetchedEmail.body,
+                receivedAt: fetchedEmail.timestamp,
+                isRead: fetchedEmail.isRead,
+                isStarred: fetchedEmail.isStarred,
                 isVIP: false,
-                aiSummary: nil,
+                aiSummary: fetchedEmail.aiSummary,
                 attachments: nil
             )
 
@@ -408,6 +408,7 @@ class EmailComposeViewModel: ObservableObject {
             initialState = "\(to)\(cc)\(bcc)\(subject)\(body)"
 
         } catch {
+            print("Error loading original email: \(error)")
             self.error = error
             self.showError = true
         }
@@ -420,16 +421,43 @@ class EmailComposeViewModel: ObservableObject {
         defer { isSending = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1s
+            // Parse recipients
+            let toRecipients = to.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
 
-            // Mock send
+            switch mode {
+            case .reply:
+                // Reply to original email
+                guard let emailId = replyTo else {
+                    throw EmailError.invalidReplyContext
+                }
+                try await apiClient.replyToEmail(id: emailId, body: body)
+
+            case .replyAll:
+                // Reply all - same as reply for now (backend handles CC)
+                guard let emailId = replyTo else {
+                    throw EmailError.invalidReplyContext
+                }
+                try await apiClient.replyToEmail(id: emailId, body: body)
+
+            case .forward:
+                // Forward email
+                guard let emailId = replyTo else {
+                    throw EmailError.invalidForwardContext
+                }
+                try await apiClient.forwardEmail(id: emailId, to: toRecipients, body: body)
+
+            case .new:
+                // Send new email
+                try await apiClient.sendEmail(to: toRecipients, subject: subject, body: body)
+            }
+
             sendSuccess = true
 
             // Save as sent
             saveDraft(isSent: true)
 
         } catch {
+            print("Error sending email: \(error)")
             self.error = error
             self.showError = true
         }
@@ -528,5 +556,20 @@ class EmailComposeViewModel: ObservableObject {
     NavigationStack {
         EmailComposeView(replyTo: "test-email-123", mode: .reply)
             .environmentObject(NavigationState())
+    }
+}
+
+// MARK: - Email Error
+enum EmailError: LocalizedError {
+    case invalidReplyContext
+    case invalidForwardContext
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidReplyContext:
+            return "Cannot reply: Original email not found"
+        case .invalidForwardContext:
+            return "Cannot forward: Original email not found"
+        }
     }
 }

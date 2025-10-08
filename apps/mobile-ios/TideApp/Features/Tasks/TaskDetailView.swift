@@ -231,23 +231,23 @@ class TaskDetailViewModel: ObservableObject {
         defer { isLoading = false }
 
         do {
-            // TODO: Implement actual API call
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+            let apiTask = try await apiClient.getTask(id: taskId)
 
-            // Mock task
+            // Convert API Task to TideTaskDetail
             task = TideTaskDetail(
-                id: taskId,
-                title: "Review pull requests",
-                description: "Review team's PRs from this morning. Focus on the authentication refactor and the new API endpoints.",
-                status: .inProgress,
-                priority: .high,
-                dueDate: Date(),
-                tags: ["code-review", "urgent"],
-                createdAt: Date().addingTimeInterval(-172800), // 2 days ago
-                updatedAt: Date().addingTimeInterval(-3600) // 1 hour ago
+                id: apiTask.id,
+                title: apiTask.title,
+                description: apiTask.description,
+                status: TaskStatus(rawValue: apiTask.status) ?? .todo,
+                priority: TaskPriority(rawValue: apiTask.priority) ?? .none,
+                dueDate: apiTask.dueDate,
+                tags: nil, // TODO: Add tags support in API
+                createdAt: apiTask.createdAt ?? Date(),
+                updatedAt: apiTask.updatedAt
             )
 
         } catch {
+            print("Error loading task: \(error)")
             self.error = error
         }
     }
@@ -265,6 +265,7 @@ class TaskDetailViewModel: ObservableObject {
             newStatus = .todo
         }
 
+        // Update locally optimistically
         task = TideTaskDetail(
             id: task.id,
             title: task.title,
@@ -276,14 +277,25 @@ class TaskDetailViewModel: ObservableObject {
             createdAt: task.createdAt,
             updatedAt: Date()
         )
-
         self.task = task
-        // TODO: API call
+
+        // Update via API
+        do {
+            try await apiClient.updateTaskStatus(taskId: taskId, status: newStatus.rawValue)
+        } catch {
+            print("Error updating task status: \(error)")
+            // Reload on error
+            await loadTask()
+        }
     }
 
     func deleteTask() async {
-        // TODO: Implement actual API call
-        try? await Task.sleep(nanoseconds: 300_000_000) // 0.3s
+        do {
+            try await apiClient.deleteTask(id: taskId)
+        } catch {
+            print("Error deleting task: \(error)")
+            self.error = error
+        }
     }
 }
 

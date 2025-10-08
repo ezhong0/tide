@@ -3,24 +3,47 @@ import SwiftUI
 @main
 struct TideApp: App {
     // MARK: - Dependency Injection
-    @StateObject private var container = DependencyContainer.shared
+    @StateObject private var container: DependencyContainer
     @StateObject private var appState = AppState()
+    @State private var initializationError: Error?
 
     init() {
+        // Try to create production container with validation
+        var tempContainer: DependencyContainer
+        var tempError: Error?
+
+        do {
+            tempContainer = try DependencyContainer.production()
+            print("✅ Tide initialized successfully")
+        } catch {
+            print("❌ Configuration error: \(error.localizedDescription)")
+            tempContainer = DependencyContainer.placeholder(error: error)
+            tempError = error
+        }
+
+        _container = StateObject(wrappedValue: tempContainer)
+        _initializationError = State(initialValue: tempError)
+
         // Configure app on launch
         configureApp()
     }
 
     var body: some Scene {
         WindowGroup {
-            TideRootView()
-                .environmentObject(container)
-                .environmentObject(container.authManager as! AuthManager)
-                .environmentObject(appState)
-                .onOpenURL { url in
-                    // Handle OAuth callback URLs
-                    handleOAuthCallback(url)
-                }
+            if let error = initializationError {
+                // Show configuration error view
+                ConfigurationErrorView(error: error)
+            } else {
+                // Normal app flow
+                TideRootView()
+                    .environmentObject(container)
+                    .environmentObject(container.authManager as! AuthManager)
+                    .environmentObject(appState)
+                    .onOpenURL { url in
+                        // Handle OAuth callback URLs
+                        handleOAuthCallback(url)
+                    }
+            }
         }
     }
 

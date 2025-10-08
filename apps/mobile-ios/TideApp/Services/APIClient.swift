@@ -6,27 +6,34 @@
 import Foundation
 
 class APIClient: APIClientProtocol {
-    static let shared = APIClient()
+    // Keep shared for backward compatibility, but deprecate
+    @available(*, deprecated, message: "Use dependency injection instead of shared instance")
+    static let shared = APIClient(authManager: AuthManager.shared, baseURL: Config.apiBaseURL)
 
     private let baseURL: String
     private let session: URLSession
+    private let authManager: AuthManagerProtocol
 
-    private init() {
-        #if DEBUG
-        baseURL = "http://localhost:3002" // Local development
-        #else
-        baseURL = "https://gateway.tide.ai" // Production
-        #endif
+    // MARK: - Initialization
+
+    init(
+        authManager: AuthManagerProtocol,
+        baseURL: String? = nil,
+        session: URLSession? = nil
+    ) {
+        self.authManager = authManager
+        self.baseURL = baseURL ?? Config.apiBaseURL
 
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 30
-        session = URLSession(configuration: config)
+        config.timeoutIntervalForRequest = Config.Network.requestTimeout
+        config.timeoutIntervalForResource = Config.Network.resourceTimeout
+        self.session = session ?? URLSession(configuration: config)
     }
 
     // MARK: - Auth
 
     func getAuthToken() -> String? {
-        guard let token = AuthManager.shared.accessToken else {
+        guard let token = authManager.accessToken else {
             return nil
         }
 
@@ -97,6 +104,45 @@ class APIClient: APIClientProtocol {
         return response.connected
     }
 
+    // Email Actions
+    func getEmailThread(id: String) async throws -> [Email] {
+        return try await get(.emailThread(id: id))
+    }
+
+    func markEmailRead(id: String) async throws {
+        let _: EmptyResponse = try await post(.emailMarkRead(id: id), body: EmptyBody())
+    }
+
+    func markEmailUnread(id: String) async throws {
+        let _: EmptyResponse = try await post(.emailMarkUnread(id: id), body: EmptyBody())
+    }
+
+    func starEmail(id: String) async throws {
+        let _: EmptyResponse = try await post(.emailStar(id: id), body: EmptyBody())
+    }
+
+    func unstarEmail(id: String) async throws {
+        let _: EmptyResponse = try await post(.emailUnstar(id: id), body: EmptyBody())
+    }
+
+    func archiveEmail(id: String) async throws {
+        let _: EmptyResponse = try await post(.emailArchive(id: id), body: EmptyBody())
+    }
+
+    func deleteEmail(id: String) async throws {
+        let _: EmptyResponse = try await delete(.emailDelete(id: id))
+    }
+
+    func replyToEmail(id: String, body: String) async throws {
+        let request = ReplyEmailRequest(body: body)
+        let _: EmptyResponse = try await post(.emailReply(id: id), body: request)
+    }
+
+    func forwardEmail(id: String, to: [String], body: String) async throws {
+        let request = ForwardEmailRequest(to: to, body: body)
+        let _: EmptyResponse = try await post(.emailForward(id: id), body: request)
+    }
+
     // Email Intelligence
     func getRelationship(userId: String, contactEmail: String) async throws -> RelationshipIntelligence {
         return try await get(.emailRelationship(userId: userId, email: contactEmail))
@@ -140,12 +186,24 @@ class APIClient: APIClientProtocol {
         return try await get(.calendarEvents(start: start, end: end))
     }
 
+    func getCalendarEvent(id: String) async throws -> CalendarEvent {
+        return try await get(.calendarEvent(id: id))
+    }
+
     func getMeetingBrief(eventId: String) async throws -> MeetingBrief {
         return try await get(.calendarEventBrief(eventId: eventId))
     }
 
     func createEvent(event: CreateEventRequest) async throws -> CalendarEvent {
         return try await post(.calendarCreateEvent, body: event)
+    }
+
+    func updateEvent(id: String, event: CreateEventRequest) async throws -> CalendarEvent {
+        return try await put(.calendarUpdateEvent(id: id), body: event)
+    }
+
+    func deleteEvent(id: String) async throws {
+        let _: EmptyResponse = try await delete(.calendarDeleteEvent(id: id))
     }
 
     // Calendar Intelligence
@@ -196,8 +254,20 @@ class APIClient: APIClientProtocol {
         return try await get(.workflowTasks(status: status, priority: nil))
     }
 
+    func getTask(id: String) async throws -> Task {
+        return try await get(.workflowTask(id: id))
+    }
+
     func createTask(task: CreateTaskRequest) async throws -> Task {
         return try await post(.workflowCreateTask, body: task)
+    }
+
+    func updateTask(id: String, task: CreateTaskRequest) async throws -> Task {
+        return try await put(.workflowUpdateTask(id: id), body: task)
+    }
+
+    func deleteTask(id: String) async throws {
+        let _: EmptyResponse = try await delete(.workflowDeleteTask(id: id))
     }
 
     func updateTaskStatus(taskId: String, status: String) async throws {
@@ -335,6 +405,22 @@ class APIClient: APIClientProtocol {
         return try decoder.decode(U.self, from: data)
     }
 
+    private func delete<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+        guard let url = URL(string: baseURL + endpoint.path) else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        addAuthHeader(&request)
+
+        let (data, response) = try await session.data(for: request)
+        try validateResponse(response)
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(T.self, from: data)
+    }
+
     private func addAuthHeader(_ request: inout URLRequest) {
         if let token = getAuthToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -387,6 +473,15 @@ struct ConnectionStatus: Decodable {
 struct SendEmailRequest: Encodable {
     let to: [String]
     let subject: String
+    let body: String
+}
+
+struct ReplyEmailRequest: Encodable {
+    let body: String
+}
+
+struct ForwardEmailRequest: Encodable {
+    let to: [String]
     let body: String
 }
 

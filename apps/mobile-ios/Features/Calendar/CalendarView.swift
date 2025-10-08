@@ -1,14 +1,17 @@
 import SwiftUI
 
 struct CalendarView: View {
+    @StateObject private var viewModel: CalendarGridViewModel
+    @EnvironmentObject var container: DependencyContainer
     @State private var selectedDate = Date()
-    @State private var events: [CalendarEvent] = CalendarEvent.mockEvents
     @State private var showingScheduler = false
 
+    init(dependencies: DependencyContainer = .shared) {
+        self._viewModel = StateObject(wrappedValue: dependencies.makeCalendarViewModel())
+    }
+
     var todaysEvents: [CalendarEvent] {
-        events.filter { event in
-            Calendar.current.isDate(event.startTime, inSameDayAs: selectedDate)
-        }.sorted { $0.startTime < $1.startTime }
+        viewModel.events(for: selectedDate)
     }
 
     var body: some View {
@@ -26,7 +29,11 @@ struct CalendarView: View {
                             .bold()
                             .padding(.horizontal)
 
-                        if todaysEvents.isEmpty {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else if todaysEvents.isEmpty {
                             EmptyScheduleCard()
                         } else {
                             ForEach(todaysEvents) { event in
@@ -69,6 +76,9 @@ struct CalendarView: View {
             }
             .sheet(isPresented: $showingScheduler) {
                 Text("Smart Scheduler - Coming Soon")
+            }
+            .task {
+                await viewModel.loadEvents()
             }
         }
     }
