@@ -5,6 +5,7 @@ resume/.build
 dist/
 *.js.map
 *.d.ts.map
+*.tsbuildinfo
 
 # macOS
 .DS_Store
