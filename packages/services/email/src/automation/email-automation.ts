@@ -68,10 +68,20 @@ export class EmailAutomation {
           return await this.escalateToUser(email, triage);
 
         default:
+          logger.warn(
+            { emailId: email.id, strategy: triage.strategy.type },
+            'Unknown email handling strategy encountered'
+          );
+
+          // In development, throw error for unknown strategies to catch bugs early
+          if (process.env.NODE_ENV === 'development') {
+            throw new Error(`Unknown email strategy: ${triage.strategy.type}`);
+          }
+
           return {
             type: 'queue_for_review',
             confidence: 0.5,
-            reasoning: 'Unknown strategy - queuing for manual review',
+            reasoning: `Unknown strategy '${triage.strategy.type}' - queuing for manual review`,
           };
       }
     } catch (error) {

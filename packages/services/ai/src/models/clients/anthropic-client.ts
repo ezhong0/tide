@@ -22,16 +22,25 @@ export class AnthropicClient implements ModelClient {
     const startTime = Date.now();
 
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: options.maxTokens ?? 1000,
-        temperature: options.temperature ?? 0.7,
-        system: options.systemPrompt,
-        messages: [
-          { role: 'user', content: prompt },
-        ],
-        stop_sequences: options.stopSequences,
-      });
+      // Add timeout to prevent hanging requests (30 seconds default)
+      const timeout = options.timeout ?? 30000;
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`AI request timed out after ${timeout}ms`)), timeout)
+      );
+
+      const response = await Promise.race([
+        this.client.messages.create({
+          model: this.model,
+          max_tokens: options.maxTokens ?? 1000,
+          temperature: options.temperature ?? 0.7,
+          system: options.systemPrompt,
+          messages: [
+            { role: 'user', content: prompt },
+          ],
+          stop_sequences: options.stopSequences,
+        }),
+        timeoutPromise,
+      ]);
 
       const latency = Date.now() - startTime;
       const content = response.content[0]?.type === 'text' ? response.content[0].text : '';

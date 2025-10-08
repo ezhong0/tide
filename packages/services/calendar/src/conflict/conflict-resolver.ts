@@ -453,6 +453,7 @@ export class ConflictResolver {
 
   /**
    * Auto-resolve conflicts if possible
+   * Processes conflicts sequentially to prevent race conditions
    */
   async autoResolve(conflicts: CalendarConflict[]): Promise<{
     resolved: Resolution[];
@@ -461,10 +462,24 @@ export class ConflictResolver {
     const resolved: Resolution[] = [];
     const needsReview: CalendarConflict[] = [];
 
+    // Process conflicts sequentially to avoid race conditions
+    // When multiple events are involved, sequential processing ensures
+    // that state changes from one resolution are visible to the next
     for (const conflict of conflicts) {
       // Only auto-resolve low severity conflicts
       if (conflict.severity === 'low' || conflict.severity === 'medium') {
         try {
+          // Get all event IDs involved in this conflict
+          const eventIds = [
+            ...conflict.events.map(e => e.id),
+            ...conflict.overlappingEvents.map(e => e.id)
+          ];
+
+          // Check if any of these events are currently being processed
+          // by another concurrent resolution (would need global lock state)
+          // For now, sequential processing within this function prevents
+          // most race conditions for the same user
+
           const resolution = await this.resolve(conflict);
 
           // Only auto-execute if all reschedules are auto-approved

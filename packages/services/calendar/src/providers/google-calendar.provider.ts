@@ -155,11 +155,11 @@ export class GoogleCalendarProvider implements ICalendarProvider {
         location: event.location,
         start: {
           dateTime: event.start?.toISOString(),
-          timeZone: 'America/Los_Angeles', // Should be configurable
+          timeZone: event.timezone || 'UTC', // Use event timezone or UTC default
         },
         end: {
           dateTime: event.end?.toISOString(),
-          timeZone: 'America/Los_Angeles',
+          timeZone: event.timezone || 'UTC', // Use event timezone or UTC default
         },
         attendees: event.attendees?.map((a) => ({
           email: a.email,

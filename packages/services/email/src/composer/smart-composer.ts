@@ -310,9 +310,28 @@ Body: [email body]`;
       }
     }
 
+    // Sanitize generated body to prevent injection attacks
+    const sanitizeEmailContent = (content: string): string => {
+      return content
+        .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
+        .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframe tags
+        .replace(/javascript:/gi, '') // Remove javascript: protocol
+        .trim();
+    };
+
+    const body = bodyLines.join('\n').trim() ||
+      this.generateBody('detailed', request, {
+        preferredGreetings: [],
+        preferredClosings: [],
+        averageSentenceLength: 15,
+        formalityLevel: 0.6,
+        commonPhrases: [],
+        toneProfile: { professional: 0.7, casual: 0.2, formal: 0.1 }
+      }, '');
+
     return {
       subject,
-      body: bodyLines.join('\n').trim() || this.generateBody('detailed', request, { preferredGreetings: [], preferredClosings: [], averageSentenceLength: 15, formalityLevel: 0.6, commonPhrases: [], toneProfile: { professional: 0.7, casual: 0.2, formal: 0.1 } }, ''),
+      body: sanitizeEmailContent(body),
     };
   }
 
