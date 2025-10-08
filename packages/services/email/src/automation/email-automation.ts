@@ -188,12 +188,19 @@ export class EmailAutomation {
     });
 
     // Use concise version (index 1)
-    const acknowledgment = drafts.find((d) => d.approach === 'concise') || drafts[0];
+    const acknowledgment = drafts.find((d) => d.approach === 'concise') || drafts[0] || {
+      subject: `Re: ${email.subject}`,
+      body: 'Thank you, noted.',
+      approach: 'concise' as DraftApproach,
+      tone: 'professional',
+      length: 15,
+      confidence: 0.5,
+    };
 
     return {
       type: 'send',
       email: acknowledgment,
-      confidence: 0.9,
+      confidence: drafts.length > 0 ? 0.9 : 0.5,
       reasoning: 'Auto-acknowledging FYI email to confirm receipt',
     };
   }
@@ -316,7 +323,9 @@ export class EmailAutomation {
     if (durationMatch) {
       const value = parseInt(durationMatch[1]);
       const unit = durationMatch[2].toLowerCase();
-      duration = unit.startsWith('h') ? value * 60 : value;
+      const rawDuration = unit.startsWith('h') ? value * 60 : value;
+      // Validate duration: 15 minutes to 8 hours (480 minutes)
+      duration = Math.min(Math.max(rawDuration, 15), 480);
     }
 
     // Extract attendees from CC and To fields

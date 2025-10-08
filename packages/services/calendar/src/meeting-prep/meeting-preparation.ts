@@ -91,35 +91,47 @@ export class MeetingPreparation {
     }
   ): Promise<Partial<MeetingBrief>> {
     try {
-      const response = await fetch(`${this.aiServiceUrl}/api/v1/agents/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentType: 'calendar.prep',
-          input: {
-            meeting: {
-              title: meeting.title,
-              description: meeting.description,
-              start: meeting.start,
-              end: meeting.end,
-              attendees: meeting.attendees,
-            },
-            context: {
-              previousMeetings: context.previousMeetings,
-              relatedEmails: context.relatedEmails,
-              companyInfo: context.companyInfo,
-            },
-          },
-        }),
-      });
+      // Add timeout to prevent hanging requests (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      if (!response.ok) {
-        logger.warn({ status: response.status }, 'AI service call failed, using fallback');
-        return {};
+      try {
+        const response = await fetch(`${this.aiServiceUrl}/api/v1/agents/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentType: 'calendar.prep',
+            input: {
+              meeting: {
+                title: meeting.title,
+                description: meeting.description,
+                start: meeting.start,
+                end: meeting.end,
+                attendees: meeting.attendees,
+              },
+              context: {
+                previousMeetings: context.previousMeetings,
+                relatedEmails: context.relatedEmails,
+                companyInfo: context.companyInfo,
+              },
+            },
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          logger.warn({ status: response.status }, 'AI service call failed, using fallback');
+          return {};
+        }
+
+        const result = await response.json() as { output?: Partial<MeetingBrief> };
+        return result.output || {};
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
       }
-
-      const result = await response.json() as { output?: Partial<MeetingBrief> };
-      return result.output || {};
     } catch (error) {
       logger.error({ error }, 'Failed to call AI service, using fallback');
       return {};
@@ -265,20 +277,31 @@ export class MeetingPreparation {
           company: 'Unknown',
         };
 
-        const interactions = {
-          emailCount: Math.floor(Math.random() * 50), // Mock data
-          meetingCount: Math.floor(Math.random() * 20),
-          lastContact: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000),
-        };
+        // Only use mock data in development
+        const interactions = process.env.NODE_ENV === 'development'
+          ? {
+              emailCount: Math.floor(Math.random() * 50), // Mock data
+              meetingCount: Math.floor(Math.random() * 20),
+              lastContact: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000),
+            }
+          : {
+              emailCount: 0,
+              meetingCount: 0,
+              lastContact: undefined,
+            };
 
-        const importance = Math.random();
-        const relationshipStrength = Math.random();
+        const importance = process.env.NODE_ENV === 'development' ? Math.random() : 0.5;
+        const relationshipStrength = process.env.NODE_ENV === 'development' ? Math.random() : 0.5;
         const communicationStyle: 'formal' | 'casual' | 'direct' | 'collaborative' =
-          ['formal', 'casual', 'direct', 'collaborative'][
-            Math.floor(Math.random() * 4)
-          ] as any;
+          process.env.NODE_ENV === 'development'
+            ? (['formal', 'casual', 'direct', 'collaborative'][
+                Math.floor(Math.random() * 4)
+              ] as any)
+            : 'professional' as any;
 
-        const topics = ['project', 'budget', 'timeline', 'strategy'];
+        const topics = process.env.NODE_ENV === 'development'
+          ? ['project', 'budget', 'timeline', 'strategy']
+          : [];
 
         return {
           attendee,

@@ -61,15 +61,24 @@ export class GmailProvider implements IEmailProvider {
         query += ` label:${options.labels.join(' label:')}`;
       }
 
-      // Fetch message list
+      // Fetch message list with pagination support
       const response = await this.gmail.users.messages.list({
         userId: 'me',
         q: query.trim() || undefined,
         maxResults: options.limit || 50,
+        pageToken: options.pageToken || undefined,
       });
 
       if (!response.data.messages || response.data.messages.length === 0) {
         return [];
+      }
+
+      // Log pagination info
+      if (response.data.nextPageToken) {
+        logger.debug(
+          { userId: this.userId, nextPageToken: response.data.nextPageToken },
+          'More emails available - use nextPageToken for pagination'
+        );
       }
 
       // Fetch full message details in parallel

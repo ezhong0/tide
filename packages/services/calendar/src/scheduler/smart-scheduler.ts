@@ -82,6 +82,9 @@ export class SmartScheduler {
       commonSlots = this.intersectSlots(commonSlots, availabilities[i].slots);
     }
 
+    // Deduplicate slots to remove exact duplicates
+    commonSlots = this.deduplicateSlots(commonSlots);
+
     // Filter slots that are long enough for the meeting
     return commonSlots.filter((slot) => {
       const slotDuration = (slot.end.getTime() - slot.start.getTime()) / (1000 * 60);
@@ -144,6 +147,28 @@ export class SmartScheduler {
     }
 
     return merged;
+  }
+
+  /**
+   * Remove duplicate time slots (exact same start and end times)
+   */
+  private deduplicateSlots(slots: TimeSlot[]): TimeSlot[] {
+    if (slots.length === 0) {
+      return [];
+    }
+
+    const seen = new Set<string>();
+    const deduplicated: TimeSlot[] = [];
+
+    for (const slot of slots) {
+      const key = `${slot.start.getTime()}-${slot.end.getTime()}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        deduplicated.push(slot);
+      }
+    }
+
+    return deduplicated;
   }
 
   /**
@@ -327,7 +352,12 @@ export class SmartScheduler {
     const slots: TimeSlot[] = [];
     const current = new Date(start);
 
-    while (current < end) {
+    // Safety limit to prevent infinite loops (max 1000 slots)
+    const MAX_SLOTS = 1000;
+    let slotCount = 0;
+
+    while (current < end && slotCount < MAX_SLOTS) {
+      slotCount++;
       const hour = current.getHours();
 
       // Only generate slots during working hours
@@ -348,6 +378,13 @@ export class SmartScheduler {
 
       // Move to next 30-minute slot
       current.setMinutes(current.getMinutes() + 30);
+    }
+
+    if (slotCount >= MAX_SLOTS) {
+      logger.warn(
+        { start, end, slotsGenerated: slots.length },
+        'Reached maximum slot generation limit - date range may be too large'
+      );
     }
 
     return slots;

@@ -229,6 +229,8 @@ export class CalendarOptimizer {
       }
 
       // Check final gap
+      // Ensure currentTime doesn't exceed endOfDay (handles events that run past work hours)
+      currentTime = new Date(Math.min(currentTime.getTime(), endOfDay.getTime()));
       const finalGapMinutes =
         (endOfDay.getTime() - currentTime.getTime()) / (1000 * 60);
       if (finalGapMinutes >= 120) {
@@ -252,13 +254,16 @@ export class CalendarOptimizer {
 
     // Small meetings (< 5 people) are often more valuable
     const attendeeCount = event.attendees?.length || 0;
-    if (attendeeCount <= 5) {
-      value += 0.2;
-    }
+    // Validate attendee count is reasonable (1-1000 people)
+    if (attendeeCount > 0 && attendeeCount <= 1000) {
+      if (attendeeCount <= 5) {
+        value += 0.2;
+      }
 
-    // 1:1s are valuable
-    if (attendeeCount === 2) {
-      value += 0.1;
+      // 1:1s are valuable
+      if (attendeeCount === 2) {
+        value += 0.1;
+      }
     }
 
     // Meetings with important keywords

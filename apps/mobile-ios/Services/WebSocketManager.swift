@@ -334,7 +334,10 @@ struct AnyCodable: Codable {
         } else if let arrayValue = try? container.decode([AnyCodable].self) {
             value = arrayValue.map { $0.value }
         } else {
-            value = [:]
+            throw DecodingError.typeMismatch(
+                AnyCodable.self,
+                DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Unsupported type for AnyCodable")
+            )
         }
     }
 
