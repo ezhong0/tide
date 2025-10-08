@@ -103,6 +103,12 @@ export class SmartScheduler {
         // Check if there's overlap
         if (start < end) {
           intersections.push({ start, end });
+        } else if (start.getTime() === end.getTime()) {
+          // Log zero-duration slots for debugging (they're valid but unusual)
+          logger.debug('Zero-duration time slot detected during intersection', {
+            start: start.toISOString(),
+            end: end.toISOString(),
+          });
         }
       }
     }

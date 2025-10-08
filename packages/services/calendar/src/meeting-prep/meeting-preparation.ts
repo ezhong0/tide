@@ -1,6 +1,9 @@
 import { logger } from '@tide/logger';
+import { createSupabase } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type { CalendarEvent, Attendee } from '../types/index.js';
+
+const supabase = createSupabase();
 
 export interface ParticipantInfo {
   attendee: Attendee;
@@ -70,7 +73,85 @@ export interface MeetingBrief {
  * Meeting Preparation system that generates comprehensive briefs for meetings
  */
 export class MeetingPreparation {
-  constructor(private userId: UserId) {}
+  private aiServiceUrl: string;
+
+  constructor(private userId: UserId) {
+    this.aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:3003';
+  }
+
+  /**
+   * Call AI service to generate enhanced meeting brief
+   */
+  private async generateAIBrief(
+    meeting: CalendarEvent,
+    context: {
+      previousMeetings: any[];
+      relatedEmails: any[];
+      companyInfo: any;
+    }
+  ): Promise<Partial<MeetingBrief>> {
+    try {
+      const response = await fetch(`${this.aiServiceUrl}/api/v1/agents/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentType: 'calendar.prep',
+          input: {
+            meeting: {
+              title: meeting.title,
+              description: meeting.description,
+              start: meeting.start,
+              end: meeting.end,
+              attendees: meeting.attendees,
+            },
+            context: {
+              previousMeetings: context.previousMeetings,
+              relatedEmails: context.relatedEmails,
+              companyInfo: context.companyInfo,
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        logger.warn({ status: response.status }, 'AI service call failed, using fallback');
+        return {};
+      }
+
+      const result = await response.json() as { output?: Partial<MeetingBrief> };
+      return result.output || {};
+    } catch (error) {
+      logger.error({ error }, 'Failed to call AI service, using fallback');
+      return {};
+    }
+  }
+
+  /**
+   * Save meeting brief to database
+   */
+  private async saveBriefToDatabase(
+    eventId: string,
+    brief: MeetingBrief
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('calendar_events')
+        .update({
+          meeting_brief: brief as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', eventId)
+        .eq('user_id', this.userId);
+
+      if (error) {
+        logger.error({ error, eventId }, 'Failed to save meeting brief to database');
+      } else {
+        logger.info({ eventId }, 'Meeting brief saved to database');
+      }
+    } catch (error) {
+      logger.error({ error, eventId }, 'Error saving meeting brief');
+    }
+  }
 
   /**
    * Prepare comprehensive brief for a meeting
@@ -96,24 +177,35 @@ export class MeetingPreparation {
           this.gatherCompanyInfo(meeting.attendees || []),
         ]);
 
-      // Generate meeting summary and objectives
-      const summary = this.generateSummary(meeting);
-      const objectives = this.deriveObjectives(meeting, previousMeetings);
+      // Try to get AI-generated insights
+      const aiEnhanced = await this.generateAIBrief(meeting, {
+        previousMeetings,
+        relatedEmails,
+        companyInfo,
+      });
 
-      // Create suggested agenda
-      const agenda = this.createAgenda(meeting, previousMeetings);
+      // Generate meeting summary and objectives (use AI or fallback)
+      const summary = aiEnhanced.summary || this.generateSummary(meeting);
+      const objectives =
+        aiEnhanced.objectives || this.deriveObjectives(meeting, previousMeetings);
 
-      // Generate talking points
-      const talkingPoints = this.generateTalkingPoints(meeting, previousMeetings);
+      // Create suggested agenda (use AI or fallback)
+      const agenda = aiEnhanced.agenda || this.createAgenda(meeting, previousMeetings);
 
-      // Generate strategic questions
-      const suggestedQuestions = this.generateQuestions(meeting, participants);
+      // Generate talking points (use AI or fallback)
+      const talkingPoints =
+        aiEnhanced.talkingPoints || this.generateTalkingPoints(meeting, previousMeetings);
 
-      // Anticipate objections
-      const possibleObjections = this.anticipateObjections(meeting);
+      // Generate strategic questions (use AI or fallback)
+      const suggestedQuestions =
+        aiEnhanced.suggestedQuestions || this.generateQuestions(meeting, participants);
 
-      // Define success metrics
-      const successMetrics = this.defineSuccess(meeting);
+      // Anticipate objections (use AI or fallback)
+      const possibleObjections =
+        aiEnhanced.possibleObjections || this.anticipateObjections(meeting);
+
+      // Define success metrics (use AI or fallback)
+      const successMetrics = aiEnhanced.successMetrics || this.defineSuccess(meeting);
 
       // Estimate preparation time
       const preparationTime = this.estimatePreparationTime(meeting, agenda);
@@ -136,12 +228,16 @@ export class MeetingPreparation {
         preparationTime,
       };
 
+      // Save brief to database
+      await this.saveBriefToDatabase(meeting.id, brief);
+
       logger.info(
         {
           userId: this.userId,
           meetingId: meeting.id,
           agendaItems: agenda.length,
           participantCount: participants.length,
+          aiEnhanced: !!aiEnhanced.summary,
         },
         'Meeting brief prepared'
       );
@@ -203,14 +299,51 @@ export class MeetingPreparation {
   private async findPreviousMeetings(
     meeting: CalendarEvent
   ): Promise<{ date: Date; summary: string; outcomes: string[] }[]> {
-    // In production, would query calendar history
-    return [
-      {
-        date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-        summary: 'Previous discussion about project timeline',
-        outcomes: ['Agreed on Q2 delivery', 'Identified resource gaps', 'Scheduled follow-up'],
-      },
-    ];
+    try {
+      // Get current meeting attendees
+      const currentAttendees = meeting.attendees?.map((a) => a.email) || [];
+
+      if (currentAttendees.length === 0) {
+        return [];
+      }
+
+      // Query past meetings with same attendees (in the last 90 days)
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const { data: pastEvents, error } = await supabase
+        .from('calendar_events')
+        .select('title, start_time, description, attendees, meeting_brief')
+        .eq('user_id', this.userId)
+        .lt('end_time', new Date().toISOString())
+        .gte('start_time', ninetyDaysAgo.toISOString())
+        .order('start_time', { ascending: false })
+        .limit(20);
+
+      if (error) {
+        logger.error({ error, userId: this.userId }, 'Failed to fetch previous meetings');
+        return [];
+      }
+
+      // Filter to meetings with overlapping attendees
+      const relevantMeetings =
+        pastEvents?.filter((event: any) => {
+          const eventAttendees = (event.attendees as Array<{ email: string }>)?.map((a) => a.email) || [];
+          const overlap = currentAttendees.filter((email) => eventAttendees.includes(email));
+          return overlap.length >= Math.min(2, currentAttendees.length * 0.5);
+        }) || [];
+
+      return relevantMeetings.slice(0, 5).map((event: any) => ({
+        date: new Date(event.start_time),
+        summary: event.title,
+        outcomes: event.meeting_brief
+          ? [(event.meeting_brief as { summary?: string }).summary || 'No summary available']
+          : [],
+      }));
+    } catch (error) {
+      logger.error({ error, userId: this.userId }, 'Error finding previous meetings');
+      return [];
+    }
   }
 
   /**
@@ -219,14 +352,48 @@ export class MeetingPreparation {
   private async findRelatedEmails(
     meeting: CalendarEvent
   ): Promise<{ date: Date; subject: string; summary: string }[]> {
-    // In production, would query email database
-    return [
-      {
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-        subject: 'Re: Meeting agenda items',
-        summary: 'Discussed adding budget review to agenda',
-      },
-    ];
+    try {
+      // Extract attendee emails
+      const attendeeEmails = meeting.attendees?.map((a) => a.email) || [];
+
+      if (attendeeEmails.length === 0) {
+        return [];
+      }
+
+      // Query emails from/to attendees or with matching subject keywords
+      // Escape special SQL ILIKE characters to prevent injection
+      const escapeSqlLike = (str: string): string => {
+        return str.replace(/[%_]/g, '\\$&');
+      };
+
+      const safeTitle = escapeSqlLike(meeting.title.substring(0, 20));
+
+      const { data: emails, error } = await supabase
+        .from('email_messages')
+        .select('subject, received_at, ai_summary, from_address')
+        .eq('user_id', this.userId)
+        .or(
+          `from_address.in.(${attendeeEmails.join(',')}),subject.ilike.%${safeTitle}%`
+        )
+        .order('received_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        logger.error({ error, userId: this.userId }, 'Failed to fetch related emails');
+        return [];
+      }
+
+      return (
+        emails?.map((email: any) => ({
+          date: new Date(email.received_at),
+          subject: email.subject || 'No subject',
+          summary: email.ai_summary || 'No summary available',
+        })) || []
+      );
+    } catch (error) {
+      logger.error({ error, userId: this.userId }, 'Error finding related emails');
+      return [];
+    }
   }
 
   /**

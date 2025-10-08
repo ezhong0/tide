@@ -133,7 +133,8 @@ export class CalendarOptimizer {
 
     // Calculate total meeting time
     const totalMeetingTime = events.reduce((sum, event) => {
-      const duration = (event.end.getTime() - event.start.getTime()) / (1000 * 60);
+      // Ensure duration is never negative (in case of malformed events)
+      const duration = Math.max(0, (event.end.getTime() - event.start.getTime()) / (1000 * 60));
       return sum + duration;
     }, 0);
 

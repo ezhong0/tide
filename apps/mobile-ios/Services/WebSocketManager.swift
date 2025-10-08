@@ -22,6 +22,9 @@ class WebSocketManager: ObservableObject {
     private var heartbeatTimer: Timer?
     private let heartbeatInterval: TimeInterval = 30
 
+    // Track reconnection task to prevent memory leaks
+    private var reconnectionTask: Task<Void, Never>?
+
     init(baseURL: String = "ws://localhost:4002") {
         self.baseURL = baseURL
         self.urlSession = URLSession(configuration: .default)
@@ -76,11 +79,16 @@ class WebSocketManager: ObservableObject {
     func reconnect() {
         disconnect()
 
+        // Cancel any existing reconnection task to prevent memory leaks
+        reconnectionTask?.cancel()
+
         if let token = accessToken {
             // Reconnect after a delay
-            Task {
+            reconnectionTask = Task {
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                await connect(token: token)
+                if !Task.isCancelled {
+                    await connect(token: token)
+                }
             }
         }
     }
