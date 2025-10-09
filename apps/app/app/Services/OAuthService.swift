@@ -19,7 +19,7 @@ final class OAuthService: NSObject, ObservableObject {
 
     // MARK: - Initialization
 
-    init(supabaseManager: SupabaseManager = .shared) {
+    init(supabaseManager: SupabaseManager) {
         self.supabaseManager = supabaseManager
         super.init()
     }
@@ -257,8 +257,8 @@ final class OAuthService: NSObject, ObservableObject {
         )
 
         // Get Supabase session token for authentication
-        guard let session = try? await supabaseManager.getCurrentSession(),
-              let accessToken = session?.accessToken else {
+        guard let session = try await supabaseManager.getCurrentSession(),
+              let accessToken = session.accessToken else {
             throw OAuthError.tokenExchangeFailed
         }
 
