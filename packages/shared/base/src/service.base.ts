@@ -11,6 +11,7 @@
  */
 
 import type { Express, Request, Response } from 'express';
+import type { Server } from 'http';
 import { createLogger } from '@tide/logger';
 import type { Logger } from 'pino';
 
@@ -27,7 +28,7 @@ export interface HealthStatus {
   version: string;
   timestamp: string;
   uptime: number;
-  checks?: Record<string, { status: string; details?: any }>;
+  checks?: Record<string, { status: string; details?: unknown }>;
 }
 
 /**
@@ -38,7 +39,7 @@ export abstract class ServiceBase {
   protected readonly logger: Logger;
   protected readonly config: ServiceConfig;
   protected readonly resources: Set<Resource> = new Set();
-  private server?: any;
+  private server?: Server;
   private isShuttingDown = false;
 
   constructor(config: ServiceConfig) {

@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { Request, Response, NextFunction } from 'express';
 
 // OAuth Tokens validation
 export const OAuthTokensSchema = z.object({
@@ -107,7 +108,7 @@ export const PopularSearchesSchema = z.object({
  * Creates middleware that validates request data against a schema
  */
 export function validate<T extends z.ZodType>(schema: T, source: 'body' | 'params' | 'query' = 'body') {
-  return async (req: any, res: any, next: any) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = source === 'body' ? req.body : source === 'params' ? req.params : req.query;
       const validated = await schema.parseAsync(data);
