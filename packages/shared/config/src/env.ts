@@ -10,9 +10,10 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
   // Supabase (Core Infrastructure)
-  SUPABASE_URL: z.string().url(),
-  SUPABASE_ANON_KEY: z.string(), // For mobile apps
-  SUPABASE_SERVICE_ROLE_KEY: z.string(), // For backend services (bypasses RLS)
+  // Made optional to allow services that don't need Supabase (e.g., AI service)
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_ANON_KEY: z.string().optional(), // For mobile apps
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(), // For backend services (bypasses RLS)
   SUPABASE_JWT_SECRET: z.string().optional(),
 
   // Database (Optional - services use Supabase client)

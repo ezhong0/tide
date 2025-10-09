@@ -13,9 +13,10 @@ const EnvSchema = zod_1.z.object({
     PORT: zod_1.z.string().transform(Number).pipe(zod_1.z.number().int().positive()).default('4000'),
     LOG_LEVEL: zod_1.z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     // Supabase (Core Infrastructure)
-    SUPABASE_URL: zod_1.z.string().url(),
-    SUPABASE_ANON_KEY: zod_1.z.string(), // For mobile apps
-    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string(), // For backend services (bypasses RLS)
+    // Made optional to allow services that don't need Supabase (e.g., AI service)
+    SUPABASE_URL: zod_1.z.string().url().optional(),
+    SUPABASE_ANON_KEY: zod_1.z.string().optional(), // For mobile apps
+    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().optional(), // For backend services (bypasses RLS)
     SUPABASE_JWT_SECRET: zod_1.z.string().optional(),
     // Database (Optional - services use Supabase client)
     DATABASE_URL: zod_1.z.string().url().optional(),

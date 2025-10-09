@@ -6,9 +6,9 @@ declare const EnvSchema: z.ZodObject<{
     NODE_ENV: z.ZodDefault<z.ZodEnum<["development", "test", "staging", "production"]>>;
     PORT: z.ZodDefault<z.ZodPipeline<z.ZodEffects<z.ZodString, number, string>, z.ZodNumber>>;
     LOG_LEVEL: z.ZodDefault<z.ZodEnum<["debug", "info", "warn", "error"]>>;
-    SUPABASE_URL: z.ZodString;
-    SUPABASE_ANON_KEY: z.ZodString;
-    SUPABASE_SERVICE_ROLE_KEY: z.ZodString;
+    SUPABASE_URL: z.ZodOptional<z.ZodString>;
+    SUPABASE_ANON_KEY: z.ZodOptional<z.ZodString>;
+    SUPABASE_SERVICE_ROLE_KEY: z.ZodOptional<z.ZodString>;
     SUPABASE_JWT_SECRET: z.ZodOptional<z.ZodString>;
     DATABASE_URL: z.ZodOptional<z.ZodString>;
     DATABASE_POOL_MIN: z.ZodDefault<z.ZodPipeline<z.ZodEffects<z.ZodString, number, string>, z.ZodNumber>>;
@@ -50,9 +50,6 @@ declare const EnvSchema: z.ZodObject<{
     NODE_ENV: "development" | "test" | "staging" | "production";
     PORT: number;
     LOG_LEVEL: "debug" | "info" | "warn" | "error";
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    SUPABASE_SERVICE_ROLE_KEY: string;
     DATABASE_POOL_MIN: number;
     DATABASE_POOL_MAX: number;
     DATABASE_SSL: boolean;
@@ -74,6 +71,9 @@ declare const EnvSchema: z.ZodObject<{
     ALLOWED_ORIGINS: string;
     RATE_LIMIT_WINDOW_MS: number;
     RATE_LIMIT_MAX_REQUESTS: number;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_ANON_KEY?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
     SUPABASE_JWT_SECRET?: string | undefined;
     DATABASE_URL?: string | undefined;
     REDIS_URL?: string | undefined;
@@ -91,12 +91,12 @@ declare const EnvSchema: z.ZodObject<{
     SENTRY_DSN?: string | undefined;
     DATADOG_API_KEY?: string | undefined;
 }, {
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    SUPABASE_SERVICE_ROLE_KEY: string;
     NODE_ENV?: "development" | "test" | "staging" | "production" | undefined;
     PORT?: string | undefined;
     LOG_LEVEL?: "debug" | "info" | "warn" | "error" | undefined;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_ANON_KEY?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
     SUPABASE_JWT_SECRET?: string | undefined;
     DATABASE_URL?: string | undefined;
     DATABASE_POOL_MIN?: string | undefined;
@@ -143,9 +143,6 @@ export declare const env: {
     NODE_ENV: "development" | "test" | "staging" | "production";
     PORT: number;
     LOG_LEVEL: "debug" | "info" | "warn" | "error";
-    SUPABASE_URL: string;
-    SUPABASE_ANON_KEY: string;
-    SUPABASE_SERVICE_ROLE_KEY: string;
     DATABASE_POOL_MIN: number;
     DATABASE_POOL_MAX: number;
     DATABASE_SSL: boolean;
@@ -167,6 +164,9 @@ export declare const env: {
     ALLOWED_ORIGINS: string;
     RATE_LIMIT_WINDOW_MS: number;
     RATE_LIMIT_MAX_REQUESTS: number;
+    SUPABASE_URL?: string | undefined;
+    SUPABASE_ANON_KEY?: string | undefined;
+    SUPABASE_SERVICE_ROLE_KEY?: string | undefined;
     SUPABASE_JWT_SECRET?: string | undefined;
     DATABASE_URL?: string | undefined;
     REDIS_URL?: string | undefined;
