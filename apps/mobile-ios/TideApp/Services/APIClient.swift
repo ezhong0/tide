@@ -268,19 +268,19 @@ final class APIClient: APIClientProtocol {
 
     // MARK: - Tasks
 
-    func getTasks(status: String? = nil) async throws -> [Task] {
+    func getTasks(status: String? = nil) async throws -> [TaskAPIModel] {
         return try await get(.workflowTasks(status: status, priority: nil))
     }
 
-    func getTask(id: String) async throws -> Task {
+    func getTask(id: String) async throws -> TaskAPIModel {
         return try await get(.workflowTask(id: id))
     }
 
-    func createTask(task: CreateTaskRequest) async throws -> Task {
+    func createTask(task: CreateTaskRequest) async throws -> TaskAPIModel {
         return try await post(.workflowCreateTask, body: task)
     }
 
-    func updateTask(id: String, task: CreateTaskRequest) async throws -> Task {
+    func updateTask(id: String, task: CreateTaskRequest) async throws -> TaskAPIModel {
         return try await put(.workflowUpdateTask(id: id), body: task)
     }
 

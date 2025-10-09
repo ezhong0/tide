@@ -203,14 +203,6 @@ class LoginViewModel: BaseViewModel {
     }
 }
 
-// MARK: - OAuth Provider
-
-enum OAuthProvider {
-    case google
-    case microsoft
-    case apple
-}
-
 // MARK: - Login Error
 
 enum LoginError: LocalizedError {

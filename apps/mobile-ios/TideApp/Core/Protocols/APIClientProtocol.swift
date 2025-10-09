@@ -14,6 +14,7 @@ protocol APIClientProtocol {
     func sendChatMessage(message: String, conversationId: String?) async throws -> ChatResponse
     func getConversations() async throws -> [Conversation]
     func getConversationMessages(conversationId: String) async throws -> [ChatMessage]
+    func deleteConversation(id: String) async throws
 
     // MARK: - Email
     func getEmails(category: String?) async throws -> [Email]

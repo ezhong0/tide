@@ -102,17 +102,7 @@ struct DraftResponse: Codable {
     let generatedAt: Date
 }
 
-// Email model for draft context
-struct Email: Codable, Identifiable {
-    let id: String
-    let from: String
-    let to: [String]
-    let subject: String
-    let body: String
-    let receivedAt: Date
-    let category: String?
-    let priority: Int?
-}
+// Email model imported from canonical Email.swift
 
 struct RelationshipIntelligence: Codable, Identifiable {
     let id: String

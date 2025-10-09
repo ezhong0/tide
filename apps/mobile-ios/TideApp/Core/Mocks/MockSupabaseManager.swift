@@ -24,7 +24,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Authentication
     func signIn(email: String, password: String) async throws -> Session {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -32,14 +32,14 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
         let mockUser = User(
             id: UUID(),
             aud: "authenticated",
-            role: "authenticated",
+            role: nil,
             email: email,
             emailConfirmedAt: Date(),
-            phone: nil,
+            phone: nil as String?,
             confirmedAt: Date(),
             lastSignInAt: Date(),
             appMetadata: [:],
-            userMetadata: ["full_name": .string("Mock User")],
+            userMetadata: ["full_name": AnyJSON.string("Mock User")],
             identities: [],
             createdAt: Date(),
             updatedAt: Date()
@@ -59,7 +59,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func signUp(email: String, password: String, data: [String: AnyJSON]?) async throws -> Session {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -67,10 +67,10 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
         let mockUser = User(
             id: UUID(),
             aud: "authenticated",
-            role: "authenticated",
+            role: nil,
             email: email,
             emailConfirmedAt: Date(),
-            phone: nil,
+            phone: nil as String?,
             confirmedAt: Date(),
             lastSignInAt: Date(),
             appMetadata: [:],
@@ -94,7 +94,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func signInWithGoogle() async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -102,7 +102,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func signInWithMicrosoft() async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -110,7 +110,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func handleOAuthCallback(url: URL) async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -118,7 +118,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func signOut() async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -127,7 +127,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func getCurrentSession() async throws -> Session? {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -147,27 +147,33 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     // MARK: - User Profile
+    func getCurrentUserId() async -> String? {
+        return currentUser?.id.uuidString
+    }
+
     func fetchUserProfile() async throws -> UserProfile {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
 
         return UserProfile(
-            id: currentUser?.id.uuidString ?? UUID().uuidString,
+            id: String(describing: currentUser?.id ?? UUID()),
+            email: currentUser?.email ?? "mock@example.com",
             fullName: "Mock User",
             avatarUrl: nil,
-            primaryProvider: "google",
+            primaryProvider: "mock",
             timezone: "UTC",
             language: "en",
-            theme: "light",
+            theme: "system",
+            preferences: [:],
             createdAt: Date(),
             updatedAt: Date()
         )
     }
 
     func updateUserProfile(_ profile: UserProfile) async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -175,7 +181,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Conversations
     func fetchConversations() async throws -> [DBConversation] {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -183,7 +189,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
         return [
             DBConversation(
                 id: UUID().uuidString,
-                userId: currentUser?.id.uuidString ?? "",
+                userId: String(describing: currentUser?.id ?? UUID()),
                 title: "Mock Conversation",
                 summary: "A mock conversation for testing",
                 messageCount: 2,
@@ -195,14 +201,14 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func createConversation(title: String) async throws -> DBConversation {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
 
         return DBConversation(
             id: UUID().uuidString,
-            userId: currentUser?.id.uuidString ?? "",
+            userId: String(describing: currentUser?.id ?? UUID()),
             title: title,
             summary: nil,
             messageCount: 0,
@@ -213,7 +219,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func fetchMessages(conversationId: String) async throws -> [DBMessage] {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -232,7 +238,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func sendMessage(conversationId: String, content: String, role: String) async throws -> DBMessage {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -265,7 +271,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Calendar Events
     func fetchCalendarEvents(from: Date, to: Date) async throws -> [DBCalendarEvent] {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -273,7 +279,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
         return [
             DBCalendarEvent(
                 id: UUID().uuidString,
-                userId: currentUser?.id.uuidString ?? "",
+                userId: String(describing: currentUser?.id ?? UUID()),
                 provider: "google",
                 title: "Mock Event",
                 description: "A mock calendar event",
@@ -288,7 +294,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
 
     // MARK: - Tasks
     func fetchTasks(status: DBTaskStatus?) async throws -> [DBTask] {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
@@ -296,7 +302,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
         return [
             DBTask(
                 id: UUID().uuidString,
-                userId: currentUser?.id.uuidString ?? "",
+                userId: String(describing: currentUser?.id ?? UUID()),
                 title: "Mock Task",
                 description: "A mock task for testing",
                 status: "pending",
@@ -309,14 +315,14 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func createTask(title: String, description: String?, dueAt: Date?) async throws -> DBTask {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }
 
         return DBTask(
             id: UUID().uuidString,
-            userId: currentUser?.id.uuidString ?? "",
+            userId: String(describing: currentUser?.id ?? UUID()),
             title: title,
             description: description,
             status: "pending",
@@ -328,7 +334,7 @@ final class MockSupabaseManager: ObservableObject, SupabaseManagerProtocol {
     }
 
     func updateTaskStatus(taskId: String, status: DBTaskStatus) async throws {
-        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
         if shouldFail {
             throw AuthError.notAuthenticated
         }

@@ -18,6 +18,7 @@
     "@tide/database": "workspace:*",
     "@tide/errors": "workspace:*",
     "@tide/logger": "workspace:*",
+    "@tide/middleware": "workspace:*",
     "@tide/types": "workspace:*",
     "@tide/validation": "workspace:*",
     "cors": "^2.8.5",

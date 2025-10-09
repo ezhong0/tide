@@ -6,7 +6,12 @@
 import SwiftUI
 
 struct DailySnapshotView: View {
-    @StateObject private var viewModel = DailySnapshotViewModel()
+    @StateObject private var viewModel: DailySnapshotViewModel
+    @EnvironmentObject var container: DependencyContainer
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: dependencies.makeDailySnapshotViewModel())
+    }
 
     var body: some View {
         ScrollView {
@@ -48,7 +53,7 @@ struct DailySnapshotView: View {
                     SectionHeader(title: "Today's Meetings", icon: "calendar")
 
                     ForEach(viewModel.meetingPreviews) { meeting in
-                        MeetingBriefCard(meeting: meeting)
+                        MeetingPreviewCard(meeting: meeting)
                     }
                 }
 
@@ -346,9 +351,9 @@ struct RecommendationView: View {
     }
 }
 
-// MARK: - Meeting Brief Card
+// MARK: - Meeting Preview Card
 
-struct MeetingBriefCard: View {
+struct MeetingPreviewCard: View {
     let meeting: MeetingPreview
 
     var body: some View {

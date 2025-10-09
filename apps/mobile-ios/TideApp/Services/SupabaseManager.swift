@@ -4,10 +4,14 @@
  */
 
 import Foundation
+import Supabase
 
 @MainActor
-final class SupabaseManager {
+final class SupabaseManager: ObservableObject, SupabaseManagerProtocol {
     static let shared = SupabaseManager()
+
+    @Published var currentUser: User?
+    @Published var isAuthenticated: Bool = false
 
     private let baseURL: String
     private let anonKey: String
@@ -16,6 +20,100 @@ final class SupabaseManager {
         // TODO: Move to environment configuration
         self.baseURL = ProcessInfo.processInfo.environment["SUPABASE_URL"] ?? "https://ozrocykjomgcuphicqpg.supabase.co"
         self.anonKey = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"] ?? ""
+    }
+
+    // MARK: - Protocol Requirements (Stub implementations)
+
+    func signIn(email: String, password: String) async throws -> Session {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func signUp(email: String, password: String, data: [String: AnyJSON]?) async throws -> Session {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func signInWithGoogle() async throws {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func signInWithMicrosoft() async throws {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func handleOAuthCallback(url: URL) async throws {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func signOut() async throws {
+        currentUser = nil
+        isAuthenticated = false
+    }
+
+    func getCurrentSession() async throws -> Session? {
+        return nil
+    }
+
+    func fetchUserProfile() async throws -> UserProfile {
+        guard let user = currentUser else {
+            throw SupabaseError.unauthorized
+        }
+        return UserProfile(
+            id: user.id.uuidString,
+            email: user.email ?? "",
+            fullName: user.userMetadata["full_name"]?.value as? String ?? "User",
+            avatarUrl: user.userMetadata["avatar_url"]?.value as? String,
+            primaryProvider: "supabase",
+            timezone: "UTC",
+            language: "en",
+            theme: "system",
+            preferences: [:],
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        )
+    }
+
+    func updateUserProfile(_ profile: UserProfile) async throws {
+        // Stub implementation
+    }
+
+    func fetchConversations() async throws -> [DBConversation] {
+        return []
+    }
+
+    func createConversation(title: String) async throws -> DBConversation {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func fetchMessages(conversationId: String) async throws -> [DBMessage] {
+        return []
+    }
+
+    func sendMessage(conversationId: String, content: String, role: String) async throws -> DBMessage {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func subscribeToMessages(conversationId: String, onMessage: @escaping (DBMessage) -> Void) -> RealtimeChannel {
+        fatalError("Not implemented")
+    }
+
+    func unsubscribe(channel: RealtimeChannel) {
+        // Stub implementation
+    }
+
+    func fetchCalendarEvents(from: Date, to: Date) async throws -> [DBCalendarEvent] {
+        return []
+    }
+
+    func fetchTasks(status: DBTaskStatus?) async throws -> [DBTask] {
+        return []
+    }
+
+    func createTask(title: String, description: String?, dueAt: Date?) async throws -> DBTask {
+        throw SupabaseError.serverError("Not implemented")
+    }
+
+    func updateTaskStatus(taskId: String, status: DBTaskStatus) async throws {
+        // Stub implementation
     }
 
     // MARK: - User
@@ -103,9 +201,29 @@ final class SupabaseManager {
 struct UserProfile: Codable {
     let id: String
     let email: String
-    let name: String
-    let preferences: [String: String]
+    let fullName: String
+    let avatarUrl: String?
+    let primaryProvider: String
+    var timezone: String
+    var language: String
+    var theme: String
+    var preferences: [String: String]
     let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case email
+        case fullName = "full_name"
+        case avatarUrl = "avatar_url"
+        case primaryProvider = "primary_provider"
+        case timezone
+        case language
+        case theme
+        case preferences
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
 }
 
 struct SupabaseSubscription {

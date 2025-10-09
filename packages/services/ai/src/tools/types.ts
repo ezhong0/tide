@@ -2,8 +2,6 @@
  * Tool System Types for GPT-5 Function Calling
  */
 
-import type { Request } from 'express';
-
 /**
  * Context provided to tools during execution
  */
@@ -34,7 +32,7 @@ export interface TideTool {
  */
 export interface ParameterDefinition {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object';
-  description: string;
+  description?: string;
   enum?: string[];
   items?: ParameterDefinition;
   properties?: Record<string, ParameterDefinition>;

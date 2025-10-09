@@ -76,40 +76,7 @@ struct PendingDecision: Codable, Identifiable {
     }
 }
 
-struct DecisionContext: Codable {
-    let background: String
-    let stakeholders: [String]
-    let impact: Impact
-    let historicalContext: String?
-    let relatedDecisions: [String]?
-    let financialImplications: FinancialImplications?
-
-    enum Impact: String, Codable {
-        case low
-        case medium
-        case high
-    }
-
-    struct FinancialImplications: Codable {
-        let amount: Double
-        let currency: String
-    }
-}
-
-struct AIRecommendation: Codable {
-    let recommendation: Recommendation
-    let reasoning: String
-    let confidence: Double
-    let alternatives: [String]?
-    let risks: [String]?
-
-    enum Recommendation: String, Codable {
-        case approve
-        case decline
-        case discuss
-        case `defer`
-    }
-}
+// DecisionContext and AIRecommendation are defined in Decision.swift
 
 struct MeetingPreview: Codable, Identifiable {
     let id: String

@@ -13,9 +13,9 @@ final class SyncEngine {
 
     // MARK: - Properties
 
-    private let cacheManager: CacheManagerProtocol
-    private let offlineQueue: OfflineQueueProtocol
-    private let networkMonitor: NetworkMonitorProtocol
+    private let cacheManager: CacheManager
+    private let offlineQueue: OfflineQueue
+    private let networkMonitor: NetworkMonitor
 
     private var isSyncing = false
     private var lastSyncDate: Date?
@@ -23,23 +23,14 @@ final class SyncEngine {
     // MARK: - Initializer
 
     init(
-        cacheManager: CacheManagerProtocol,
-        offlineQueue: OfflineQueueProtocol,
-        networkMonitor: NetworkMonitorProtocol
+        cacheManager: CacheManager = .shared,
+        offlineQueue: OfflineQueue = .shared,
+        networkMonitor: NetworkMonitor = .shared
     ) {
         self.cacheManager = cacheManager
         self.offlineQueue = offlineQueue
         self.networkMonitor = networkMonitor
         observeNetworkChanges()
-    }
-
-    // Convenience init for backward compatibility with .shared
-    private convenience init() {
-        self.init(
-            cacheManager: CacheManager.shared,
-            offlineQueue: OfflineQueue.shared,
-            networkMonitor: NetworkMonitor.shared
-        )
     }
 
     // MARK: - Public API

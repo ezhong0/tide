@@ -148,7 +148,7 @@ struct EmailInboxView: View {
             .padding(.horizontal, Design.Spacing.md)
             .padding(.vertical, Design.Spacing.sm)
         }
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
         .shadow(
             color: Design.Shadow.sm.color,
             radius: Design.Shadow.sm.radius,

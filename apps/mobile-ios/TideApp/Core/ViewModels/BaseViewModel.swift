@@ -85,16 +85,3 @@ class BaseViewModel: ObservableObject {
         error = nil
     }
 }
-
-// MARK: - Auth Error
-
-enum AuthError: LocalizedError {
-    case notAuthenticated
-
-    var errorDescription: String? {
-        switch self {
-        case .notAuthenticated:
-            return "You must be logged in to perform this action."
-        }
-    }
-}

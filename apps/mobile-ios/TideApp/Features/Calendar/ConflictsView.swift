@@ -25,7 +25,7 @@ struct ConflictsView: View {
             ScrollView {
                 LazyVStack(spacing: Design.Spacing.md) {
                     ForEach(viewModel.conflicts) { conflict in
-                        ConflictCard(conflict: conflict)
+                        EventConflictCard(conflict: conflict)
                             .onTapGesture {
                                 // Navigate to first event in conflict
                                 navigationState.calendarPath.append(CalendarDestination.detail(eventId: conflict.events.first?.id ?? ""))
@@ -74,12 +74,12 @@ struct ConflictsView: View {
             Spacer()
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
     }
 }
 
-// MARK: - Conflict Card
-struct ConflictCard: View {
+// MARK: - Event Conflict Card
+struct EventConflictCard: View {
     let conflict: EventConflict
 
     var body: some View {
@@ -132,7 +132,7 @@ struct ConflictCard: View {
             }
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.secondary)
+        .background(Design.ColorHelpers.Background.secondary)
         .cornerRadius(Design.CornerRadius.lg)
         .overlay(
             RoundedRectangle(cornerRadius: Design.CornerRadius.lg)

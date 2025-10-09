@@ -122,13 +122,13 @@ struct FilterChip: View {
                     .font(Design.Typography.Caption.semibold)
                     .padding(.horizontal, Design.Spacing.xxs)
                     .padding(.vertical, 2)
-                    .background(isSelected ? Color.white.opacity(0.3) : Design.Colors.Border.light)
+                    .background(isSelected ? Color.white.opacity(0.3) : Design.ColorHelpers.Border.light)
                     .cornerRadius(Design.CornerRadius.sm)
             }
         }
         .padding(.horizontal, Design.Spacing.md)
         .padding(.vertical, Design.Spacing.xs)
-        .background(isSelected ? Design.Colors.Semantic.primary : Design.Colors.Background.secondary)
+        .background(isSelected ? Design.Colors.Semantic.primary : Design.ColorHelpers.Background.secondary)
         .foregroundColor(isSelected ? .white : Design.Colors.Text.primary)
         .cornerRadius(Design.CornerRadius.xl)
         .accessibilityElement(children: .combine)
@@ -159,7 +159,7 @@ struct TaskSectionHeader: View {
             Spacer()
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(status.title) section")
         .accessibilityValue("\(count) tasks")
@@ -255,7 +255,7 @@ struct TaskRow: View {
                 .frame(width: 8, height: 8)
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.secondary)
+        .background(Design.ColorHelpers.Background.secondary)
         .cornerRadius(Design.CornerRadius.md)
         .padding(.horizontal, Design.Spacing.md)
         .padding(.vertical, Design.Spacing.xxs)

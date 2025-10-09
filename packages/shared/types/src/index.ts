@@ -9,3 +9,6 @@ export * from './events';
 
 // Re-export contracts
 export * from '@tide/contracts';
+
+// Express type augmentation
+import './express';

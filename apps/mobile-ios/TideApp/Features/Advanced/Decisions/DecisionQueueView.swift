@@ -6,7 +6,15 @@
 import SwiftUI
 
 struct DecisionQueueView: View {
-    @StateObject private var viewModel = DecisionQueueViewModel()
+    @StateObject private var viewModel: DecisionQueueViewModel
+    @EnvironmentObject var container: DependencyContainer
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: DecisionQueueViewModel(
+            apiClient: dependencies.apiClient,
+            authManager: dependencies.authManager
+        ))
+    }
 
     var body: some View {
         ScrollView {

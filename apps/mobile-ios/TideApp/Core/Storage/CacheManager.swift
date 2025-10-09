@@ -15,7 +15,7 @@ final class CacheManager {
     // MARK: - Properties
 
     /// Memory cache (fast, cleared on app termination)
-    private let memoryCache = NSCache<NSString, CacheEntry>()
+    private let memoryCache = NSCache<NSString, AnyObject>()
 
     /// Disk cache directory
     private let cacheDirectory: URL
@@ -56,9 +56,9 @@ final class CacheManager {
     /// Retrieve value from cache
     func get<T: Codable>(_ type: T.Type, forKey key: String) -> T? {
         // Try memory cache first
-        if let entry = memoryCache.object(forKey: key as NSString) {
+        if let entry = memoryCache.object(forKey: key as NSString) as? CacheEntry<T> {
             if entry.isValid {
-                return entry.value as? T
+                return entry.value
             } else {
                 // Expired - remove from memory
                 memoryCache.removeObject(forKey: key as NSString)

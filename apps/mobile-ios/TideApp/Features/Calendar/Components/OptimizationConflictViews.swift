@@ -50,9 +50,9 @@ struct OptimizationCard: View {
     }
 }
 
-// MARK: - Conflict Card
+// MARK: - Meeting Conflict Card
 
-struct ConflictCard: View {
+struct MeetingConflictCard: View {
     let conflict: MeetingConflict
     let onResolve: (ResolutionOption) -> Void
 
@@ -137,11 +137,19 @@ struct ConflictResolutionSheet: View {
                 }
             }
             .navigationTitle("Resolve Conflict")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") { dismiss() }
                 }
+                #else
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                #endif
             }
         }
     }

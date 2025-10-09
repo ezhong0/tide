@@ -50,11 +50,31 @@ final class NavigationState: ObservableObject {
 
     func path(for tab: Tab) -> Binding<NavigationPath> {
         switch tab {
-        case .chat: return $chatPath
-        case .email: return $emailPath
-        case .calendar: return $calendarPath
-        case .tasks: return $tasksPath
-        case .more: return $morePath
+        case .chat:
+            return Binding(
+                get: { self.chatPath },
+                set: { self.chatPath = $0 }
+            )
+        case .email:
+            return Binding(
+                get: { self.emailPath },
+                set: { self.emailPath = $0 }
+            )
+        case .calendar:
+            return Binding(
+                get: { self.calendarPath },
+                set: { self.calendarPath = $0 }
+            )
+        case .tasks:
+            return Binding(
+                get: { self.tasksPath },
+                set: { self.tasksPath = $0 }
+            )
+        case .more:
+            return Binding(
+                get: { self.morePath },
+                set: { self.morePath = $0 }
+            )
         }
     }
 

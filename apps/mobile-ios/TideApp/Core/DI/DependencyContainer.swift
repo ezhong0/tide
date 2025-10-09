@@ -4,6 +4,7 @@
  */
 
 import Foundation
+import SwiftUI
 
 @MainActor
 final class DependencyContainer: ObservableObject {
@@ -95,12 +96,13 @@ final class DependencyContainer: ObservableObject {
         )
     }
 
-    func makeEmailViewModel() -> EmailViewModel {
-        return EmailViewModel(
-            apiClient: apiClient,
-            authManager: authManager
-        )
-    }
+    // TODO: Implement EmailViewModel when needed
+    // func makeEmailViewModel() -> EmailViewModel {
+    //     return EmailViewModel(
+    //         apiClient: apiClient,
+    //         authManager: authManager
+    //     )
+    // }
 
     func makeEmailInboxViewModel() -> EmailInboxViewModel {
         return EmailInboxViewModel(
@@ -164,12 +166,13 @@ final class DependencyContainer: ObservableObject {
         )
     }
 
-    func makeDecisionsViewModel() -> DecisionsViewModel {
-        return DecisionsViewModel(
-            apiClient: apiClient,
-            authManager: authManager
-        )
-    }
+    // TODO: Implement DecisionsViewModel when needed
+    // func makeDecisionsViewModel() -> DecisionsViewModel {
+    //     return DecisionsViewModel(
+    //         apiClient: apiClient,
+    //         authManager: authManager
+    //     )
+    // }
 
     func makeDailySnapshotViewModel() -> DailySnapshotViewModel {
         return DailySnapshotViewModel(

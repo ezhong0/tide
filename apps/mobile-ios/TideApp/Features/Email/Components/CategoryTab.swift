@@ -25,7 +25,7 @@ struct CategoryTab: View {
                         .font(Design.Typography.Caption.semibold)
                         .padding(.horizontal, Design.Spacing.xs)
                         .padding(.vertical, 2)
-                        .background(isSelected ? Color.white.opacity(0.3) : Design.Colors.Border.light)
+                        .background(isSelected ? Color.white.opacity(0.3) : Design.ColorHelpers.Border.light)
                         .cornerRadius(Design.CornerRadius.sm)
                         .accessibilityHidden(true)
                 }

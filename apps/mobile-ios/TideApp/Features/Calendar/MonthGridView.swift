@@ -144,7 +144,7 @@ struct MonthGridView: View {
             }
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
     }
 
     // MARK: - Day of Week Labels
@@ -158,7 +158,7 @@ struct MonthGridView: View {
             }
         }
         .padding(.vertical, Design.Spacing.sm)
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
     }
 
     // MARK: - Calendar Grid
@@ -230,9 +230,9 @@ struct DayCell: View {
             return Design.Colors.Semantic.primary.opacity(0.1)
         }
         if !calendarDay.isCurrentMonth {
-            return Design.Colors.Background.tertiary
+            return Design.ColorHelpers.Background.tertiary
         }
-        return Design.Colors.Background.primary
+        return Design.ColorHelpers.Background.primary
     }
 }
 

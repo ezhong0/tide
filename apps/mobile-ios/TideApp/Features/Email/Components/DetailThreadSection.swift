@@ -38,7 +38,7 @@ struct DetailThreadSection: View {
                         .lineLimit(3)
                 }
                 .padding(Design.Spacing.md)
-                .background(Design.Colors.Background.secondary)
+                .background(Design.ColorHelpers.Background.secondary)
                 .cornerRadius(Design.CornerRadius.md)
                 .padding(.horizontal, Design.Spacing.md)
             }

@@ -119,8 +119,8 @@ extension Date {
     }
 
     /// Get end of month
-    func endOfMonth(calendar: Calendar = .current) -> Date {
-        guard let start = startOfMonth(calendar: calendar) else { return self }
+    func endOfMonth(calendar: Calendar = .current) -> Date? {
+        guard let start = startOfMonth(calendar: calendar) else { return nil }
         let nextMonth = start.adding(.month, value: 1, calendar: calendar)
         return nextMonth.adding(.second, value: -1, calendar: calendar)
     }

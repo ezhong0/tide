@@ -14,19 +14,14 @@ final class OfflineQueue {
 
     private var queue: [QueuedOperation] = []
     private let queueKey = "TideOfflineQueue"
-    private let networkMonitor: NetworkMonitorProtocol
+    private let networkMonitor: NetworkMonitor
 
     // MARK: - Initializer
 
-    init(networkMonitor: NetworkMonitorProtocol) {
+    init(networkMonitor: NetworkMonitor = .shared) {
         self.networkMonitor = networkMonitor
         loadQueue()
         observeNetworkChanges()
-    }
-
-    // Convenience init for backward compatibility with .shared
-    private convenience init() {
-        self.init(networkMonitor: NetworkMonitor.shared)
     }
 
     // MARK: - Public API
