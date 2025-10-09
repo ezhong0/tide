@@ -9,7 +9,8 @@ struct EmailView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var showConnectGmail = true
-    @StateObject private var oauthService = GoogleOAuthService.shared
+    @State private var isConnectingGmail = false
+    @StateObject private var authManager = AuthManager.shared
 
     var filteredEmails: [Email] {
         var filtered = emails
@@ -64,7 +65,7 @@ struct EmailView: View {
                                         .foregroundColor(.secondary)
                                 }
                                 Spacer()
-                                if oauthService.isAuthenticating {
+                                if isConnectingGmail {
                                     ProgressView()
                                 } else {
                                     Image(systemName: "chevron.right")
@@ -73,12 +74,12 @@ struct EmailView: View {
                             }
                             .padding(.vertical, 8)
                         }
-                        .disabled(oauthService.isAuthenticating)
+                        .disabled(isConnectingGmail)
                     }
                 }
 
-                // Error message if OAuth failed
-                if let error = oauthService.authError {
+                // Error message
+                if let error = errorMessage {
                     Section {
                         Text(error)
                             .foregroundColor(.red)
@@ -187,9 +188,12 @@ struct EmailView: View {
     }
 
     private func connectGmail() async {
+        isConnectingGmail = true
+        defer { isConnectingGmail = false }
+
         do {
-            let testUserId = "00000000-0000-0000-0000-000000000001"
-            try await oauthService.connectGmail(userId: testUserId)
+            // Sign in with Google OAuth via Supabase
+            try await authManager.loginWithOAuth(provider: .google)
 
             // After successful connection, fetch emails
             await refreshEmails()
@@ -197,6 +201,7 @@ struct EmailView: View {
             // Hide the connect button
             showConnectGmail = false
         } catch {
+            errorMessage = "Failed to connect Gmail: \(error.localizedDescription)"
             print("❌ Error connecting Gmail: \(error)")
         }
     }

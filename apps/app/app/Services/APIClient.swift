@@ -104,9 +104,10 @@ class APIClient {
 
     // MARK: - Token Refresh
 
+    @MainActor
     private func refreshTokenAndRetry() async throws {
-        // Try to refresh the access token
-        _ = try await AuthService.shared.refreshToken()
+        // Try to refresh the access token using AuthManager
+        try await AuthManager.shared.refreshAccessToken()
     }
 }
 

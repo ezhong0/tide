@@ -9,6 +9,8 @@ class LoginViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isAuthenticated = false
 
+    private let authManager = AuthManager.shared
+
     var isValid: Bool {
         !email.isEmpty &&
         email.contains("@") &&
@@ -26,15 +28,10 @@ class LoginViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let session = try await AuthService.shared.login(
+            // Use AuthManager which handles Supabase auth
+            try await authManager.login(
                 email: email,
                 password: password
-            )
-
-            // Save tokens to Keychain
-            try KeychainService.shared.saveTokens(
-                accessToken: session.accessToken,
-                refreshToken: session.refreshToken
             )
 
             isAuthenticated = true
@@ -55,6 +52,8 @@ class RegisterViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoading = false
     @Published var isAuthenticated = false
+
+    private let authManager = AuthManager.shared
 
     var isValid: Bool {
         !name.isEmpty &&
@@ -79,21 +78,11 @@ class RegisterViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let user = try await AuthService.shared.register(
+            // Use AuthManager which handles Supabase auth
+            try await authManager.signUp(
                 email: email,
                 password: password,
                 name: name
-            )
-
-            // Auto-login after registration
-            let session = try await AuthService.shared.login(
-                email: email,
-                password: password
-            )
-
-            try KeychainService.shared.saveTokens(
-                accessToken: session.accessToken,
-                refreshToken: session.refreshToken
             )
 
             isAuthenticated = true
