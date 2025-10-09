@@ -42,7 +42,9 @@ export class TideAIServer {
 
     // Validate API key
     if (!this.config.openaiApiKey) {
-      throw new Error('OPENAI_API_KEY is required');
+      logger.warn('OPENAI_API_KEY not configured - service will be limited');
+      // Don't throw error, allow service to start for health checks
+      // Actual AI requests will fail gracefully
     }
 
     // Initialize tools
@@ -51,9 +53,9 @@ export class TideAIServer {
       includeCustomTools: this.config.includeCustomTools,
     });
 
-    // Initialize GPT-5 orchestrator
+    // Initialize GPT-5 orchestrator (use dummy key if not configured)
     this.orchestrator = new GPT5Orchestrator({
-      apiKey: this.config.openaiApiKey,
+      apiKey: this.config.openaiApiKey || 'sk-dummy-key-for-startup',
       model: this.config.model,
       reasoningEffort: this.config.reasoningEffort,
       verbosity: this.config.verbosity,
