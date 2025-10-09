@@ -54,20 +54,18 @@ final class SupabaseManager: ObservableObject {
     // MARK: - Authentication Methods
 
     func signIn(email: String, password: String) async throws -> Session {
-        let response = try await client.auth.signIn(email: email, password: password)
-        let session = response.session
+        let session = try await client.auth.signIn(email: email, password: password)
         currentUser = session.user
         isAuthenticated = true
         return session
     }
 
     func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
-        let response = try await client.auth.signUp(
+        let session = try await client.auth.signUp(
             email: email,
             password: password,
             data: data
         )
-        let session = response.session
         currentUser = session.user
         isAuthenticated = true
         return session
@@ -80,7 +78,11 @@ final class SupabaseManager: ObservableObject {
     }
 
     func getCurrentSession() async throws -> Session? {
-        return try? await client.auth.session
+        do {
+            return try await client.auth.session
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - OAuth Methods
@@ -95,10 +97,13 @@ final class SupabaseManager: ObservableObject {
             allQueryParams["scopes"] = scopes
         }
 
+        // Convert dictionary to array of tuples for Supabase API
+        let queryParamsArray = allQueryParams.map { (name: $0.key, value: $0.value) }
+
         return try await client.auth.getOAuthSignInURL(
             provider: provider,
             redirectTo: redirectTo,
-            queryParams: allQueryParams
+            queryParams: queryParamsArray
         )
     }
 
