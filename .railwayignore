@@ -1,0 +1,22 @@
+# Railway ignore file
+# This overrides .gitignore for Railway deployments
+
+# Ignore development and local files
+.env.local
+.env.*.local
+.git
+.vscode
+.idea
+.DS_Store
+
+# Ignore iOS app (not needed for backend deployments)
+apps/mobile-ios/
+
+# IMPORTANT: Do NOT ignore dist folders!
+# Even though they're in .gitignore, Railway needs them at runtime
+# Override .gitignore's dist/ exclusion by NOT listing it here
+# (Railway will include everything not listed in .railwayignore)
+
+# Ignore node_modules (will be installed during build)
+# But note: pnpm workspaces create symlinks, so this is tricky
+# We may need to use a different approach

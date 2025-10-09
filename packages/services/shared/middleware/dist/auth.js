@@ -1,0 +1,141 @@
+/**
+ * Authentication Middleware
+ * Validates JWT tokens and extracts user information
+ */
+import jwt from 'jsonwebtoken';
+/**
+ * JWT Authentication Middleware
+ * Validates JWT token from Authorization header
+ */
+export const authenticateJWT = (req, res, next) => {
+    try {
+        // Get token from Authorization header
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'No authentication token provided'
+            });
+        }
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        // Get JWT secret from environment
+        const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+        if (!jwtSecret) {
+            console.error('❌ JWT_SECRET not configured');
+            return res.status(500).json({
+                error: 'Internal Server Error',
+                message: 'Authentication configuration error'
+            });
+        }
+        // Verify and decode token
+        const decoded = jwt.verify(token, jwtSecret);
+        // Extract user information
+        if (!decoded.sub) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Invalid token: missing user ID'
+            });
+        }
+        // Attach user to request
+        req.user = {
+            userId: decoded.sub,
+            email: decoded.email,
+            role: decoded.role
+        };
+        next();
+    }
+    catch (error) {
+        if (error instanceof jwt.TokenExpiredError) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Token expired',
+                code: 'TOKEN_EXPIRED'
+            });
+        }
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Invalid token'
+            });
+        }
+        console.error('❌ Authentication error:', error);
+        return res.status(500).json({
+            error: 'Internal Server Error',
+            message: 'Authentication failed'
+        });
+    }
+};
+/**
+ * Optional Authentication Middleware
+ * Attaches user if token is valid, but doesn't require it
+ */
+export const optionalAuth = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            // No token provided - continue without user
+            return next();
+        }
+        const token = authHeader.substring(7);
+        const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
+        if (!jwtSecret) {
+            // Configuration error - continue without user
+            return next();
+        }
+        const decoded = jwt.verify(token, jwtSecret);
+        if (decoded.sub) {
+            req.user = {
+                userId: decoded.sub,
+                email: decoded.email,
+                role: decoded.role
+            };
+        }
+        next();
+    }
+    catch (error) {
+        // Token validation failed - continue without user
+        next();
+    }
+};
+/**
+ * Role-based Authorization Middleware
+ * Requires specific role(s) to access endpoint
+ */
+export const requireRole = (...roles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                error: 'Unauthorized',
+                message: 'Authentication required'
+            });
+        }
+        if (!req.user.role || !roles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: 'Insufficient permissions'
+            });
+        }
+        next();
+    };
+};
+/**
+ * Helper to get user ID from request
+ */
+export const getUserId = (req) => {
+    return req.user?.userId;
+};
+/**
+ * Helper to require user ID from request
+ */
+export const requireUserId = (req, res) => {
+    const userId = req.user?.userId;
+    if (!userId) {
+        res.status(401).json({
+            error: 'Unauthorized',
+            message: 'User ID not found in token'
+        });
+        return null;
+    }
+    return userId;
+};
+//# sourceMappingURL=auth.js.map

@@ -7,6 +7,15 @@ dist/
 *.d.ts.map
 *.tsbuildinfo
 
+# IMPORTANT: Allow dist folders for workspace dependency packages
+# These are needed for Railway deployments with pnpm workspaces
+!packages/shared/*/dist/
+!packages/shared/*/dist/**
+!packages/libraries/*/dist/
+!packages/libraries/*/dist/**
+!packages/services/shared/*/dist/
+!packages/services/shared/*/dist/**
+
 # macOS
 .DS_Store
 *.swp
