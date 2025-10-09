@@ -37,7 +37,11 @@ export {
 } from './error-handler.js';
 
 export {
-  correlationMiddleware,
-  getCorrelationId,
-  createCorrelatedHeaders,
+  correlationId,
+  correlationLogger,
+  getCorrelationHeaders,
+  createCorrelationHeaders,
 } from './correlation.js';
+
+// Re-export auth initialization
+export { initializeAuth } from './auth.js';

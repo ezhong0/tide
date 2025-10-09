@@ -1,42 +1,35 @@
 /**
- * Request Correlation Middleware
- * Adds correlation IDs to requests for distributed tracing
+ * Correlation ID Middleware
+ * Adds unique correlation ID to each request for distributed tracing
  */
 import { Request, Response, NextFunction } from 'express';
+import { logger as baseLogger } from '@tide/logger';
 declare global {
     namespace Express {
         interface Request {
             correlationId?: string;
+            log?: typeof baseLogger;
         }
     }
 }
 /**
  * Correlation ID Middleware
- *
- * Features:
- * - Generates unique correlation ID for each request
- * - Preserves existing correlation ID from headers
- * - Adds correlation ID to response headers
- * - Enables request tracing across services
- *
- * Headers:
- * - X-Correlation-ID: Incoming correlation ID
- * - X-Request-ID: Outgoing correlation ID (for compatibility)
+ * Extracts or generates a correlation ID for request tracing
  */
-export declare const correlationMiddleware: (req: Request, res: Response, next: NextFunction) => void;
+export declare const correlationId: (req: Request, res: Response, next: NextFunction) => void;
 /**
- * Get correlation ID from request
- * Use this in services to propagate correlation to downstream calls
+ * Correlation Logger Middleware
+ * Creates a child logger with correlation ID for request-scoped logging
+ * Must be used after correlationId middleware
  */
-export declare function getCorrelationId(req: Request): string | undefined;
+export declare const correlationLogger: (req: Request, res: Response, next: NextFunction) => void;
 /**
- * Create headers with correlation ID for outgoing requests
- *
- * Example:
- * ```typescript
- * const headers = createCorrelatedHeaders(req);
- * await fetch(url, { headers });
- * ```
+ * Helper to propagate correlation ID in inter-service HTTP requests
+ * Use this when making requests to other services
  */
-export declare function createCorrelatedHeaders(req: Request, additionalHeaders?: Record<string, string>): Record<string, string>;
+export declare function getCorrelationHeaders(req: Request): Record<string, string>;
+/**
+ * Helper to create correlation headers for background jobs
+ */
+export declare function createCorrelationHeaders(correlationId?: string): Record<string, string>;
 //# sourceMappingURL=correlation.d.ts.map

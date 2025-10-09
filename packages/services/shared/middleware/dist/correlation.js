@@ -1,56 +1,48 @@
 /**
- * Request Correlation Middleware
- * Adds correlation IDs to requests for distributed tracing
+ * Correlation ID Middleware
+ * Adds unique correlation ID to each request for distributed tracing
  */
-import { randomUUID } from 'crypto';
-import { createLogger } from '@tide/logger';
-const logger = createLogger({ component: 'CorrelationMiddleware' });
+import { v4 as uuidv4 } from 'uuid';
+import { logger as baseLogger } from '@tide/logger';
 /**
  * Correlation ID Middleware
- *
- * Features:
- * - Generates unique correlation ID for each request
- * - Preserves existing correlation ID from headers
- * - Adds correlation ID to response headers
- * - Enables request tracing across services
- *
- * Headers:
- * - X-Correlation-ID: Incoming correlation ID
- * - X-Request-ID: Outgoing correlation ID (for compatibility)
+ * Extracts or generates a correlation ID for request tracing
  */
-export const correlationMiddleware = (req, res, next) => {
-    // Check for existing correlation ID from upstream
-    const incomingCorrelationId = req.headers['x-correlation-id'] ||
-        req.headers['x-request-id'] ||
-        req.headers['request-id'];
-    // Generate or use existing correlation ID
-    const correlationId = typeof incomingCorrelationId === 'string'
-        ? incomingCorrelationId
-        : randomUUID();
-    // Attach to request object
-    req.correlationId = correlationId;
-    // Add to response headers
-    res.setHeader('X-Correlation-ID', correlationId);
-    res.setHeader('X-Request-ID', correlationId); // For compatibility
-    // Log request with correlation
-    logger.info({
-        correlationId,
+export const correlationId = (req, res, next) => {
+    // Get correlation ID from header or generate new one
+    req.correlationId = req.headers['x-correlation-id'] || uuidv4();
+    // Set correlation ID in response header for client tracking
+    res.setHeader('X-Correlation-ID', req.correlationId);
+    next();
+};
+/**
+ * Correlation Logger Middleware
+ * Creates a child logger with correlation ID for request-scoped logging
+ * Must be used after correlationId middleware
+ */
+export const correlationLogger = (req, res, next) => {
+    if (!req.correlationId) {
+        // If correlation ID middleware wasn't used, generate one
+        req.correlationId = uuidv4();
+        res.setHeader('X-Correlation-ID', req.correlationId);
+    }
+    // Create child logger with correlation ID
+    req.log = baseLogger.child({
+        correlationId: req.correlationId,
         method: req.method,
         path: req.path,
+        userId: req.user?.userId,
+    });
+    // Log incoming request
+    req.log.info({
         ip: req.ip,
-        userAgent: req.get('user-agent'),
-    }, 'Request received');
-    // Track response time
+        userAgent: req.headers['user-agent'],
+    }, 'Incoming request');
+    // Log response on finish
     const startTime = Date.now();
-    // Log response when finished
     res.on('finish', () => {
         const duration = Date.now() - startTime;
-        const level = res.statusCode >= 500 ? 'error' :
-            res.statusCode >= 400 ? 'warn' : 'info';
-        logger[level]({
-            correlationId,
-            method: req.method,
-            path: req.path,
+        req.log?.info({
             statusCode: res.statusCode,
             duration,
         }, 'Request completed');
@@ -58,25 +50,20 @@ export const correlationMiddleware = (req, res, next) => {
     next();
 };
 /**
- * Get correlation ID from request
- * Use this in services to propagate correlation to downstream calls
+ * Helper to propagate correlation ID in inter-service HTTP requests
+ * Use this when making requests to other services
  */
-export function getCorrelationId(req) {
-    return req.correlationId;
+export function getCorrelationHeaders(req) {
+    return {
+        'X-Correlation-ID': req.correlationId || uuidv4(),
+    };
 }
 /**
- * Create headers with correlation ID for outgoing requests
- *
- * Example:
- * ```typescript
- * const headers = createCorrelatedHeaders(req);
- * await fetch(url, { headers });
- * ```
+ * Helper to create correlation headers for background jobs
  */
-export function createCorrelatedHeaders(req, additionalHeaders = {}) {
+export function createCorrelationHeaders(correlationId) {
     return {
-        'X-Correlation-ID': req.correlationId || randomUUID(),
-        ...additionalHeaders,
+        'X-Correlation-ID': correlationId || uuidv4(),
     };
 }
 //# sourceMappingURL=correlation.js.map
