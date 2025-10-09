@@ -22,33 +22,39 @@ struct TaskListView: View {
 
             Divider()
 
-            // Task list
-            if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if viewModel.filteredTasks.isEmpty {
-                emptyState
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
-                        // Group by status
-                        ForEach(TaskStatus.allCases, id: \.self) { status in
-                            let tasks = viewModel.tasks(for: status, filter: selectedFilter)
-                            if !tasks.isEmpty {
-                                Section {
-                                    ForEach(tasks) { task in
-                                        TaskRow(task: task, viewModel: viewModel)
-                                            .onTapGesture {
-                                                navigateToTaskDetail(task.id)
-                                            }
-                                    }
-                                } header: {
-                                    TaskSectionHeader(status: status, count: tasks.count)
+            // Task list with state management
+            ScrollView {
+                LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    // Group by status
+                    ForEach(TaskStatus.allCases, id: \.self) { status in
+                        let tasks = viewModel.tasks(for: status, filter: selectedFilter)
+                        if !tasks.isEmpty {
+                            Section {
+                                ForEach(tasks) { task in
+                                    TaskRow(task: task, viewModel: viewModel)
+                                        .onTapGesture {
+                                            navigateToTaskDetail(task.id)
+                                        }
                                 }
+                            } header: {
+                                TaskSectionHeader(status: status, count: tasks.count)
                             }
                         }
                     }
                 }
+            }
+            .stateContent(
+                isLoading: viewModel.isLoading,
+                error: viewModel.error,
+                isEmpty: viewModel.filteredTasks.isEmpty
+            ) {
+                EmptyView(
+                    icon: "checkmark.circle",
+                    title: "No tasks",
+                    message: "Create a task to get started",
+                    actionTitle: "New Task",
+                    action: navigateToCreateTask
+                )
             }
         }
         .toolbar {
@@ -58,6 +64,8 @@ struct TaskListView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("Create new task")
+                .accessibilityHint("Opens a form to create a new task")
             }
         }
         .task {
@@ -69,7 +77,7 @@ struct TaskListView: View {
     @ViewBuilder
     private var filterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
+            HStack(spacing: Design.Spacing.sm) {
                 ForEach(TaskFilter.allCases, id: \.self) { filter in
                     FilterChip(
                         title: filter.title,
@@ -77,41 +85,15 @@ struct TaskListView: View {
                         isSelected: selectedFilter == filter
                     )
                     .onTapGesture {
-                        withAnimation {
+                        withAnimation(Design.Animation.standard) {
                             selectedFilter = filter
                         }
                     }
                 }
             }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
+            .padding(.horizontal, Design.Spacing.md)
+            .padding(.vertical, Design.Spacing.sm)
         }
-    }
-
-    // MARK: - Empty State
-    @ViewBuilder
-    private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 60))
-                .foregroundColor(.green)
-
-            Text("No tasks")
-                .font(.title3)
-                .fontWeight(.semibold)
-
-            Text("Create a task to get started")
-                .font(.callout)
-                .foregroundColor(.secondary)
-
-            Button {
-                navigateToCreateTask()
-            } label: {
-                Label("New Task", systemImage: "plus")
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Helpers
@@ -131,26 +113,29 @@ struct FilterChip: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: Design.Spacing.xxs) {
             Text(title)
-                .font(.subheadline)
-                .fontWeight(.medium)
+                .font(Design.Typography.Label.medium)
 
             if count > 0 {
                 Text("\(count)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 6)
+                    .font(Design.Typography.Caption.semibold)
+                    .padding(.horizontal, Design.Spacing.xxs)
                     .padding(.vertical, 2)
-                    .background(isSelected ? Color.white.opacity(0.3) : Color.primary.opacity(0.1))
-                    .cornerRadius(8)
+                    .background(isSelected ? Color.white.opacity(0.3) : Design.Colors.Border.light)
+                    .cornerRadius(Design.CornerRadius.sm)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(isSelected ? Color.blue : Color(.secondarySystemBackground))
-        .foregroundColor(isSelected ? .white : .primary)
-        .cornerRadius(20)
+        .padding(.horizontal, Design.Spacing.md)
+        .padding(.vertical, Design.Spacing.xs)
+        .background(isSelected ? Design.Colors.Semantic.primary : Design.Colors.Background.secondary)
+        .foregroundColor(isSelected ? .white : Design.Colors.Text.primary)
+        .cornerRadius(Design.CornerRadius.xl)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title) filter")
+        .accessibilityValue("\(count) tasks")
+        .accessibilityHint(isSelected ? "Currently selected" : "Tap to filter tasks by \(title.lowercased())")
+        .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
     }
 }
 
@@ -165,16 +150,20 @@ struct TaskSectionHeader: View {
                 .foregroundColor(status.color)
 
             Text(status.title)
-                .font(.headline)
+                .font(Design.Typography.Headline.bold)
 
             Text("\(count)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+                .font(Design.Typography.Label.regular)
+                .foregroundColor(Design.Colors.Text.secondary)
 
             Spacer()
         }
-        .padding()
-        .background(Color(.systemBackground))
+        .padding(Design.Spacing.md)
+        .background(Design.Colors.Background.primary)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(status.title) section")
+        .accessibilityValue("\(count) tasks")
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -184,7 +173,7 @@ struct TaskRow: View {
     @ObservedObject var viewModel: TaskListViewModel
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Design.Spacing.sm) {
             // Checkbox
             Button {
                 Task {
@@ -192,27 +181,28 @@ struct TaskRow: View {
                 }
             } label: {
                 Image(systemName: task.status == .done ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
+                    .font(Design.Typography.Title.bold)
                     .foregroundColor(task.status == .done ? .green : .gray)
             }
+            .accessibilityLabel(task.status == .done ? "Mark task incomplete" : "Mark task complete")
+            .accessibilityHint("Changes the completion status of this task")
 
             // Task content
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Design.Spacing.xxs) {
                 Text(task.title)
-                    .font(.callout)
-                    .fontWeight(.medium)
+                    .font(Design.Typography.Body.medium)
                     .strikethrough(task.status == .done)
-                    .foregroundColor(task.status == .done ? .secondary : .primary)
+                    .foregroundColor(task.status == .done ? Design.Colors.Text.secondary : Design.Colors.Text.primary)
 
                 if let description = task.description {
                     Text(description)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(Design.Typography.Caption.regular)
+                        .foregroundColor(Design.Colors.Text.secondary)
                         .lineLimit(2)
                 }
 
                 // Metadata row
-                HStack(spacing: 12) {
+                HStack(spacing: Design.Spacing.sm) {
                     // Priority
                     if task.priority != .none {
                         HStack(spacing: 4) {
@@ -264,11 +254,15 @@ struct TaskRow: View {
                 .fill(task.status.color)
                 .frame(width: 8, height: 8)
         }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .cornerRadius(8)
-        .padding(.horizontal)
-        .padding(.vertical, 4)
+        .padding(Design.Spacing.md)
+        .background(Design.Colors.Background.secondary)
+        .cornerRadius(Design.CornerRadius.md)
+        .padding(.horizontal, Design.Spacing.md)
+        .padding(.vertical, Design.Spacing.xxs)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityHint("Tap to view task details, or swipe for more actions")
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 Task {
@@ -277,6 +271,7 @@ struct TaskRow: View {
             } label: {
                 Label("Delete", systemImage: "trash")
             }
+            .accessibilityLabel("Delete task")
 
             Button {
                 Task {
@@ -289,7 +284,41 @@ struct TaskRow: View {
                 )
             }
             .tint(.green)
+            .accessibilityLabel(task.status == .done ? "Mark incomplete" : "Mark complete")
         }
+    }
+
+    private var accessibilityLabel: String {
+        var label = task.title
+        if let description = task.description {
+            label += ", \(description)"
+        }
+        return label
+    }
+
+    private var accessibilityValue: String {
+        var parts: [String] = []
+
+        parts.append("Status: \(task.status.title)")
+
+        if task.priority != .none {
+            parts.append("Priority: \(task.priority.title)")
+        }
+
+        if let dueDate = task.dueDate {
+            let dateStr = dueDateString(dueDate)
+            if isDueDateOverdue(dueDate) {
+                parts.append("Overdue: \(dateStr)")
+            } else {
+                parts.append("Due: \(dateStr)")
+            }
+        }
+
+        if let tags = task.tags, !tags.isEmpty {
+            parts.append("Tags: \(tags.joined(separator: ", "))")
+        }
+
+        return parts.joined(separator: ", ")
     }
 
     private func dueDateString(_ date: Date) -> String {
@@ -305,9 +334,10 @@ struct TaskRow: View {
 
 // MARK: - View Model
 @MainActor
-class TaskListViewModel: ObservableObject {
+final class TaskListViewModel: ObservableObject {
     @Published var allTasks: [TideTask] = []
     @Published var isLoading = false
+    @Published var error: Error?
 
     private let apiClient: APIClientProtocol
     private let authManager: AuthManagerProtocol
@@ -323,6 +353,7 @@ class TaskListViewModel: ObservableObject {
 
     func loadTasks() async {
         isLoading = true
+        error = nil
         defer { isLoading = false }
 
         do {
@@ -341,10 +372,11 @@ class TaskListViewModel: ObservableObject {
                     tags: nil // TODO: Add tags support to API
                 )
             }
+            error = nil
 
         } catch {
-            print("Error loading tasks: \(error)")
-            // On error, show empty list instead of mock data
+            Logger.error("Error loading tasks", error: error)
+            self.error = error
             allTasks = []
         }
     }
@@ -417,7 +449,7 @@ class TaskListViewModel: ObservableObject {
         do {
             try await apiClient.updateTaskStatus(taskId: task.id, status: newStatus.rawValue)
         } catch {
-            print("Error updating task status: \(error)")
+            Logger.error("Error updating task status", error: error)
             // Revert on error
             allTasks[index] = task
         }
@@ -431,7 +463,7 @@ class TaskListViewModel: ObservableObject {
         do {
             try await apiClient.deleteTask(id: task.id)
         } catch {
-            print("Error deleting task: \(error)")
+            Logger.error("Error deleting task", error: error)
             // Reload to restore on error
             await loadTasks()
         }

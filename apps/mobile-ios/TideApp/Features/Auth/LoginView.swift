@@ -30,7 +30,7 @@ struct LoginView: View {
             )
             .ignoresSafeArea()
 
-            VStack(spacing: Spacing.xxxl) {
+            VStack(spacing: Design.Spacing.xxxl) {
                 Spacer()
 
                 // Logo and title
@@ -43,9 +43,9 @@ struct LoginView: View {
 
                 // Privacy notice
                 privacyNotice
-                    .padding(.bottom, Spacing.lg)
+                    .padding(.bottom, Design.Spacing.lg)
             }
-            .padding(.horizontal, Spacing.xl)
+            .padding(.horizontal, Design.Spacing.xl)
 
             // Loading overlay
             if viewModel.isLoading {
@@ -58,7 +58,7 @@ struct LoginView: View {
     // MARK: - Logo Section
 
     private var logoSection: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Design.Spacing.lg) {
             // App icon placeholder
             Circle()
                 .fill(Color.tidePrimary.opacity(0.2))
@@ -68,8 +68,9 @@ struct LoginView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.tidePrimary)
                 )
+                .accessibilityLabel("Tide app logo")
 
-            VStack(spacing: Spacing.sm) {
+            VStack(spacing: Design.Spacing.sm) {
                 Text("Welcome to Tide")
                     .font(.tideDisplayLarge)
                     .fontWeight(.bold)
@@ -86,10 +87,10 @@ struct LoginView: View {
     // MARK: - Login Buttons
 
     private var loginButtons: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Design.Spacing.md) {
             // Google Sign In
             Button(action: { viewModel.loginWithGoogle() }) {
-                HStack(spacing: Spacing.md) {
+                HStack(spacing: Design.Spacing.md) {
                     Image(systemName: "g.circle.fill")
                         .font(.system(size: 24))
 
@@ -98,17 +99,19 @@ struct LoginView: View {
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
+                .padding(.vertical, Design.Spacing.md)
                 .background(Color.white)
                 .foregroundColor(.black)
                 .cornerRadius(12)
                 .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
             }
+            .accessibilityLabel("Sign in with Google")
+            .accessibilityHint("Double tap to sign in using your Google account")
             .disabled(viewModel.isLoading)
 
             // Microsoft Sign In (optional)
             Button(action: { viewModel.loginWithMicrosoft() }) {
-                HStack(spacing: Spacing.md) {
+                HStack(spacing: Design.Spacing.md) {
                     Image(systemName: "microsoft.logo")
                         .font(.system(size: 24))
 
@@ -117,11 +120,13 @@ struct LoginView: View {
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
+                .padding(.vertical, Design.Spacing.md)
                 .background(Color.black)
                 .foregroundColor(.white)
                 .cornerRadius(12)
             }
+            .accessibilityLabel("Sign in with Microsoft")
+            .accessibilityHint("Double tap to sign in using your Microsoft account")
             .disabled(viewModel.isLoading)
 
             // Apple Sign In
@@ -146,7 +151,7 @@ struct LoginView: View {
             .font(.tideCaption)
             .foregroundColor(.tideSecondaryText)
             .multilineTextAlignment(.center)
-            .padding(.horizontal, Spacing.lg)
+            .padding(.horizontal, Design.Spacing.lg)
     }
 }
 

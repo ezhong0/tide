@@ -14,6 +14,27 @@ struct JWTDecoder {
         let iat: TimeInterval?  // Issued at
         let email: String?
         let role: String?
+
+        /// Check if token is expired
+        var isExpired: Bool {
+            guard let exp = exp else { return true }
+            let expirationDate = Date(timeIntervalSince1970: exp)
+            return Date() >= expirationDate
+        }
+
+        /// Check if token is expiring soon
+        func isExpiringSoon(within seconds: TimeInterval) -> Bool {
+            guard let exp = exp else { return true }
+            let expirationDate = Date(timeIntervalSince1970: exp)
+            let thresholdDate = Date().addingTimeInterval(seconds)
+            return thresholdDate >= expirationDate
+        }
+
+        /// Get expiration date
+        var expirationDate: Date? {
+            guard let exp = exp else { return nil }
+            return Date(timeIntervalSince1970: exp)
+        }
     }
 
     // MARK: - Decode JWT
@@ -33,7 +54,7 @@ struct JWTDecoder {
             let decoder = JSONDecoder()
             return try decoder.decode(JWTClaims.self, from: payloadData)
         } catch {
-            print("❌ Failed to decode JWT claims: \(error.localizedDescription)")
+            Logger.error("Failed to decode JWT claims", error: error)
             return nil
         }
     }
@@ -63,6 +84,14 @@ struct JWTDecoder {
 
     static func getUserId(from token: String) -> String? {
         return decode(token)?.sub
+    }
+
+    static func expirationDate(from token: String) -> Date? {
+        guard let claims = decode(token),
+              let exp = claims.exp else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: exp)
     }
 
     // MARK: - Base64 URL Decoding

@@ -5,7 +5,7 @@
 
 import Foundation
 
-class NetworkCalendarRepository: CalendarRepository {
+final class NetworkCalendarRepository: CalendarRepository {
     private let apiClient: APIClientProtocol
 
     init(apiClient: APIClientProtocol) {
@@ -19,8 +19,7 @@ class NetworkCalendarRepository: CalendarRepository {
     }
 
     func getEvent(id: String) async throws -> CalendarEvent {
-        // TODO: Implement get single event endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        return try await apiClient.getCalendarEvent(id: id)
     }
 
     func createEvent(event: CreateEventRequest) async throws -> CalendarEvent {
@@ -28,13 +27,11 @@ class NetworkCalendarRepository: CalendarRepository {
     }
 
     func updateEvent(id: String, event: CreateEventRequest) async throws -> CalendarEvent {
-        // TODO: Implement update event endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        return try await apiClient.updateEvent(id: id, event: event)
     }
 
     func deleteEvent(id: String) async throws {
-        // TODO: Implement delete event endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        try await apiClient.deleteEvent(id: id)
     }
 
     // MARK: - Meeting Briefs

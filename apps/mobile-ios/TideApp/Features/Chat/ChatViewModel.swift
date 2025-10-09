@@ -7,7 +7,7 @@ import Foundation
 import Combine
 
 @MainActor
-class ChatViewModel: ObservableObject {
+final class ChatViewModel: ObservableObject {
     @Published var messages: [ChatMessage] = []
     @Published var isLoading = false
     @Published var error: String?

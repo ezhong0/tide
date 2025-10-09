@@ -47,7 +47,7 @@ struct ConversationHistoryView: View {
     // MARK: - Search Bar
 
     private var searchBar: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Design.Spacing.sm) {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.tideSecondaryText)
 
@@ -62,18 +62,18 @@ struct ConversationHistoryView: View {
                 }
             }
         }
-        .padding(Spacing.md)
+        .padding(Design.Spacing.md)
         .background(Color.tideSurface)
         .cornerRadius(12)
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
+        .padding(.horizontal, Design.Spacing.md)
+        .padding(.vertical, Design.Spacing.sm)
     }
 
     // MARK: - Conversation List
 
     private var conversationList: some View {
         ScrollView {
-            LazyVStack(spacing: Spacing.md) {
+            LazyVStack(spacing: Design.Spacing.md) {
                 ForEach(viewModel.filteredConversations) { conversation in
                     ConversationRow(conversation: conversation)
                         .onTapGesture {
@@ -89,7 +89,7 @@ struct ConversationHistoryView: View {
                         }
                 }
             }
-            .padding(Spacing.md)
+            .padding(Design.Spacing.md)
         }
         .refreshable {
             await viewModel.loadConversations()
@@ -103,7 +103,7 @@ struct ConversationRow: View {
     let conversation: Conversation
 
     var body: some View {
-        HStack(spacing: Spacing.md) {
+        HStack(spacing: Design.Spacing.md) {
             // Icon
             Circle()
                 .fill(Color.tidePrimary.opacity(0.1))
@@ -114,7 +114,7 @@ struct ConversationRow: View {
                 )
 
             // Content
-            VStack(alignment: .leading, spacing: Spacing.xs) {
+            VStack(alignment: .leading, spacing: Design.Spacing.xs) {
                 Text(conversation.title ?? "Untitled Conversation")
                     .font(.tideHeadlineMedium)
                     .foregroundColor(.tidePrimaryText)
@@ -132,7 +132,7 @@ struct ConversationRow: View {
                 .foregroundColor(.tideSecondaryText)
                 .font(.system(size: 14))
         }
-        .padding(Spacing.md)
+        .padding(Design.Spacing.md)
         .background(Color.tideSurface)
         .cornerRadius(12)
     }

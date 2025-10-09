@@ -5,7 +5,7 @@
 
 import Foundation
 
-class NetworkEmailRepository: EmailRepository {
+final class NetworkEmailRepository: EmailRepository {
     private let apiClient: APIClientProtocol
 
     init(apiClient: APIClientProtocol) {
@@ -27,8 +27,19 @@ class NetworkEmailRepository: EmailRepository {
     }
 
     func deleteEmail(id: String) async throws {
-        // TODO: Implement delete endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        try await apiClient.deleteEmail(id: id)
+    }
+
+    func archiveEmail(id: String) async throws {
+        try await apiClient.archiveEmail(id: id)
+    }
+
+    func starEmail(id: String) async throws {
+        try await apiClient.starEmail(id: id)
+    }
+
+    func unstarEmail(id: String) async throws {
+        try await apiClient.unstarEmail(id: id)
     }
 
     // MARK: - Draft Operations

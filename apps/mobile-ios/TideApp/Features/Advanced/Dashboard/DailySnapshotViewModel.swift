@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class DailySnapshotViewModel: ObservableObject {
+final class DailySnapshotViewModel: ObservableObject {
     @Published var snapshot: DailySnapshot?
     @Published var priorityItems: [PriorityItem] = []
     @Published var pendingDecisions: [PendingDecision] = []
@@ -69,7 +69,7 @@ class DailySnapshotViewModel: ObservableObject {
         Task {
             do {
                 // TODO: Call decision service API
-                print("Decision \(decision.id): \(action)")
+                Logger.debug("Decision \(decision.id): \(action)")
 
                 // Remove from list
                 pendingDecisions.removeAll { $0.id == decision.id }
@@ -85,7 +85,7 @@ class DailySnapshotViewModel: ObservableObject {
             do {
                 // Execute prediction action
                 // TODO: Call action execution API
-                print("Accepting prediction: \(prediction.action)")
+                Logger.debug("Accepting prediction: \(prediction.action)")
 
                 // Remove from list
                 predictions.removeAll { $0.id == prediction.id }

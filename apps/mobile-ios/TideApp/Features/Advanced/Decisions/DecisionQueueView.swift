@@ -512,7 +512,7 @@ struct EmptyDecisionsView: View {
 // MARK: - View Model
 
 @MainActor
-class DecisionQueueViewModel: ObservableObject {
+final class DecisionQueueViewModel: ObservableObject {
     @Published var pendingDecisions: [Decision] = []
     @Published var decisionHistory: [Decision] = []
     @Published var isLoading = false

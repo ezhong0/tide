@@ -15,7 +15,7 @@ struct TidePrimaryButtonStyle: ButtonStyle {
     }
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Design.Spacing.sm) {
             if isLoading {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -27,8 +27,8 @@ struct TidePrimaryButtonStyle: ButtonStyle {
         .font(.tideLabelMedium)
         .fontWeight(.semibold)
         .foregroundColor(.white)
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, Spacing.md)
+        .padding(.horizontal, Design.Spacing.lg)
+        .padding(.vertical, Design.Spacing.md)
         .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -47,8 +47,8 @@ struct TideSecondaryButtonStyle: ButtonStyle {
             .font(.tideLabelMedium)
             .fontWeight(.semibold)
             .foregroundColor(.tidePrimary)
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.md)
+            .padding(.horizontal, Design.Spacing.lg)
+            .padding(.vertical, Design.Spacing.md)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -69,8 +69,8 @@ struct TideDestructiveButtonStyle: ButtonStyle {
             .font(.tideLabelMedium)
             .fontWeight(.semibold)
             .foregroundColor(.white)
-            .padding(.horizontal, Spacing.lg)
-            .padding(.vertical, Spacing.md)
+            .padding(.horizontal, Design.Spacing.lg)
+            .padding(.vertical, Design.Spacing.md)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 12)
@@ -87,8 +87,8 @@ struct TideCompactButtonStyle: ButtonStyle {
             .font(.tideLabelSmall)
             .fontWeight(.medium)
             .foregroundColor(.tidePrimary)
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
+            .padding(.horizontal, Design.Spacing.md)
+            .padding(.vertical, Design.Spacing.sm)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(configuration.isPressed ? Color.tidePrimary.opacity(0.1) : Color.tideSurface)
@@ -120,7 +120,7 @@ extension View {
 
 struct ButtonStyles_Previews: PreviewProvider {
     static var previews: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Design.Spacing.lg) {
             Button("Primary Button") {}
                 .tidePrimaryButton()
 
@@ -136,6 +136,6 @@ struct ButtonStyles_Previews: PreviewProvider {
             Button("Compact Button") {}
                 .tideCompactButton()
         }
-        .padding(Spacing.lg)
+        .padding(Design.Spacing.lg)
     }
 }

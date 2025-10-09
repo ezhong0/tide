@@ -15,16 +15,29 @@ class TideCore: ObservableObject {
     @Published var connectionStatus: String = "Disconnected"
 
     // MARK: - Services
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
     // private let dataManager = DataManager.shared  // Excluded from build
-    private let webSocketManager = WebSocketManager.shared
+    private let webSocketManager: WebSocketManagerProtocol
     private var cancellables = Set<AnyCancellable>()
     private var accessToken: String?
 
     // MARK: - Initialization
-    init() {
+    init(
+        apiClient: APIClientProtocol,
+        webSocketManager: WebSocketManagerProtocol
+    ) {
+        self.apiClient = apiClient
+        self.webSocketManager = webSocketManager
         loadConversations()
         setupWebSocketHandlers()
+    }
+
+    // Convenience init for backward compatibility with .shared
+    convenience init() {
+        self.init(
+            apiClient: APIClient.shared,
+            webSocketManager: WebSocketManager.shared
+        )
     }
 
     // MARK: - WebSocket Setup

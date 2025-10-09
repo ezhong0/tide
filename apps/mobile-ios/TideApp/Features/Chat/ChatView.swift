@@ -62,6 +62,8 @@ struct ChatView: View {
                     .onSubmit {
                         sendMessage()
                     }
+                    .accessibilityLabel("Message input")
+                    .accessibilityHint("Type your message to Tide AI assistant")
 
                 Button(action: sendMessage) {
                     Image(systemName: "arrow.up.circle.fill")
@@ -69,6 +71,8 @@ struct ChatView: View {
                         .foregroundColor(messageText.isEmpty ? .gray : .blue)
                 }
                 .disabled(messageText.isEmpty || viewModel.isLoading)
+                .accessibilityLabel("Send message")
+                .accessibilityHint("Double tap to send your message to Tide AI")
             }
             .padding()
             .background(Color(.systemBackground))
@@ -83,6 +87,8 @@ struct ChatView: View {
                 } label: {
                     Label("History", systemImage: "clock")
                 }
+                .accessibilityLabel("Conversation history")
+                .accessibilityHint("Double tap to view previous conversations")
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -92,15 +98,21 @@ struct ChatView: View {
                     } label: {
                         Label("New Conversation", systemImage: "plus.bubble")
                     }
+                    .accessibilityLabel("New conversation")
+                    .accessibilityHint("Start a new conversation with Tide AI")
 
                     Button(role: .destructive) {
                         viewModel.messages = []
                     } label: {
                         Label("Clear Chat", systemImage: "trash")
                     }
+                    .accessibilityLabel("Clear chat")
+                    .accessibilityHint("Delete all messages in this conversation")
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Chat options")
+                .accessibilityHint("View chat menu options")
             }
         }
         .sheet(isPresented: $showHistory) {
@@ -313,6 +325,8 @@ struct SuggestionChip: View {
             .foregroundColor(.blue)
             .cornerRadius(12)
         }
+        .accessibilityLabel(text)
+        .accessibilityHint("Double tap to use this suggestion")
     }
 }
 

@@ -18,96 +18,133 @@ struct MonthGridView: View {
 
     var body: some View {
         NavigationView {
-            VStack(spacing: 0) {
-                // Month navigation header
-                monthNavigationHeader
+            contentView
+        }
+    }
 
-                // Day of week labels
-                dayOfWeekLabels
+    private var contentView: some View {
+        VStack(spacing: 0) {
+            // Month navigation header
+            monthNavigationHeader
 
-                Divider()
+            // Day of week labels
+            dayOfWeekLabels
 
-                // Calendar grid
-                if viewModel.isLoading && viewModel.calendarDays.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    calendarGrid
-                }
-            }
-            .navigationTitle("Calendar")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingNewEvent = true
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                    }
-                }
+            Divider()
 
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        viewModel.goToToday()
-                        Task {
-                            await viewModel.loadEvents()
-                        }
-                    } label: {
-                        Text("Today")
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
-            .sheet(isPresented: $showingNewEvent) {
-                EventEditView(mode: .create)
-                    .environmentObject(container)
-            }
-            .sheet(item: $selectedDate) { date in
-                DayAgendaView(date: date)
-                    .environmentObject(container)
-            }
-            .task {
-                await viewModel.loadEvents()
+            // Calendar grid with state management
+            calendarGridWithState
+        }
+        .navigationTitle("Calendar")
+        .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            toolbarContent
+        }
+        .sheet(isPresented: $showingNewEvent) {
+            EventEditView(mode: .create)
+                .environmentObject(container)
+        }
+        .sheet(item: $selectedDate) { date in
+            DayAgendaView(date: date)
+                .environmentObject(container)
+        }
+        .task {
+            await viewModel.loadEvents()
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button {
+                showingNewEvent = true
+            } label: {
+                Image(systemName: "plus.circle.fill")
+                    .font(Design.Typography.Title.bold)
+                    .foregroundColor(Design.Colors.Semantic.primary)
             }
         }
+
+        ToolbarItem(placement: .navigationBarLeading) {
+            Button {
+                withAnimation(Design.Animation.standard) {
+                    viewModel.goToToday()
+                }
+                Task {
+                    await viewModel.loadEvents()
+                }
+            } label: {
+                Text("Today")
+                    .font(Design.Typography.Body.semibold)
+            }
+        }
+    }
+
+    private var calendarGridWithState: some View {
+        calendarGrid
+            .stateContent(
+                isLoading: viewModel.isLoading,
+                error: viewModel.error,
+                isEmpty: viewModel.calendarDays.isEmpty,
+                retryAction: retryAction,
+                emptyContent: emptyStateView
+            )
+    }
+
+    private func retryAction() {
+        Task { await viewModel.loadEvents() }
+    }
+
+    private func emptyStateView() -> some View {
+        EmptyView(
+            icon: "calendar",
+            title: "No Calendar Data",
+            message: "Unable to load calendar",
+            actionTitle: "Retry",
+            action: {
+                Task { await viewModel.loadEvents() }
+            }
+        )
     }
 
     // MARK: - Month Navigation Header
     private var monthNavigationHeader: some View {
         HStack {
             Button {
-                viewModel.previousMonth()
+                withAnimation(Design.Animation.standard) {
+                    viewModel.previousMonth()
+                }
                 Task {
                     await viewModel.loadEvents()
                 }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+                    .font(Design.Typography.Title.bold)
+                    .foregroundColor(Design.Colors.Semantic.primary)
             }
 
             Spacer()
 
             Text(viewModel.monthYearString)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(Design.Typography.Title.bold)
 
             Spacer()
 
             Button {
-                viewModel.nextMonth()
+                withAnimation(Design.Animation.standard) {
+                    viewModel.nextMonth()
+                }
                 Task {
                     await viewModel.loadEvents()
                 }
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.title2)
-                    .foregroundColor(.blue)
+                    .font(Design.Typography.Title.bold)
+                    .foregroundColor(Design.Colors.Semantic.primary)
             }
         }
-        .padding()
-        .background(Color(.systemBackground))
+        .padding(Design.Spacing.md)
+        .background(Design.Colors.Background.primary)
     }
 
     // MARK: - Day of Week Labels
@@ -115,27 +152,28 @@ struct MonthGridView: View {
         HStack(spacing: 0) {
             ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
                 Text(day)
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.secondary)
+                    .font(Design.Typography.Caption.semibold)
+                    .foregroundColor(Design.Colors.Text.secondary)
                     .frame(maxWidth: .infinity)
             }
         }
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground))
+        .padding(.vertical, Design.Spacing.sm)
+        .background(Design.Colors.Background.primary)
     }
 
     // MARK: - Calendar Grid
     private var calendarGrid: some View {
         ScrollView {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 7), spacing: 2) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Design.Spacing.xxs), count: 7), spacing: Design.Spacing.xxs) {
                 ForEach(viewModel.calendarDays) { calendarDay in
                     DayCell(calendarDay: calendarDay) {
-                        selectedDate = calendarDay.date
+                        withAnimation(Design.Animation.standard) {
+                            selectedDate = calendarDay.date
+                        }
                     }
                 }
             }
-            .padding(2)
+            .padding(Design.Spacing.xxs)
         }
     }
 }
@@ -147,17 +185,17 @@ struct DayCell: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 2) {
+            VStack(spacing: Design.Spacing.xxs) {
                 Text("\(calendarDay.day)")
                     .font(.system(size: 16, weight: calendarDay.isToday ? .bold : .regular))
                     .foregroundColor(textColor)
 
                 // Event indicator dots
                 if calendarDay.hasEvents {
-                    HStack(spacing: 2) {
+                    HStack(spacing: Design.Spacing.xxs) {
                         ForEach(0..<min(calendarDay.events.count, 3), id: \.self) { _ in
                             Circle()
-                                .fill(Color.blue)
+                                .fill(Design.Colors.Semantic.primary)
                                 .frame(width: 4, height: 4)
                         }
                     }
@@ -169,32 +207,32 @@ struct DayCell: View {
             .frame(height: 60)
             .frame(maxWidth: .infinity)
             .background(backgroundColor)
-            .cornerRadius(8)
+            .cornerRadius(Design.CornerRadius.md)
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(calendarDay.isToday ? Color.blue : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: Design.CornerRadius.md)
+                    .stroke(calendarDay.isToday ? Design.Colors.Semantic.primary : Color.clear, lineWidth: 2)
             )
         }
     }
 
     private var textColor: Color {
         if !calendarDay.isCurrentMonth {
-            return .secondary.opacity(0.5)
+            return Design.Colors.Text.secondary.opacity(0.5)
         }
         if calendarDay.isToday {
-            return .blue
+            return Design.Colors.Semantic.primary
         }
-        return .primary
+        return Design.Colors.Text.primary
     }
 
     private var backgroundColor: Color {
         if calendarDay.isToday {
-            return Color.blue.opacity(0.1)
+            return Design.Colors.Semantic.primary.opacity(0.1)
         }
         if !calendarDay.isCurrentMonth {
-            return Color(.systemGray6)
+            return Design.Colors.Background.tertiary
         }
-        return Color(.systemBackground)
+        return Design.Colors.Background.primary
     }
 }
 
@@ -217,32 +255,31 @@ struct DayAgendaView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: Design.Spacing.md) {
                     // Date header
-                    VStack(spacing: 4) {
+                    VStack(spacing: Design.Spacing.xs) {
                         Text(date, style: .date)
-                            .font(.title2)
-                            .fontWeight(.bold)
+                            .font(Design.Typography.Title.bold)
 
                         Text("\(dayEvents.count) event(s)")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .font(Design.Typography.Body.regular)
+                            .foregroundColor(Design.Colors.Text.secondary)
                     }
-                    .padding()
+                    .padding(Design.Spacing.md)
 
                     // Event list
                     if dayEvents.isEmpty {
-                        VStack(spacing: 12) {
+                        VStack(spacing: Design.Spacing.sm) {
                             Image(systemName: "calendar.badge.checkmark")
                                 .font(.system(size: 48))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Design.Colors.Text.secondary)
 
                             Text("No events scheduled")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(Design.Typography.Headline.bold)
+                                .foregroundColor(Design.Colors.Text.secondary)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
+                        .padding(.vertical, Design.Spacing.xxl)
                     } else {
                         ForEach(dayEvents) { event in
                             EventCard(event: event)
@@ -257,6 +294,7 @@ struct DayAgendaView: View {
                     Button("Done") {
                         dismiss()
                     }
+                    .font(Design.Typography.Body.semibold)
                 }
             }
             .task {
@@ -267,7 +305,7 @@ struct DayAgendaView: View {
 }
 
 // MARK: - Date Identifiable Extension
-extension Date: Identifiable {
+extension Date: @retroactive Identifiable {
     public var id: TimeInterval {
         self.timeIntervalSince1970
     }

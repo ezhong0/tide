@@ -20,35 +20,41 @@ struct EmailDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(.top, 100)
-                } else if let email = viewModel.email {
+                if let email = viewModel.email {
                     // Email Header
-                    emailHeader(email)
+                    DetailHeaderSection(email: email)
 
                     Divider()
 
                     // Email Body
-                    emailBody(email)
+                    DetailBodySection(email: email)
 
                     // Attachments (if any)
                     if let attachments = email.attachments, !attachments.isEmpty {
-                        attachmentsSection(attachments)
+                        DetailAttachmentsSection(attachments: attachments)
                     }
 
                     // Previous messages in thread
                     if let threadMessages = viewModel.threadMessages, !threadMessages.isEmpty {
-                        threadSection(threadMessages)
-                    }
-                } else if let error = viewModel.error {
-                    ErrorView(error: error) {
-                        Task {
-                            await viewModel.loadEmail()
-                        }
+                        DetailThreadSection(messages: threadMessages)
                     }
                 }
+            }
+            .stateContent(
+                isLoading: viewModel.isLoading,
+                error: viewModel.error,
+                isEmpty: viewModel.email == nil,
+                retryAction: {
+                    Task {
+                        await viewModel.loadEmail()
+                    }
+                }
+            ) {
+                EmptyView(
+                    icon: "envelope",
+                    title: "Email not found",
+                    message: "This email may have been deleted"
+                )
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -63,6 +69,8 @@ struct EmailDetailView: View {
                             systemImage: viewModel.email?.isRead == true ? "envelope.badge" : "envelope.open"
                         )
                     }
+                    .accessibilityLabel(viewModel.email?.isRead == true ? "Mark as unread" : "Mark as read")
+                    .accessibilityHint("Double tap to toggle read status")
 
                     Button {
                         Task { await viewModel.toggleStar() }
@@ -72,6 +80,8 @@ struct EmailDetailView: View {
                             systemImage: viewModel.email?.isStarred == true ? "star.slash" : "star"
                         )
                     }
+                    .accessibilityLabel(viewModel.email?.isStarred == true ? "Remove star" : "Add star")
+                    .accessibilityHint("Double tap to toggle starred status")
 
                     Divider()
 
@@ -83,6 +93,8 @@ struct EmailDetailView: View {
                     } label: {
                         Label("Archive", systemImage: "archivebox")
                     }
+                    .accessibilityLabel("Archive email")
+                    .accessibilityHint("Double tap to move this email to archive")
 
                     Button(role: .destructive) {
                         Task {
@@ -92,444 +104,23 @@ struct EmailDetailView: View {
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
+                    .accessibilityLabel("Delete email")
+                    .accessibilityHint("Double tap to permanently delete this email")
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Email actions")
+                .accessibilityHint("Double tap to show email actions menu")
             }
         }
         .safeAreaInset(edge: .bottom) {
             if viewModel.email != nil {
-                actionButtons
+                DetailActionButtons(emailId: emailId)
             }
         }
         .task {
             await viewModel.loadEmail()
         }
-    }
-
-    // MARK: - Email Header
-    @ViewBuilder
-    private func emailHeader(_ email: EmailDetail) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // From
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(email.fromName ?? email.from)
-                        .font(.headline)
-
-                    Text(email.from)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                if email.isVIP {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.yellow)
-                }
-            }
-
-            // To
-            if !email.to.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("To: \(email.to.joined(separator: ", "))")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-
-            // CC (if present)
-            if let cc = email.cc, !cc.isEmpty {
-                Text("CC: \(cc.joined(separator: ", "))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Date
-            Text(email.receivedAt, style: .relative)
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            // Subject
-            Text(email.subject)
-                .font(.title3)
-                .fontWeight(.semibold)
-        }
-        .padding()
-    }
-
-    // MARK: - Email Body
-    @ViewBuilder
-    private func emailBody(_ email: EmailDetail) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // AI Summary (if available)
-            if let summary = email.aiSummary {
-                HStack {
-                    Image(systemName: "sparkles")
-                        .foregroundColor(.blue)
-                    Text(summary)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
-                .background(Color.blue.opacity(0.1))
-                .cornerRadius(8)
-            }
-
-            // Body text
-            Text(email.body)
-                .font(.body)
-                .textSelection(.enabled)
-        }
-        .padding()
-    }
-
-    // MARK: - Attachments
-    @ViewBuilder
-    private func attachmentsSection(_ attachments: [Attachment]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Attachments (\(attachments.count))")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
-
-            ForEach(attachments) { attachment in
-                HStack {
-                    Image(systemName: "doc.fill")
-                        .foregroundColor(.blue)
-
-                    VStack(alignment: .leading) {
-                        Text(attachment.filename)
-                            .font(.callout)
-
-                        Text(formatFileSize(attachment.size))
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button {
-                        // Download attachment
-                    } label: {
-                        Image(systemName: "arrow.down.circle")
-                    }
-                }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(8)
-            }
-        }
-        .padding()
-    }
-
-    // MARK: - Thread Section
-    @ViewBuilder
-    private func threadSection(_ messages: [EmailDetail]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Divider()
-
-            Text("Previous Messages (\(messages.count))")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
-                .padding(.horizontal)
-
-            ForEach(messages) { message in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text(message.fromName ?? message.from)
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-
-                        Spacer()
-
-                        Text(message.receivedAt, style: .relative)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-
-                    Text(message.body)
-                        .font(.callout)
-                        .foregroundColor(.secondary)
-                        .lineLimit(3)
-                }
-                .padding()
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(8)
-                .padding(.horizontal)
-            }
-        }
-        .padding(.vertical)
-    }
-
-    // MARK: - Action Buttons
-    private var actionButtons: some View {
-        HStack(spacing: 12) {
-            Button {
-                navigateToCompose(mode: .reply)
-            } label: {
-                Label("Reply", systemImage: "arrowshape.turn.up.left")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-
-            Button {
-                navigateToCompose(mode: .replyAll)
-            } label: {
-                Label("Reply All", systemImage: "arrowshape.turn.up.left.2")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-
-            Button {
-                navigateToCompose(mode: .forward)
-            } label: {
-                Label("Forward", systemImage: "arrowshape.turn.up.right")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
-        .background(Color(.systemBackground))
-        .shadow(color: Color.black.opacity(0.05), radius: 5, y: -2)
-    }
-
-    // MARK: - Helpers
-    private func navigateToCompose(mode: ComposeMode) {
-        navigationState.emailPath.append(EmailDestination.compose(replyTo: emailId, mode: mode))
-    }
-
-    private func formatFileSize(_ bytes: Int) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: Int64(bytes))
-    }
-}
-
-// MARK: - Email Detail Model
-struct EmailDetail: Identifiable {
-    let id: String
-    let from: String
-    let fromName: String?
-    let to: [String]
-    let cc: [String]?
-    let subject: String
-    let body: String
-    let receivedAt: Date
-    var isRead: Bool
-    var isStarred: Bool
-    let isVIP: Bool
-    let aiSummary: String?
-    let attachments: [Attachment]?
-}
-
-struct Attachment: Identifiable {
-    let id: String
-    let filename: String
-    let size: Int
-    let mimeType: String
-}
-
-// MARK: - View Model
-@MainActor
-class EmailDetailViewModel: ObservableObject {
-    @Published var email: EmailDetail?
-    @Published var threadMessages: [EmailDetail]?
-    @Published var isLoading = false
-    @Published var error: Error?
-
-    private let emailId: String
-    private let apiClient: APIClientProtocol
-    private let authManager: AuthManagerProtocol
-
-    init(emailId: String, apiClient: APIClientProtocol, authManager: AuthManagerProtocol) {
-        self.emailId = emailId
-        self.apiClient = apiClient
-        self.authManager = authManager
-    }
-
-    func loadEmail() async {
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            // Fetch email details from API
-            let fetchedEmail = try await apiClient.getEmailDetail(id: emailId)
-
-            // Convert API Email to EmailDetail
-            email = EmailDetail(
-                id: fetchedEmail.id,
-                from: fetchedEmail.from.email,
-                fromName: fetchedEmail.from.name,
-                to: fetchedEmail.to.map { $0.email },
-                cc: nil, // TODO: Add CC support to Email model
-                subject: fetchedEmail.subject,
-                body: fetchedEmail.body,
-                receivedAt: fetchedEmail.timestamp,
-                isRead: fetchedEmail.isRead,
-                isStarred: fetchedEmail.isStarred,
-                isVIP: false, // TODO: Determine VIP status
-                aiSummary: fetchedEmail.aiSummary,
-                attachments: nil // TODO: Add attachments support
-            )
-
-            // Load thread messages
-            await loadThread()
-
-        } catch {
-            print("Error loading email: \(error)")
-            self.error = error
-        }
-    }
-
-    func loadThread() async {
-        do {
-            let threadEmails = try await apiClient.getEmailThread(id: emailId)
-
-            // Convert to EmailDetail array, excluding the current email
-            threadMessages = threadEmails
-                .filter { $0.id != emailId }
-                .map { email in
-                    EmailDetail(
-                        id: email.id,
-                        from: email.from.email,
-                        fromName: email.from.name,
-                        to: email.to.map { $0.email },
-                        cc: nil,
-                        subject: email.subject,
-                        body: email.body,
-                        receivedAt: email.timestamp,
-                        isRead: email.isRead,
-                        isStarred: email.isStarred,
-                        isVIP: false,
-                        aiSummary: email.aiSummary,
-                        attachments: nil
-                    )
-                }
-                .sorted { $0.receivedAt < $1.receivedAt } // Sort chronologically
-        } catch {
-            print("Error loading thread: \(error)")
-            // Don't set error for thread - email is already loaded
-            threadMessages = []
-        }
-    }
-
-    func toggleRead() async {
-        guard var email = email else { return }
-        let wasRead = email.isRead
-
-        // Optimistic update
-        email = EmailDetail(
-            id: email.id,
-            from: email.from,
-            fromName: email.fromName,
-            to: email.to,
-            cc: email.cc,
-            subject: email.subject,
-            body: email.body,
-            receivedAt: email.receivedAt,
-            isRead: !email.isRead,
-            isStarred: email.isStarred,
-            isVIP: email.isVIP,
-            aiSummary: email.aiSummary,
-            attachments: email.attachments
-        )
-        self.email = email
-
-        // API call
-        do {
-            if wasRead {
-                try await apiClient.markEmailUnread(id: emailId)
-            } else {
-                try await apiClient.markEmailRead(id: emailId)
-            }
-        } catch {
-            print("Error toggling read status: \(error)")
-            // Rollback on error
-            self.email?.isRead = wasRead
-        }
-    }
-
-    func toggleStar() async {
-        guard var email = email else { return }
-        let wasStarred = email.isStarred
-
-        // Optimistic update
-        email = EmailDetail(
-            id: email.id,
-            from: email.from,
-            fromName: email.fromName,
-            to: email.to,
-            cc: email.cc,
-            subject: email.subject,
-            body: email.body,
-            receivedAt: email.receivedAt,
-            isRead: email.isRead,
-            isStarred: !email.isStarred,
-            isVIP: email.isVIP,
-            aiSummary: email.aiSummary,
-            attachments: email.attachments
-        )
-        self.email = email
-
-        // API call
-        do {
-            if wasStarred {
-                try await apiClient.unstarEmail(id: emailId)
-            } else {
-                try await apiClient.starEmail(id: emailId)
-            }
-        } catch {
-            print("Error toggling star: \(error)")
-            // Rollback on error
-            self.email?.isStarred = wasStarred
-        }
-    }
-
-    func archive() async {
-        do {
-            try await apiClient.archiveEmail(id: emailId)
-        } catch {
-            print("Error archiving email: \(error)")
-            self.error = error
-        }
-    }
-
-    func delete() async {
-        do {
-            try await apiClient.deleteEmail(id: emailId)
-        } catch {
-            print("Error deleting email: \(error)")
-            self.error = error
-        }
-    }
-}
-
-// MARK: - Error View
-struct ErrorView: View {
-    let error: Error
-    let retry: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 48))
-                .foregroundColor(.orange)
-
-            Text("Error loading email")
-                .font(.headline)
-
-            Text(error.localizedDescription)
-                .font(.callout)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            Button("Try Again", action: retry)
-                .buttonStyle(.borderedProminent)
-        }
-        .padding()
     }
 }
 

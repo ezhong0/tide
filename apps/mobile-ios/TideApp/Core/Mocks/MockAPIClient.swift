@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class MockAPIClient: APIClientProtocol {
+final class MockAPIClient: APIClientProtocol {
     // MARK: - Mock Data Control
     var shouldFail: Bool = false
     var mockDelay: TimeInterval = 0.3
@@ -18,8 +18,8 @@ class MockAPIClient: APIClientProtocol {
 
     // MARK: - Chat
     func sendChatMessage(message: String, conversationId: String?) async throws -> ChatResponse {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return ChatResponse(
             conversationId: conversationId ?? UUID().uuidString,
@@ -30,8 +30,8 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func getConversations() async throws -> [Conversation] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return [
             Conversation(
@@ -45,8 +45,8 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func getConversationMessages(conversationId: String) async throws -> [ChatMessage] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return [
             ChatMessage(
@@ -68,14 +68,14 @@ class MockAPIClient: APIClientProtocol {
 
     // MARK: - Email
     func getEmails(category: String?) async throws -> [Email] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func getEmailDetail(id: String) async throws -> Email {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return Email(
             id: id,
@@ -89,38 +89,85 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func generateEmailDrafts(emailId: String) async throws -> [EmailDraft] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func generateEmailDrafts(emailId: String, userId: String, context: EmailComposeContext?) async throws -> [EmailDraft] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func sendEmail(to: [String], subject: String, body: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func getGmailAuthURL() async throws -> String {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return "https://mock-auth-url.com"
     }
 
     func checkEmailConnection() async throws -> Bool {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return true
+    }
+
+    // MARK: - Email Actions
+    func getEmailThread(id: String) async throws -> [Email] {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+        return []
+    }
+
+    func markEmailRead(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func markEmailUnread(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func starEmail(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func unstarEmail(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func archiveEmail(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func deleteEmail(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func replyToEmail(id: String, body: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
+    func forwardEmail(id: String, to: [String], body: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     // MARK: - Email Intelligence
     func getRelationship(userId: String, contactEmail: String) async throws -> RelationshipIntelligence {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return RelationshipIntelligence(
             contactEmail: contactEmail,
@@ -132,49 +179,64 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func getAutomatedEmailActions(userId: String) async throws -> [AutomatedEmailAction] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func getAutomatedActionsSummary(userId: String) async throws -> ActionsSummary {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return ActionsSummary(totalActions: 0, successfulActions: 0, failedActions: 0)
     }
 
     func getLearningInsights(userId: String) async throws -> [LearningInsight] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func undoAutomatedAction(actionId: String, userId: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func provideActionFeedback(actionId: String, userId: String, feedback: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func markContactAsVIP(userId: String, contactEmail: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     // MARK: - Calendar
     func getCalendarEvents(startDate: Date, endDate: Date) async throws -> [CalendarEvent] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
+    func getCalendarEvent(id: String) async throws -> CalendarEvent {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+
+        return CalendarEvent(
+            id: id,
+            title: "Mock Event",
+            startTime: Date(),
+            endTime: Date().addingTimeInterval(3600),
+            description: "Mock event description",
+            location: nil,
+            attendees: []
+        )
+    }
+
     func getMeetingBrief(eventId: String) async throws -> MeetingBrief {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return MeetingBrief(
             eventId: eventId,
@@ -186,8 +248,8 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func createEvent(event: CreateEventRequest) async throws -> CalendarEvent {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return CalendarEvent(
             id: UUID().uuidString,
@@ -200,16 +262,36 @@ class MockAPIClient: APIClientProtocol {
         )
     }
 
+    func updateEvent(id: String, event: CreateEventRequest) async throws -> CalendarEvent {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+
+        return CalendarEvent(
+            id: id,
+            title: event.title,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            description: event.description,
+            location: nil,
+            attendees: []
+        )
+    }
+
+    func deleteEvent(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
     // MARK: - Calendar Intelligence
     func getMeetingBriefs(userId: String) async throws -> [MeetingBrief] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func generateMeetingBrief(eventId: String, userId: String) async throws -> MeetingBrief {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return MeetingBrief(
             eventId: eventId,
@@ -221,69 +303,113 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func getCalendarOptimizations(userId: String) async throws -> [CalendarOptimization] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func acceptOptimization(optimizationId: String, userId: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func rejectOptimization(optimizationId: String, userId: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func getMeetingConflicts(userId: String) async throws -> [MeetingConflict] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func resolveConflict(conflictId: String, userId: String, resolution: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func findOptimalTimeSlots(title: String, attendees: [String], durationMinutes: Int, userId: String) async throws -> [TimeSlot] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     // MARK: - Tasks
-    func getTasks(status: String?) async throws -> [Task] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+    func getTasks(status: String?) async throws -> [TaskAPIModel] {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
-    func createTask(task: CreateTaskRequest) async throws -> Task {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+    func getTask(id: String) async throws -> TaskAPIModel {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
-        return Task(
+        return TaskAPIModel(
+            id: id,
+            title: "Mock Task",
+            description: "This is a mock task",
+            status: "pending",
+            priority: "medium",
+            dueDate: Date().addingTimeInterval(86400),
+            createdAt: Date(),
+            updatedAt: nil,
+            userId: nil,
+            isCompleted: false
+        )
+    }
+
+    func createTask(task: CreateTaskRequest) async throws -> TaskAPIModel {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+
+        return TaskAPIModel(
             id: UUID().uuidString,
             title: task.title,
             description: task.description,
             status: "pending",
             priority: task.priority,
             dueDate: task.dueDate,
-            createdAt: Date()
+            createdAt: Date(),
+            updatedAt: nil,
+            userId: nil,
+            isCompleted: false
         )
     }
 
+    func updateTask(id: String, task: CreateTaskRequest) async throws -> TaskAPIModel {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+
+        return TaskAPIModel(
+            id: id,
+            title: task.title,
+            description: task.description,
+            status: "pending",
+            priority: task.priority,
+            dueDate: task.dueDate,
+            createdAt: Date(),
+            updatedAt: Date(),
+            userId: nil,
+            isCompleted: false
+        )
+    }
+
+    func deleteTask(id: String) async throws {
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
+    }
+
     func updateTaskStatus(taskId: String, status: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     // MARK: - Intelligence
     func getDailySnapshot(userId: String) async throws -> DailySnapshot {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
 
         return DailySnapshot(
             date: Date(),
@@ -299,66 +425,66 @@ class MockAPIClient: APIClientProtocol {
     }
 
     func getPriorityItems(userId: String) async throws -> [PriorityItem] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func getPendingDecisions(userId: String) async throws -> [PendingDecision] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func getPredictions(userId: String) async throws -> [Prediction] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     // MARK: - Actions
     func executeAction(_ action: SuggestedAction) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func getPendingActions(userId: String) async throws -> [ActionSuggestion] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func approveAction(actionId: String, userId: String, approved: Bool, modifications: [String: AnyCodable]?) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func undoAction(actionId: String, userId: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func getActionHistory(userId: String) async throws -> [ActionSuggestion] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     // MARK: - Decisions
     func getPendingDecisions(userId: String) async throws -> [Decision] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 
     func makeDecision(decisionId: String, userId: String, chosenOption: String?, reasoning: String?, status: String) async throws {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
     }
 
     func getDecisionHistory(userId: String) async throws -> [Decision] {
-        try await Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
-        if shouldFail { throw APIError.networkError }
+        try await Swift.Task.sleep(nanoseconds: UInt64(mockDelay * 1_000_000_000))
+        if shouldFail { throw NetworkError.noInternetConnection }
         return []
     }
 }

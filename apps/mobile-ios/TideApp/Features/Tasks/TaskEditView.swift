@@ -30,6 +30,8 @@ struct TaskEditView: View {
                 Section {
                     TextField("Task Title", text: $viewModel.title)
                         .focused($focusedField, equals: .title)
+                        .accessibilityLabel("Task title")
+                        .accessibilityHint("Enter a title for this task")
                 }
 
                 // Status & Priority
@@ -40,6 +42,9 @@ struct TaskEditView: View {
                                 .tag(status)
                         }
                     }
+                    .accessibilityLabel("Task status")
+                    .accessibilityHint("Select the current status of this task")
+                    .accessibilityValue(viewModel.status.title)
 
                     Picker("Priority", selection: $viewModel.priority) {
                         ForEach(TaskPriority.allCases, id: \.self) { priority in
@@ -47,11 +52,16 @@ struct TaskEditView: View {
                                 .tag(priority)
                         }
                     }
+                    .accessibilityLabel("Task priority")
+                    .accessibilityHint("Select the priority level for this task")
+                    .accessibilityValue(viewModel.priority.title)
                 }
 
                 // Due Date
                 Section {
                     Toggle("Set Due Date", isOn: $viewModel.hasDueDate)
+                        .accessibilityLabel("Set due date")
+                        .accessibilityHint(viewModel.hasDueDate ? "Turn off to remove due date" : "Turn on to add a due date")
 
                     if viewModel.hasDueDate {
                         DatePicker(
@@ -59,6 +69,8 @@ struct TaskEditView: View {
                             selection: $viewModel.dueDate,
                             displayedComponents: [.date]
                         )
+                        .accessibilityLabel("Task due date")
+                        .accessibilityHint("Select the date when this task is due")
                     }
                 } header: {
                     Text("Due Date")
@@ -69,6 +81,8 @@ struct TaskEditView: View {
                     TextEditor(text: $viewModel.description)
                         .frame(minHeight: 100)
                         .focused($focusedField, equals: .description)
+                        .accessibilityLabel("Task description")
+                        .accessibilityHint("Enter an optional description for this task")
                 } header: {
                     Text("Description")
                 }
@@ -91,6 +105,8 @@ struct TaskEditView: View {
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
                                         }
+                                        .accessibilityLabel("Remove tag \(tag)")
+                                        .accessibilityHint("Removes this tag from the task")
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 6)
@@ -108,6 +124,8 @@ struct TaskEditView: View {
                     } label: {
                         Label("Add Tag", systemImage: "plus.circle.fill")
                     }
+                    .accessibilityLabel("Add tag")
+                    .accessibilityHint("Add a new tag to this task")
                 } header: {
                     Text("Tags")
                 }
@@ -123,6 +141,8 @@ struct TaskEditView: View {
                             dismiss()
                         }
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityHint(viewModel.hasChanges ? "Discard changes and return to previous screen" : "Return to previous screen")
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -135,6 +155,8 @@ struct TaskEditView: View {
                         }
                     }
                     .disabled(!viewModel.canSave || viewModel.isSaving)
+                    .accessibilityLabel("Save task")
+                    .accessibilityHint(viewModel.canSave ? "Save this task" : "Enter a title to save this task")
                 }
             }
             .alert("Discard Changes?", isPresented: $showCancelConfirmation) {
@@ -172,7 +194,7 @@ struct TaskEditView: View {
 
 // MARK: - View Model
 @MainActor
-class TaskEditViewModel: ObservableObject {
+final class TaskEditViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var description: String = ""
     @Published var status: TaskStatus = .todo
@@ -233,7 +255,7 @@ class TaskEditViewModel: ObservableObject {
             initialState = "\(title)\(description)\(status)\(priority)\(hasDueDate)\(dueDate)\(tags)"
 
         } catch {
-            print("Error loading task: \(error)")
+            Logger.error("Error loading task", error: error)
             self.error = error
             self.showError = true
         }
@@ -265,7 +287,7 @@ class TaskEditViewModel: ObservableObject {
             saveSuccess = true
 
         } catch {
-            print("Error saving task: \(error)")
+            Logger.error("Error saving task", error: error)
             self.error = error
             self.showError = true
         }

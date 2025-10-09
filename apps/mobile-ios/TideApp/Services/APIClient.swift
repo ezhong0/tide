@@ -5,7 +5,7 @@
 
 import Foundation
 
-class APIClient: APIClientProtocol {
+final class APIClient: APIClientProtocol {
     // Keep shared for backward compatibility, but deprecate
     @available(*, deprecated, message: "Use dependency injection instead of shared instance")
     static let shared = APIClient(authManager: AuthManager.shared, baseURL: Config.apiBaseURL)
@@ -37,15 +37,29 @@ class APIClient: APIClientProtocol {
             return nil
         }
 
-        // Check if token is expired (JWT tokens typically have expiry in payload)
-        // In production, would decode JWT and check exp claim
-        // For now, add basic validation that token exists and is not empty
+        // Validate token is not empty
         if token.isEmpty {
             return nil
         }
 
-        // TODO: Add proper JWT expiry check by decoding token and checking exp claim
-        // If expired, trigger token refresh before returning
+        // Check if token is expired using JWTDecoder
+        if let decodedToken = JWTDecoder.decode(token) {
+            if decodedToken.isExpired {
+                Logger.warning("Access token is expired, needs refresh")
+                // Token is expired - authManager should handle refresh
+                // Return nil to trigger re-authentication
+                return nil
+            }
+
+            // Check if token is about to expire (within 5 minutes)
+            if decodedToken.isExpiringSoon(within: 300) {
+                Logger.info("Access token expiring soon, consider refreshing")
+                // Could trigger background refresh here
+            }
+        } else {
+            Logger.warning("Failed to decode JWT token, treating as invalid")
+            return nil
+        }
 
         return token
     }
@@ -67,6 +81,10 @@ class APIClient: APIClientProtocol {
 
     func getConversationMessages(conversationId: String) async throws -> [ChatMessage] {
         return try await get(.aiConversationMessages(conversationId: conversationId))
+    }
+
+    func deleteConversation(id: String) async throws {
+        let _: EmptyResponse = try await delete(.aiConversationDelete(conversationId: id))
     }
 
     // MARK: - Email
@@ -348,77 +366,89 @@ class APIClient: APIClientProtocol {
     // MARK: - Generic HTTP Methods
 
     private func get<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
-        guard let url = URL(string: baseURL + endpoint.path) else {
-            throw APIError.invalidURL
+        return try await RetryLogic.executeWithRetry {
+            try await self.performRequest(endpoint: endpoint, method: "GET", body: nil as EmptyBody?)
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        addAuthHeader(&request)
-
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(T.self, from: data)
     }
 
     private func post<T: Encodable, U: Decodable>(_ endpoint: Endpoint, body: T) async throws -> U {
-        guard let url = URL(string: baseURL + endpoint.path) else {
-            throw APIError.invalidURL
+        return try await RetryLogic.executeWithRetry {
+            try await self.performRequest(endpoint: endpoint, method: "POST", body: body)
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(&request)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(body)
-
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(U.self, from: data)
     }
 
     private func put<T: Encodable, U: Decodable>(_ endpoint: Endpoint, body: T) async throws -> U {
-        guard let url = URL(string: baseURL + endpoint.path) else {
-            throw APIError.invalidURL
+        return try await RetryLogic.executeWithRetry {
+            try await self.performRequest(endpoint: endpoint, method: "PUT", body: body)
         }
-        var request = URLRequest(url: url)
-        request.httpMethod = "PUT"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        addAuthHeader(&request)
-
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        request.httpBody = try encoder.encode(body)
-
-        let (data, response) = try await session.data(for: request)
-        try validateResponse(response)
-
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(U.self, from: data)
     }
 
     private func delete<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
-        guard let url = URL(string: baseURL + endpoint.path) else {
-            throw APIError.invalidURL
+        return try await RetryLogic.executeWithRetry {
+            try await self.performRequest(endpoint: endpoint, method: "DELETE", body: nil as EmptyBody?)
         }
+    }
+
+    // MARK: - Core Request Method
+
+    private func performRequest<T: Encodable, U: Decodable>(
+        endpoint: Endpoint,
+        method: String,
+        body: T?
+    ) async throws -> U {
+        guard let url = URL(string: baseURL + endpoint.path) else {
+            Logger.error("Invalid URL: \(baseURL + endpoint.path)")
+            throw NetworkError.invalidURL
+        }
+
         var request = URLRequest(url: url)
-        request.httpMethod = "DELETE"
+        request.httpMethod = method
         addAuthHeader(&request)
 
+        // Encode body if present
+        if let body = body {
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            request.httpBody = try encoder.encode(body)
+        }
+
+        // Log request
+        Logger.networkRequest(
+            method: method,
+            url: url.absoluteString,
+            headers: request.allHTTPHeaderFields,
+            body: request.httpBody
+        )
+
+        // Perform request
         let (data, response) = try await session.data(for: request)
+
+        // Log response
+        guard let httpResponse = response as? HTTPURLResponse else {
+            Logger.error("Invalid response type")
+            throw NetworkError.unknown(NSError(domain: "InvalidResponse", code: -1))
+        }
+
+        Logger.networkResponse(
+            url: url.absoluteString,
+            statusCode: httpResponse.statusCode,
+            data: data
+        )
+
+        // Validate response
         try validateResponse(response)
 
+        // Decode response
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(T.self, from: data)
+
+        do {
+            return try decoder.decode(U.self, from: data)
+        } catch {
+            Logger.error("Decoding failed", error: error)
+            throw NetworkError.decodingFailed(error)
+        }
     }
 
     private func addAuthHeader(_ request: inout URLRequest) {
@@ -429,20 +459,19 @@ class APIClient: APIClientProtocol {
 
     private func validateResponse(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.invalidResponse
+            throw NetworkError.unknown(NSError(domain: "InvalidResponse", code: -1))
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw APIError.httpError(statusCode: httpResponse.statusCode)
+        guard httpResponse.statusCode.isSuccessful else {
+            Logger.error("HTTP error: \(httpResponse.statusCode)")
+            throw NetworkError.httpError(statusCode: httpResponse.statusCode, data: nil)
         }
 
         // Validate Content-Type for JSON responses
         if let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") {
-            // Accept application/json or application/json; charset=utf-8
             let isValidContentType = contentType.lowercased().contains("application/json")
             if !isValidContentType && httpResponse.statusCode != 204 {
-                // 204 No Content responses don't require Content-Type validation
-                print("Warning: Unexpected Content-Type: \(contentType)")
+                Logger.warning("Unexpected Content-Type: \(contentType)")
             }
         }
     }
@@ -490,13 +519,6 @@ struct CreateEventRequest: Encodable {
     let startTime: Date
     let endTime: Date
     let description: String?
-}
-
-struct CreateTaskRequest: Encodable {
-    let title: String
-    let description: String?
-    let priority: String
-    let dueDate: Date?
 }
 
 struct UpdateTaskStatusRequest: Encodable {
@@ -618,9 +640,3 @@ struct TimeSlot: Codable, Identifiable {
 
 struct EmptyBody: Encodable {}
 struct EmptyResponse: Decodable {}
-
-enum APIError: Error {
-    case invalidURL
-    case invalidResponse
-    case httpError(statusCode: Int)
-}

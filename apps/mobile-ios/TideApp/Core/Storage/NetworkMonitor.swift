@@ -7,7 +7,7 @@ import Foundation
 import Network
 
 @MainActor
-class NetworkMonitor: ObservableObject {
+final class NetworkMonitor: ObservableObject {
     // MARK: - Singleton
     static let shared = NetworkMonitor()
 

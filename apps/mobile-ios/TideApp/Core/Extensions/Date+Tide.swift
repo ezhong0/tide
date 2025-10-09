@@ -231,69 +231,9 @@ extension Date {
     }
 }
 
-// MARK: - Calendar Day Model
-
-/// Represents a day in a calendar grid
-struct CalendarDay: Identifiable {
-    let id = UUID()
-    let date: Date
-    let isToday: Bool
-    let isCurrentMonth: Bool
-    let isSelected: Bool
-    let isWeekend: Bool
-
-    init(date: Date, currentMonth: Date, selectedDate: Date?, calendar: Calendar = .current) {
-        self.date = date
-        self.isToday = calendar.isDateInToday(date)
-        self.isCurrentMonth = date.isSameMonth(as: currentMonth, calendar: calendar)
-        self.isSelected = selectedDate.map { date.isSameDay(as: $0, calendar: calendar) } ?? false
-
-        let weekday = calendar.component(.weekday, from: date)
-        self.isWeekend = weekday == 1 || weekday == 7 // Sunday or Saturday
-    }
-}
-
 // MARK: - Calendar Extensions
 
 extension Calendar {
-    /// Safely generate days for a month grid (including padding from prev/next months)
-    /// Returns 42 days (6 weeks) for consistent grid display
-    func generateMonthDays(for date: Date, selectedDate: Date? = nil) -> [CalendarDay] {
-        guard let startOfMonth = date.startOfMonth(calendar: self) else {
-            return []
-        }
-
-        // Find the first day to display (could be from previous month)
-        let firstWeekday = component(.weekday, from: startOfMonth)
-        let daysFromPrevMonth = firstWeekday - self.firstWeekday
-        let firstDisplayDate = startOfMonth.adding(.day, value: -daysFromPrevMonth, calendar: self)
-
-        // Generate 42 days (6 weeks) for consistent grid
-        var days: [CalendarDay] = []
-        var currentDate = firstDisplayDate
-
-        for _ in 0..<42 {
-            days.append(CalendarDay(date: currentDate, currentMonth: date, selectedDate: selectedDate, calendar: self))
-            currentDate = currentDate.adding(.day, value: 1, calendar: self)
-        }
-
-        return days
-    }
-
-    /// Safely generate week days for a given date
-    func generateWeekDays(for date: Date, selectedDate: Date? = nil) -> [CalendarDay] {
-        let startOfWeek = date.startOfWeek(calendar: self)
-        var days: [CalendarDay] = []
-        var currentDate = startOfWeek
-
-        for _ in 0..<7 {
-            days.append(CalendarDay(date: currentDate, currentMonth: date, selectedDate: selectedDate, calendar: self))
-            currentDate = currentDate.adding(.day, value: 1, calendar: self)
-        }
-
-        return days
-    }
-
     /// Get weekday symbols starting from first day of week
     var orderedWeekdaySymbols: [String] {
         let symbols = shortWeekdaySymbols

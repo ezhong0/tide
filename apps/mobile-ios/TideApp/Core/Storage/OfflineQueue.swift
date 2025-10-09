@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class OfflineQueue {
+final class OfflineQueue {
     // MARK: - Singleton
     static let shared = OfflineQueue()
 
@@ -14,13 +14,19 @@ class OfflineQueue {
 
     private var queue: [QueuedOperation] = []
     private let queueKey = "TideOfflineQueue"
-    private let networkMonitor = NetworkMonitor.shared
+    private let networkMonitor: NetworkMonitorProtocol
 
     // MARK: - Initializer
 
-    private init() {
+    init(networkMonitor: NetworkMonitorProtocol) {
+        self.networkMonitor = networkMonitor
         loadQueue()
         observeNetworkChanges()
+    }
+
+    // Convenience init for backward compatibility with .shared
+    private convenience init() {
+        self.init(networkMonitor: NetworkMonitor.shared)
     }
 
     // MARK: - Public API
@@ -41,25 +47,25 @@ class OfflineQueue {
     /// Manually trigger sync
     func syncQueue() async {
         guard networkMonitor.isConnected else {
-            print("⚠️ Cannot sync: Offline")
+            Logger.warning("Cannot sync: Offline")
             return
         }
 
         guard !queue.isEmpty else {
-            print("✅ Queue is empty, nothing to sync")
+            Logger.info("Queue is empty, nothing to sync")
             return
         }
 
-        print("🔄 Syncing \(queue.count) queued operations...")
+        Logger.info("Syncing \(queue.count) queued operations...")
 
         var failedOperations: [QueuedOperation] = []
 
         for operation in queue {
             do {
                 try await executeOperation(operation)
-                print("✅ Synced operation: \(operation.type)")
+                Logger.dataOperation("Sync", entity: operation.type.rawValue, success: true)
             } catch {
-                print("❌ Failed to sync operation: \(error.localizedDescription)")
+                Logger.dataOperation("Sync", entity: operation.type.rawValue, success: false, details: error.localizedDescription)
                 failedOperations.append(operation)
             }
         }
@@ -69,9 +75,9 @@ class OfflineQueue {
         saveQueue()
 
         if queue.isEmpty {
-            print("✅ All operations synced successfully")
+            Logger.info("All operations synced successfully")
         } else {
-            print("⚠️ \(queue.count) operations failed to sync, will retry later")
+            Logger.warning("\(queue.count) operations failed to sync, will retry later")
         }
     }
 
@@ -86,7 +92,7 @@ class OfflineQueue {
     private func executeOperation(_ operation: QueuedOperation) async throws {
         // TODO: Execute the actual API call based on operation type
         // This will be implemented when integrating with repositories
-        print("Executing operation: \(operation.type)")
+        Logger.debug("Executing operation: \(operation.type.rawValue)")
 
         // For now, we'll just simulate success
         try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
@@ -109,7 +115,7 @@ class OfflineQueue {
             let data = try encoder.encode(queue)
             UserDefaults.standard.set(data, forKey: queueKey)
         } catch {
-            print("❌ Failed to save queue: \(error.localizedDescription)")
+            Logger.error("Failed to save queue", error: error)
         }
     }
 
@@ -121,9 +127,9 @@ class OfflineQueue {
         do {
             let decoder = JSONDecoder()
             queue = try decoder.decode([QueuedOperation].self, from: data)
-            print("📥 Loaded \(queue.count) queued operations")
+            Logger.info("Loaded \(queue.count) queued operations")
         } catch {
-            print("❌ Failed to load queue: \(error.localizedDescription)")
+            Logger.error("Failed to load queue", error: error)
         }
     }
 }
