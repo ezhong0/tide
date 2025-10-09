@@ -8,6 +8,10 @@ import { logger } from '@tide/logger';
  * Week 3 Alpha uses Supabase Auth - no custom JWT validation needed.
  * This file verifies Supabase JWTs using the Supabase client.
  */
+// Validate that Supabase config is available (required for gateway)
+if (!supabaseConfig.url || !supabaseConfig.anonKey) {
+    throw new Error('Gateway requires SUPABASE_URL and SUPABASE_ANON_KEY environment variables');
+}
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 /**
  * Verify Supabase JWT token and extract user information

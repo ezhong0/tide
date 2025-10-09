@@ -14,7 +14,7 @@ const rateLimitStore = new Map();
 export const rateLimit = (options = {}) => {
     const { windowMs = 60 * 1000, // 1 minute
     maxRequests = 100, keyGenerator = defaultKeyGenerator, skipSuccessfulRequests = false, skipFailedRequests = false, } = options;
-    return async (req, res, next) => {
+    return (req, res, next) => {
         try {
             const key = keyGenerator(req);
             const now = Date.now();
@@ -43,33 +43,30 @@ export const rateLimit = (options = {}) => {
                     retryAfter,
                 });
             }
-            // Increment counter (conditionally)
-            const shouldCount = await new Promise((resolve) => {
-                if (skipSuccessfulRequests || skipFailedRequests) {
-                    // Intercept response to check status
-                    const originalSend = res.send;
-                    res.send = function (body) {
-                        const statusCode = res.statusCode;
-                        const isSuccess = statusCode >= 200 && statusCode < 300;
-                        const shouldSkip = (skipSuccessfulRequests && isSuccess) ||
-                            (skipFailedRequests && !isSuccess);
-                        resolve(!shouldSkip);
-                        return originalSend.call(this, body);
-                    };
-                    next();
-                }
-                else {
-                    resolve(true);
-                    next();
-                }
-            });
-            if (shouldCount) {
-                entry.count++;
-            }
-            // Add rate limit headers
+            // Add rate limit headers BEFORE calling next()
             res.setHeader('X-RateLimit-Limit', maxRequests.toString());
             res.setHeader('X-RateLimit-Remaining', Math.max(0, maxRequests - entry.count).toString());
             res.setHeader('X-RateLimit-Reset', entry.resetAt.toString());
+            // Handle conditional counting
+            if (skipSuccessfulRequests || skipFailedRequests) {
+                // Intercept response to conditionally increment counter
+                const originalSend = res.send;
+                res.send = function (body) {
+                    const statusCode = res.statusCode;
+                    const isSuccess = statusCode >= 200 && statusCode < 300;
+                    const shouldSkip = (skipSuccessfulRequests && isSuccess) ||
+                        (skipFailedRequests && !isSuccess);
+                    if (!shouldSkip) {
+                        entry.count++;
+                    }
+                    return originalSend.call(this, body);
+                };
+            }
+            else {
+                // Increment counter immediately for non-conditional counting
+                entry.count++;
+            }
+            next();
         }
         catch (error) {
             logger.error('Rate limit middleware error', { error });
