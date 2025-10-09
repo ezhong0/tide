@@ -11,7 +11,7 @@ final class AuthManager: ObservableObject {
     static let shared = AuthManager()
 
     @Published var isAuthenticated = false
-    @Published var currentUser: User?
+    @Published var currentUser: Supabase.User?
 
     private let supabaseManager: SupabaseManager
     private let oauthService: OAuthService
@@ -55,18 +55,29 @@ final class AuthManager: ObservableObject {
         isAuthenticated = true
     }
 
-    func loginWithGoogle() async throws {
-        let session = try await oauthService.signInWithGoogle()
+    func loginWithOAuth(provider: OAuthProvider) async throws {
+        let session: Session
+
+        switch provider {
+        case .google:
+            session = try await oauthService.signInWithGoogle()
+        case .microsoft:
+            session = try await oauthService.signInWithMicrosoft()
+        case .apple:
+            throw AuthError.notImplemented("Apple OAuth not supported on macOS")
+        }
+
         currentUser = session.user
         isAuthenticated = true
-        print("✅ Google OAuth successful: \(session.user.email ?? "unknown")")
+        print("✅ \(provider.rawValue.capitalized) OAuth successful: \(session.user.email ?? "unknown")")
+    }
+
+    func loginWithGoogle() async throws {
+        try await loginWithOAuth(provider: .google)
     }
 
     func loginWithMicrosoft() async throws {
-        let session = try await oauthService.signInWithMicrosoft()
-        currentUser = session.user
-        isAuthenticated = true
-        print("✅ Microsoft OAuth successful: \(session.user.email ?? "unknown")")
+        try await loginWithOAuth(provider: .microsoft)
     }
 
     func handleOAuthCallback(url: URL) async throws {
@@ -87,6 +98,13 @@ final class AuthManager: ObservableObject {
         isAuthenticated = false
     }
 
+    // MARK: - Token Refresh
+
+    func refreshAccessToken() async throws {
+        // Supabase SDK handles token refresh automatically
+        _ = try await supabaseManager.getCurrentSession()
+    }
+
     // MARK: - User Info
 
     var userEmail: String? {
@@ -98,9 +116,33 @@ final class AuthManager: ObservableObject {
     }
 }
 
-// MARK: - User Model
+// MARK: - OAuth Provider
 
-struct User: Codable, Identifiable {
+enum OAuthProvider: String {
+    case google
+    case microsoft
+    case apple
+}
+
+// MARK: - Auth Error
+
+enum AuthError: LocalizedError {
+    case notImplemented(String)
+    case noRefreshToken
+
+    var errorDescription: String? {
+        switch self {
+        case .notImplemented(let message):
+            return message
+        case .noRefreshToken:
+            return "No refresh token available"
+        }
+    }
+}
+
+// MARK: - User Model (for app-specific use)
+
+struct TideUser: Codable, Identifiable {
     let id: String
     let email: String
     let name: String
