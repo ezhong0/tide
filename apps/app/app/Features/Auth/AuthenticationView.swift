@@ -125,7 +125,7 @@ struct AuthenticationView: View {
 
     private func signInWithGoogle() async {
         do {
-            try await authManager.loginWithGoogle()
+            try await authManager.loginWithOAuth(provider: .google)
             print("✅ Google login successful")
         } catch {
             let errorDesc = (error as? OAuthError)?.errorDescription ?? error.localizedDescription
@@ -149,7 +149,7 @@ struct AuthenticationView: View {
 
     private func signInWithMicrosoft() async {
         do {
-            try await authManager.loginWithMicrosoft()
+            try await authManager.loginWithOAuth(provider: .microsoft)
             print("✅ Microsoft login successful")
         } catch {
             let errorDesc = (error as? OAuthError)?.errorDescription ?? error.localizedDescription

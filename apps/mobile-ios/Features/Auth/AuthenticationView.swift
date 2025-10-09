@@ -2,9 +2,10 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var oauthService = GoogleOAuthService.shared
+    @StateObject private var authManager = AuthManager.shared
     @State private var showError = false
     @State private var errorMessage = ""
+    @State private var isAuthenticating = false
 
     var body: some View {
         ZStack {
@@ -63,10 +64,10 @@ struct AuthenticationView: View {
                         .cornerRadius(TideTheme.CornerRadius.medium)
                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
-                    .disabled(oauthService.isAuthenticating)
+                    .disabled(isAuthenticating)
 
                     // Loading indicator
-                    if oauthService.isAuthenticating {
+                    if isAuthenticating {
                         ProgressView("Connecting...")
                             .padding()
                     }
@@ -98,10 +99,12 @@ struct AuthenticationView: View {
     }
 
     private func signInWithGoogle() async {
+        isAuthenticating = true
+        defer { isAuthenticating = false }
+
         do {
-            // Use a test user ID for now
-            let testUserId = "00000000-0000-0000-0000-000000000001"
-            try await oauthService.connectGmail(userId: testUserId)
+            // Sign in with Google OAuth via Supabase
+            try await authManager.loginWithOAuth(provider: .google)
 
             // Mark as authenticated
             appState.isAuthenticated = true
