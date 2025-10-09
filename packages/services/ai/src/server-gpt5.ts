@@ -82,8 +82,8 @@ export class TideAIServer {
           host: '0.0.0.0',
           endpoint: `http://0.0.0.0:${this.config.port}`,
           env: process.env.NODE_ENV || 'production',
-          buildTimestamp: '2025-10-09T14:00:00Z',
-          version: '2.0.1-fixed',
+          buildTimestamp: new Date().toISOString(),
+          version: '2.0.2-redeploy',
         };
         logger.info('🚀🚀🚀 AI SERVICE NOW LISTENING - PORT=' + this.config.port, logData);
         console.log('=== RAILWAY DEBUG ===');
