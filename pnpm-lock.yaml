@@ -205,6 +205,9 @@ importers:
       '@tide/logger':
         specifier: workspace:*
         version: link:../../libraries/logger
+      '@tide/middleware':
+        specifier: workspace:*
+        version: link:../shared/middleware
       '@tide/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -376,6 +379,9 @@ importers:
       '@tide/logger':
         specifier: workspace:*
         version: link:../../libraries/logger
+      '@tide/middleware':
+        specifier: workspace:*
+        version: link:../shared/middleware
       '@tide/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -506,6 +512,31 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.19)
 
+  packages/services/shared/middleware:
+    dependencies:
+      '@tide/logger':
+        specifier: workspace:*
+        version: link:../../../libraries/logger
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.23
+      '@types/jsonwebtoken':
+        specifier: ^9.0.5
+        version: 9.0.10
+      express:
+        specifier: ^4.18.2
+        version: 4.21.2
+      jsonwebtoken:
+        specifier: ^9.0.2
+        version: 9.0.2
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.6
+        version: 20.19.19
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+
   packages/services/workflow:
     dependencies:
       '@supabase/supabase-js':
@@ -523,6 +554,9 @@ importers:
       '@tide/logger':
         specifier: workspace:*
         version: link:../../libraries/logger
+      '@tide/middleware':
+        specifier: workspace:*
+        version: link:../shared/middleware
       '@tide/types':
         specifier: workspace:*
         version: link:../../shared/types
@@ -3372,7 +3406,6 @@ packages:
     dependencies:
       '@types/ms': 2.1.0
       '@types/node': 20.19.19
-    dev: true
 
   /@types/long@4.0.2:
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
@@ -3383,7 +3416,6 @@ packages:
 
   /@types/ms@2.1.0:
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
-    dev: true
 
   /@types/node-fetch@2.6.13:
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
