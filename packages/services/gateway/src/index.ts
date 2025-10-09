@@ -70,24 +70,32 @@ app.use('/api/ai', createProxyMiddleware({
   target: AI_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { '^/api/ai': '' },
+  timeout: 60000, // 60 second timeout
+  proxyTimeout: 60000,
 }));
 
 app.use('/api/email', createProxyMiddleware({
   target: EMAIL_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { '^/api/email': '' },
+  timeout: 60000, // 60 second timeout for OAuth flows
+  proxyTimeout: 60000,
 }));
 
 app.use('/api/calendar', createProxyMiddleware({
   target: CALENDAR_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { '^/api/calendar': '' },
+  timeout: 60000, // 60 second timeout
+  proxyTimeout: 60000,
 }));
 
 app.use('/api/workflow', createProxyMiddleware({
   target: WORKFLOW_SERVICE_URL,
   changeOrigin: true,
   pathRewrite: { '^/api/workflow': '' },
+  timeout: 60000, // 60 second timeout
+  proxyTimeout: 60000,
 }));
 
 // Root endpoint - landing page
