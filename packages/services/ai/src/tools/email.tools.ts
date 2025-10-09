@@ -152,7 +152,7 @@ export const composeEmailTool: TideTool = {
       throw new Error(`Email composition failed: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as { body: string; subject?: string };
 
     return {
       draft: result.body,
@@ -233,7 +233,7 @@ export const sendEmailTool: TideTool = {
       throw new Error(`Email send failed: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = await response.json() as { messageId: string };
 
     return {
       sent: true,
