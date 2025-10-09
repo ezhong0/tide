@@ -76,10 +76,10 @@ export class TideAIServer {
    */
   async start(): Promise<void> {
     return new Promise((resolve) => {
-      this.server.listen(this.config.port, () => {
+      this.server.listen(this.config.port, '0.0.0.0', () => {
         logger.info('Tide AI Service started', {
           port: this.config.port,
-          endpoint: `http://localhost:${this.config.port}`,
+          endpoint: `http://0.0.0.0:${this.config.port}`,
         });
         resolve();
       });
