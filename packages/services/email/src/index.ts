@@ -11,6 +11,7 @@ import {
   errorHandler,
   notFoundHandler,
 } from '@tide/middleware';
+import { initializeEncryption, encrypt, decrypt } from '@tide/encryption';
 import { GmailProvider } from './providers/gmail.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { EmailTriageEngine } from './triage/triage-engine.js';
@@ -34,6 +35,15 @@ class EmailService {
     this.composer = new SmartComposer();
     this.providers = new Map();
     this.db = createSupabase(true); // Use service role for backend operations
+
+    // Initialize encryption for OAuth tokens
+    try {
+      initializeEncryption();
+      logger.info('Encryption initialized for OAuth tokens');
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize encryption');
+      throw new Error('Encryption initialization failed - cannot proceed without secure token storage');
+    }
 
     this.setupMiddleware();
     this.setupRoutes();
@@ -96,15 +106,18 @@ class EmailService {
 
         this.providers.set(`${userId}-${provider}`, emailProvider);
 
-        // Store OAuth tokens in database
+        // Store OAuth tokens in database (encrypted)
+        const encryptedAccessToken = await encrypt(tokens.accessToken);
+        const encryptedRefreshToken = await encrypt(tokens.refreshToken);
+
         const { error: dbError } = await this.db
           .from('oauth_tokens')
           .upsert({
             user_id: userId,
             provider: provider === 'gmail' ? 'google' : 'microsoft',
             service: 'email',
-            access_token: tokens.accessToken,
-            refresh_token: tokens.refreshToken,
+            access_token: encryptedAccessToken,
+            refresh_token: encryptedRefreshToken,
             expires_at: tokens.expiresAt ? new Date(tokens.expiresAt).toISOString() : null,
             scope: tokens.scope || null,
           }, {
@@ -192,11 +205,14 @@ class EmailService {
             });
           }
 
-          // Initialize provider with tokens from database
+          // Initialize provider with tokens from database (decrypt first)
+          const decryptedAccessToken = await decrypt(tokenData.access_token);
+          const decryptedRefreshToken = await decrypt(tokenData.refresh_token);
+
           emailProvider = this.getProvider(provider as EmailProvider);
           await emailProvider.initialize(userId as UserId, {
-            accessToken: tokenData.access_token,
-            refreshToken: tokenData.refresh_token,
+            accessToken: decryptedAccessToken,
+            refreshToken: decryptedRefreshToken,
             expiresAt: new Date(tokenData.expires_at), // Convert string to Date
             scope: tokenData.scope ? tokenData.scope.split(' ') : [], // Convert space-separated string to array
           } as OAuthTokens);
