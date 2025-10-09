@@ -20,16 +20,11 @@ struct EventDetailView: View {
 
     var body: some View {
         ScrollView {
-            if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .padding(.top, 100)
-            } else if let event = viewModel.event {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Title
+            VStack(alignment: .leading, spacing: Design.Spacing.lg) {
+                // Title
+                if let event = viewModel.event {
                     Text(event.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(Design.Typography.Title.bold)
 
                     // Time
                     InfoRow(
@@ -49,14 +44,14 @@ struct EventDetailView: View {
 
                     // Attendees
                     if let attendees = event.attendees, !attendees.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: Design.Spacing.sm) {
                             Label("Attendees", systemImage: "person.2")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(Design.Typography.Headline.semibold)
+                                .foregroundColor(Design.Colors.Text.secondary)
 
                             ForEach(attendees, id: \.self) { attendee in
                                 Text(attendee)
-                                    .font(.callout)
+                                    .font(Design.Typography.Body.regular)
                                     .padding(.leading, 28)
                             }
                         }
@@ -64,58 +59,73 @@ struct EventDetailView: View {
 
                     // Description
                     if let description = event.description {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: Design.Spacing.sm) {
                             Label("Description", systemImage: "doc.text")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
+                                .font(Design.Typography.Headline.semibold)
+                                .foregroundColor(Design.Colors.Text.secondary)
 
                             Text(description)
-                                .font(.callout)
+                                .font(Design.Typography.Body.regular)
                                 .padding(.leading, 28)
                         }
                     }
 
-                    // Meeting Link
-                    if let meetingLink = event.meetingLink {
-                        Link(destination: URL(string: meetingLink)!) {
+                    // Meeting Link (keeping safe URL unwrapping)
+                    if let meetingLink = event.meetingLink,
+                       let meetingURL = URL(string: meetingLink) {
+                        Link(destination: meetingURL) {
                             HStack {
                                 Image(systemName: "video.fill")
                                     .foregroundColor(.white)
                                 Text("Join Meeting")
-                                    .fontWeight(.semibold)
+                                    .font(Design.Typography.Body.semibold)
                                     .foregroundColor(.white)
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
-                                    .font(.caption)
+                                    .font(Design.Typography.Caption.regular)
                                     .foregroundColor(.white)
                             }
-                            .padding()
-                            .background(Color.blue)
-                            .cornerRadius(12)
+                            .padding(Design.Spacing.md)
+                            .background(Design.Colors.Semantic.primary)
+                            .cornerRadius(Design.CornerRadius.lg)
                         }
+                        .accessibilityLabel("Join meeting")
+                        .accessibilityHint("Opens the meeting link in your default browser or app")
                     }
 
                     // Conflict warning
                     if event.hasConflict {
-                        HStack {
+                        HStack(spacing: Design.Spacing.sm) {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                                .foregroundColor(Design.Colors.Semantic.warning)
                             Text("This event conflicts with another event")
-                                .font(.callout)
+                                .font(Design.Typography.Body.regular)
                         }
-                        .padding()
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(8)
-                    }
-                }
-                .padding()
-            } else if let error = viewModel.error {
-                ErrorView(error: error) {
-                    Task {
-                        await viewModel.loadEvent()
+                        .padding(Design.Spacing.md)
+                        .background(Design.Colors.Semantic.warning.opacity(0.1))
+                        .cornerRadius(Design.CornerRadius.md)
                     }
                 }
             }
+            .padding(Design.Spacing.md)
+        }
+        .stateContent(
+            isLoading: viewModel.isLoading,
+            error: viewModel.error,
+            isEmpty: viewModel.event == nil && !viewModel.isLoading,
+            retryAction: {
+                Task { await viewModel.loadEvent() }
+            }
+        ) {
+            EmptyView(
+                icon: "calendar.badge.exclamationmark",
+                title: "Event Not Found",
+                message: "This event could not be loaded",
+                actionTitle: "Try Again",
+                action: {
+                    Task { await viewModel.loadEvent() }
+                }
+            )
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -135,6 +145,8 @@ struct EventDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Event actions")
+                .accessibilityHint("Edit or delete this event")
             }
         }
         .alert("Delete Event?", isPresented: $showDeleteConfirmation) {
@@ -179,21 +191,23 @@ struct InfoRow: View {
     let value: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: Design.Spacing.sm) {
             Label(title, systemImage: icon)
-                .font(.headline)
-                .foregroundColor(.secondary)
+                .font(Design.Typography.Headline.semibold)
+                .foregroundColor(Design.Colors.Text.secondary)
 
             Text(value)
-                .font(.callout)
+                .font(Design.Typography.Body.regular)
                 .padding(.leading, 28)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(title): \(value)")
     }
 }
 
 // MARK: - View Model
 @MainActor
-class EventDetailViewModel: ObservableObject {
+final class EventDetailViewModel: ObservableObject {
     @Published var event: EventDetail?
     @Published var isLoading = false
     @Published var error: Error?
@@ -210,6 +224,7 @@ class EventDetailViewModel: ObservableObject {
 
     func loadEvent() async {
         isLoading = true
+        error = nil
         defer { isLoading = false }
 
         do {
@@ -229,7 +244,7 @@ class EventDetailViewModel: ObservableObject {
             )
 
         } catch {
-            print("Error loading event: \(error)")
+            Logger.error("Error loading event", error: error)
             self.error = error
         }
     }
@@ -238,7 +253,7 @@ class EventDetailViewModel: ObservableObject {
         do {
             try await apiClient.deleteEvent(id: eventId)
         } catch {
-            print("Error deleting event: \(error)")
+            Logger.error("Error deleting event", error: error)
             self.error = error
         }
     }

@@ -15,12 +15,12 @@ struct TideErrorView: View {
     }
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Design.Spacing.lg) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 64))
                 .foregroundColor(.tideError)
 
-            VStack(spacing: Spacing.sm) {
+            VStack(spacing: Design.Spacing.sm) {
                 Text("Something Went Wrong")
                     .font(.tideHeadlineLarge)
                     .foregroundColor(.tidePrimaryText)
@@ -33,21 +33,21 @@ struct TideErrorView: View {
 
             if let onRetry = onRetry {
                 Button(action: onRetry) {
-                    HStack(spacing: Spacing.sm) {
+                    HStack(spacing: Design.Spacing.sm) {
                         Image(systemName: "arrow.clockwise")
                         Text("Try Again")
                     }
                     .font(.tideLabelMedium)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
-                    .padding(.horizontal, Spacing.lg)
-                    .padding(.vertical, Spacing.md)
+                    .padding(.horizontal, Design.Spacing.lg)
+                    .padding(.vertical, Design.Spacing.md)
                     .background(Color.tidePrimary)
                     .cornerRadius(12)
                 }
             }
         }
-        .padding(Spacing.xl)
+        .padding(Design.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

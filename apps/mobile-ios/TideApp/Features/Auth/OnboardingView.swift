@@ -4,15 +4,17 @@
  */
 
 import SwiftUI
+import Supabase
 
 struct OnboardingView: View {
     @StateObject private var viewModel: OnboardingViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(dependencies: DependencyContainer) {
+    init(dependencies: DependencyContainer = .shared) {
         _viewModel = StateObject(wrappedValue: OnboardingViewModel(
             apiClient: dependencies.apiClient,
-            authManager: dependencies.authManager
+            authManager: dependencies.authManager,
+            keychainManager: KeychainManager.shared
         ))
     }
 
@@ -45,16 +47,16 @@ struct OnboardingView: View {
     // MARK: - Progress Bar
 
     private var progressBar: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Design.Spacing.sm) {
             ForEach(0..<4) { index in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(index <= viewModel.currentPage ? Color.tidePrimary : Color.gray.opacity(0.3))
                     .frame(height: 4)
             }
         }
-        .padding(.horizontal, Spacing.xl)
-        .padding(.top, Spacing.lg)
-        .padding(.bottom, Spacing.md)
+        .padding(.horizontal, Design.Spacing.xl)
+        .padding(.top, Design.Spacing.lg)
+        .padding(.bottom, Design.Spacing.md)
     }
 
     // MARK: - Welcome Page
@@ -71,7 +73,7 @@ struct OnboardingView: View {
     // MARK: - Gmail Page
 
     private var gmailPage: some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(spacing: Design.Spacing.xl) {
             OnboardingPageView(
                 icon: "envelope.fill",
                 title: "Connect Gmail",
@@ -86,7 +88,9 @@ struct OnboardingView: View {
                     Text("Connect Gmail")
                 }
                 .tidePrimaryButton(isLoading: viewModel.isLoading)
-                .padding(.horizontal, Spacing.xl)
+                .padding(.horizontal, Design.Spacing.xl)
+                .accessibilityLabel("Connect Gmail")
+                .accessibilityHint("Double tap to connect your Gmail account")
             }
         }
     }
@@ -94,7 +98,7 @@ struct OnboardingView: View {
     // MARK: - Calendar Page
 
     private var calendarPage: some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(spacing: Design.Spacing.xl) {
             OnboardingPageView(
                 icon: "calendar",
                 title: "Connect Calendar",
@@ -109,7 +113,9 @@ struct OnboardingView: View {
                     Text("Connect Calendar")
                 }
                 .tidePrimaryButton(isLoading: viewModel.isLoading)
-                .padding(.horizontal, Spacing.xl)
+                .padding(.horizontal, Design.Spacing.xl)
+                .accessibilityLabel("Connect Calendar")
+                .accessibilityHint("Double tap to connect your Google Calendar")
             }
         }
     }
@@ -117,7 +123,7 @@ struct OnboardingView: View {
     // MARK: - Complete Page
 
     private var completePage: some View {
-        VStack(spacing: Spacing.xl) {
+        VStack(spacing: Design.Spacing.xl) {
             OnboardingPageView(
                 icon: "checkmark.circle.fill",
                 title: "You're All Set!",
@@ -129,21 +135,23 @@ struct OnboardingView: View {
                 Text("Get Started")
             }
             .tidePrimaryButton()
-            .padding(.horizontal, Spacing.xl)
+            .padding(.horizontal, Design.Spacing.xl)
+            .accessibilityLabel("Get Started")
+            .accessibilityHint("Double tap to complete onboarding and start using Tide")
         }
     }
 
     // MARK: - Success Badge
 
     private func successBadge(text: String) -> some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Design.Spacing.sm) {
             Image(systemName: "checkmark.circle.fill")
             Text(text)
                 .font(.tideLabelMedium)
         }
         .foregroundColor(.tideSuccess)
-        .padding(.horizontal, Spacing.lg)
-        .padding(.vertical, Spacing.md)
+        .padding(.horizontal, Design.Spacing.lg)
+        .padding(.vertical, Design.Spacing.md)
         .background(Color.tideSuccess.opacity(0.1))
         .cornerRadius(12)
     }
@@ -151,7 +159,7 @@ struct OnboardingView: View {
     // MARK: - Navigation Buttons
 
     private var navigationButtons: some View {
-        HStack(spacing: Spacing.lg) {
+        HStack(spacing: Design.Spacing.lg) {
             // Skip button
             if viewModel.currentPage < 3 {
                 Button(action: { viewModel.skip() }) {
@@ -159,17 +167,21 @@ struct OnboardingView: View {
                         .font(.tideLabelMedium)
                         .foregroundColor(.tideSecondaryText)
                 }
+                .accessibilityLabel("Skip onboarding")
+                .accessibilityHint("Double tap to skip account setup and go to the app")
             }
 
             Spacer()
 
             // Next/Back buttons
-            HStack(spacing: Spacing.md) {
+            HStack(spacing: Design.Spacing.md) {
                 if viewModel.currentPage > 0 {
                     Button(action: { viewModel.goBack() }) {
                         Image(systemName: "chevron.left")
                     }
                     .tideCompactButton()
+                    .accessibilityLabel("Go back")
+                    .accessibilityHint("Double tap to go to the previous onboarding page")
                 }
 
                 if viewModel.currentPage < 3 {
@@ -177,11 +189,13 @@ struct OnboardingView: View {
                         Image(systemName: "chevron.right")
                     }
                     .tideCompactButton()
+                    .accessibilityLabel("Go next")
+                    .accessibilityHint("Double tap to go to the next onboarding page")
                 }
             }
         }
-        .padding(.horizontal, Spacing.xl)
-        .padding(.vertical, Spacing.lg)
+        .padding(.horizontal, Design.Spacing.xl)
+        .padding(.vertical, Design.Spacing.lg)
     }
 }
 
@@ -194,7 +208,7 @@ struct OnboardingPageView: View {
     let iconColor: Color
 
     var body: some View {
-        VStack(spacing: Spacing.xxl) {
+        VStack(spacing: Design.Spacing.xxl) {
             Spacer()
 
             // Icon
@@ -208,7 +222,7 @@ struct OnboardingPageView: View {
                 )
 
             // Content
-            VStack(spacing: Spacing.md) {
+            VStack(spacing: Design.Spacing.md) {
                 Text(title)
                     .font(.tideDisplayMedium)
                     .fontWeight(.bold)
@@ -218,7 +232,7 @@ struct OnboardingPageView: View {
                     .font(.tideBodyLarge)
                     .foregroundColor(.tideSecondaryText)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, Spacing.xl)
+                    .padding(.horizontal, Design.Spacing.xl)
             }
 
             Spacer()
@@ -233,6 +247,32 @@ class OnboardingViewModel: BaseViewModel {
     @Published var currentPage = 0
     @Published var isGmailConnected = false
     @Published var isCalendarConnected = false
+
+    private let oauthService: OAuthService
+    private let keychainManager: KeychainManagerProtocol
+
+    init(
+        apiClient: APIClientProtocol,
+        authManager: AuthManagerProtocol,
+        keychainManager: KeychainManagerProtocol
+    ) {
+        // Initialize OAuth service with Supabase client
+        self.oauthService = OAuthService(supabaseClient: SupabaseClient(
+            supabaseURL: URL(string: Config.supabaseURL)!,
+            supabaseKey: Config.supabaseAnonKey ?? ""
+        ))
+        self.keychainManager = keychainManager
+
+        super.init(apiClient: apiClient, authManager: authManager)
+
+        // Check if accounts are already connected
+        checkConnectionStatus()
+    }
+
+    func checkConnectionStatus() {
+        isGmailConnected = keychainManager.exists(for: .googleAccessToken)
+        isCalendarConnected = isGmailConnected // Calendar uses same Google OAuth
+    }
 
     func goNext() {
         withAnimation {
@@ -253,10 +293,30 @@ class OnboardingViewModel: BaseViewModel {
     func connectGmail() {
         Task {
             await withLoadingState {
-                let authURL = try await apiClient.getGmailAuthURL()
-                // TODO: Open Safari or WebView to handle OAuth
-                // For now, mark as connected
-                isGmailConnected = true
+                Logger.authEvent("Starting Gmail OAuth flow from onboarding")
+
+                do {
+                    let session = try await oauthService.signInWithGoogle()
+
+                    // Store tokens in Keychain
+                    try keychainManager.save(session.accessToken, for: .googleAccessToken)
+                    if let refreshToken = session.refreshToken {
+                        try keychainManager.save(refreshToken, for: .googleRefreshToken)
+                    }
+
+                    // Update connection status
+                    isGmailConnected = true
+                    isCalendarConnected = true // Google OAuth includes calendar access
+
+                    Logger.authEvent("Gmail OAuth completed successfully from onboarding")
+
+                    // Auto-advance to next page after successful connection
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    goNext()
+                } catch {
+                    Logger.authError("Gmail OAuth failed in onboarding", error: error)
+                    throw error
+                }
             }
         }
     }
@@ -264,10 +324,42 @@ class OnboardingViewModel: BaseViewModel {
     func connectCalendar() {
         Task {
             await withLoadingState {
-                // TODO: Implement calendar OAuth
-                // For now, mark as connected
-                try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-                isCalendarConnected = true
+                // Calendar uses the same Google OAuth as Gmail
+                // If Gmail is already connected, we just need to verify the token
+                if isGmailConnected {
+                    Logger.authEvent("Calendar already connected via Gmail OAuth")
+                    isCalendarConnected = true
+
+                    // Auto-advance to next page
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    goNext()
+                } else {
+                    // If Gmail is not connected, connect it first
+                    Logger.authEvent("Connecting Google Calendar via OAuth")
+
+                    do {
+                        let session = try await oauthService.signInWithGoogle()
+
+                        // Store tokens in Keychain
+                        try keychainManager.save(session.accessToken, for: .googleAccessToken)
+                        if let refreshToken = session.refreshToken {
+                            try keychainManager.save(refreshToken, for: .googleRefreshToken)
+                        }
+
+                        // Update connection status
+                        isGmailConnected = true
+                        isCalendarConnected = true
+
+                        Logger.authEvent("Calendar OAuth completed successfully from onboarding")
+
+                        // Auto-advance to next page
+                        try? await Task.sleep(nanoseconds: 500_000_000)
+                        goNext()
+                    } catch {
+                        Logger.authError("Calendar OAuth failed in onboarding", error: error)
+                        throw error
+                    }
+                }
             }
         }
     }
@@ -275,6 +367,7 @@ class OnboardingViewModel: BaseViewModel {
     func completeOnboarding() {
         // Mark onboarding as completed
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        Logger.info("Onboarding completed")
         // The app entry point will handle navigation
     }
 }

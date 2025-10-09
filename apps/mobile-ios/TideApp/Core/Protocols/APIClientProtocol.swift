@@ -63,10 +63,10 @@ protocol APIClientProtocol {
     func findOptimalTimeSlots(title: String, attendees: [String], durationMinutes: Int, userId: String) async throws -> [TimeSlot]
 
     // MARK: - Tasks
-    func getTasks(status: String?) async throws -> [Task]
-    func getTask(id: String) async throws -> Task
-    func createTask(task: CreateTaskRequest) async throws -> Task
-    func updateTask(id: String, task: CreateTaskRequest) async throws -> Task
+    func getTasks(status: String?) async throws -> [TaskAPIModel]
+    func getTask(id: String) async throws -> TaskAPIModel
+    func createTask(task: CreateTaskRequest) async throws -> TaskAPIModel
+    func updateTask(id: String, task: CreateTaskRequest) async throws -> TaskAPIModel
     func deleteTask(id: String) async throws
     func updateTaskStatus(taskId: String, status: String) async throws
 

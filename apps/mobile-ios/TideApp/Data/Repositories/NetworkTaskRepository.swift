@@ -5,7 +5,7 @@
 
 import Foundation
 
-class NetworkTaskRepository: TaskRepository {
+final class NetworkTaskRepository: TaskRepository {
     private let apiClient: APIClientProtocol
 
     init(apiClient: APIClientProtocol) {
@@ -19,12 +19,7 @@ class NetworkTaskRepository: TaskRepository {
     }
 
     func getTask(id: String) async throws -> Task {
-        // Get task from the list
-        let tasks = try await getTasks(status: nil)
-        guard let task = tasks.first(where: { $0.id == id }) else {
-            throw RepositoryError.notFound
-        }
-        return task
+        return try await apiClient.getTask(id: id)
     }
 
     func createTask(task: CreateTaskRequest) async throws -> Task {
@@ -32,8 +27,7 @@ class NetworkTaskRepository: TaskRepository {
     }
 
     func updateTask(id: String, task: CreateTaskRequest) async throws -> Task {
-        // TODO: Implement update task endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        return try await apiClient.updateTask(id: id, task: task)
     }
 
     func updateTaskStatus(taskId: String, status: String) async throws {
@@ -41,7 +35,6 @@ class NetworkTaskRepository: TaskRepository {
     }
 
     func deleteTask(id: String) async throws {
-        // TODO: Implement delete task endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        try await apiClient.deleteTask(id: id)
     }
 }

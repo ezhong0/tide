@@ -7,23 +7,39 @@
 import Foundation
 
 @MainActor
-class SyncEngine {
+final class SyncEngine {
     // MARK: - Singleton
     static let shared = SyncEngine()
 
     // MARK: - Properties
 
-    private let cacheManager = CacheManager.shared
-    private let offlineQueue = OfflineQueue.shared
-    private let networkMonitor = NetworkMonitor.shared
+    private let cacheManager: CacheManagerProtocol
+    private let offlineQueue: OfflineQueueProtocol
+    private let networkMonitor: NetworkMonitorProtocol
 
     private var isSyncing = false
     private var lastSyncDate: Date?
 
     // MARK: - Initializer
 
-    private init() {
+    init(
+        cacheManager: CacheManagerProtocol,
+        offlineQueue: OfflineQueueProtocol,
+        networkMonitor: NetworkMonitorProtocol
+    ) {
+        self.cacheManager = cacheManager
+        self.offlineQueue = offlineQueue
+        self.networkMonitor = networkMonitor
         observeNetworkChanges()
+    }
+
+    // Convenience init for backward compatibility with .shared
+    private convenience init() {
+        self.init(
+            cacheManager: CacheManager.shared,
+            offlineQueue: OfflineQueue.shared,
+            networkMonitor: NetworkMonitor.shared
+        )
     }
 
     // MARK: - Public API
@@ -31,19 +47,19 @@ class SyncEngine {
     /// Perform full sync
     func sync() async {
         guard networkMonitor.isConnected else {
-            print("⚠️ Cannot sync: Offline")
+            Logger.warning("Cannot sync: Offline")
             return
         }
 
         guard !isSyncing else {
-            print("⚠️ Sync already in progress")
+            Logger.warning("Sync already in progress")
             return
         }
 
         isSyncing = true
         defer { isSyncing = false }
 
-        print("🔄 Starting full sync...")
+        Logger.info("Starting full sync...")
 
         // 1. Sync offline queue (push local changes)
         await offlineQueue.syncQueue()
@@ -54,7 +70,7 @@ class SyncEngine {
         // 3. Update last sync date
         lastSyncDate = Date()
 
-        print("✅ Sync completed successfully")
+        Logger.info("Sync completed successfully")
     }
 
     /// Sync specific entity type
@@ -63,7 +79,7 @@ class SyncEngine {
             return
         }
 
-        print("🔄 Syncing \(entityType.rawValue)...")
+        Logger.info("Syncing \(entityType.rawValue)...")
 
         // TODO: Implement entity-specific sync logic
         // For now, just clear cache to force refresh
@@ -109,7 +125,7 @@ class SyncEngine {
         // 3. Update local cache with changes
         // 4. Resolve conflicts if any
 
-        print("📥 Pulling latest data from server...")
+        Logger.info("Pulling latest data from server...")
 
         // For now, just clear expired cache entries
         cacheManager.clearExpired()

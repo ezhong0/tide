@@ -42,7 +42,7 @@ class BaseViewModel: ObservableObject {
         self.showError = true
 
         // Log error for debugging
-        print("❌ Error in \(String(describing: type(of: self))): \(error.localizedDescription)")
+        Logger.error("Error in \(String(describing: type(of: self)))", error: error)
     }
 
     /// Execute an async task with loading state and error handling

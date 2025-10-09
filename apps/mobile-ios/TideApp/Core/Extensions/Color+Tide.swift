@@ -5,14 +5,23 @@
 
 import SwiftUI
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
 extension Color {
     // MARK: - Primary Brand Colors
     static let tidePrimary = Color.blue
     static let tideSecondary = Color.purple
 
     // MARK: - Surface Colors
-    static let tideSurface = Color(.secondarySystemBackground)
-    static let tideBackground = Color(.systemBackground)
+    #if canImport(UIKit)
+    static let tideSurface = Color(uiColor: .secondarySystemBackground)
+    static let tideBackground = Color(uiColor: .systemBackground)
+    #else
+    static let tideSurface = Color(NSColor.controlBackgroundColor)
+    static let tideBackground = Color(NSColor.windowBackgroundColor)
+    #endif
 
     // MARK: - Semantic Colors
     static let tideSuccess = Color.green
@@ -23,7 +32,11 @@ extension Color {
     // MARK: - Text Colors
     static let tidePrimaryText = Color.primary
     static let tideSecondaryText = Color.secondary
-    static let tideTertiaryText = Color(.tertiaryLabel)
+    #if canImport(UIKit)
+    static let tideTertiaryText = Color(uiColor: .tertiaryLabel)
+    #else
+    static let tideTertiaryText = Color(NSColor.tertiaryLabelColor)
+    #endif
 
     // MARK: - Priority Colors
     static let priorityCritical = Color.purple

@@ -10,14 +10,14 @@ struct EmailDraftSelectorView: View {
     @StateObject private var viewModel: EmailDraftViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(email: Email) {
+    init(email: Email, dependencies: DependencyContainer = .shared) {
         self.email = email
-        _viewModel = StateObject(wrappedValue: EmailDraftViewModel(email: email))
+        _viewModel = StateObject(wrappedValue: dependencies.makeEmailDraftViewModel(email: email))
     }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: Design.Spacing.lg) {
                 // Original Email Context
                 OriginalEmailCard(email: email)
 
@@ -28,11 +28,10 @@ struct EmailDraftSelectorView: View {
 
                 // Draft Options
                 if !viewModel.drafts.isEmpty {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: Design.Spacing.md) {
                         Text("Choose a Draft")
-                            .font(.title3)
-                            .fontWeight(.bold)
-                            .padding(.horizontal)
+                            .font(Design.Typography.Title.bold)
+                            .padding(.horizontal, Design.Spacing.md)
 
                         ForEach(viewModel.drafts) { draft in
                             DraftOptionCard(
@@ -55,21 +54,18 @@ struct EmailDraftSelectorView: View {
 
                 // Actions
                 if viewModel.selectedDraft != nil {
-                    HStack(spacing: 12) {
+                    HStack(spacing: Design.Spacing.sm) {
                         Button(action: { dismiss() }) {
                             Text("Cancel")
-                                .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.bordered)
+                        .buttonStyle(SecondaryButtonStyle())
 
                         Button(action: { viewModel.sendEmail() }) {
                             Text("Send Email")
-                                .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(viewModel.isSending)
+                        .buttonStyle(PrimaryButtonStyle(isLoading: viewModel.isSending))
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, Design.Spacing.md)
                 }
             }
             .padding(.vertical)
@@ -103,27 +99,27 @@ struct OriginalEmailCard: View {
                 Image(systemName: "envelope.fill")
                     .foregroundColor(.tidePrimary)
                 Text("Replying to")
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
                     .foregroundColor(.secondary)
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text("From: \(email.from)")
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
 
                 Text("Subject: \(email.subject)")
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
                     .fontWeight(.semibold)
 
                 Text(email.body)
-                    .font(.caption)
+                    .font(Design.Typography.Caption.regular)
                     .foregroundColor(.secondary)
                     .lineLimit(3)
             }
         }
         .padding()
         .background(Color.tideSurface.opacity(0.5))
-        .cornerRadius(12)
+        .cornerRadius(Design.CornerRadius.lg)
         .padding(.horizontal)
     }
 }
@@ -139,45 +135,45 @@ struct RelationshipContextCard: View {
                 Image(systemName: "person.fill")
                     .foregroundColor(.purple)
                 Text("Relationship Insights")
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
                     .fontWeight(.semibold)
             }
 
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Strength")
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .foregroundColor(.secondary)
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(strengthColor)
                         Text(relationship.strengthDescription)
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .fontWeight(.semibold)
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Frequency")
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .foregroundColor(.secondary)
                     Text(relationship.interactionFrequency.capitalized)
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .fontWeight(.semibold)
                 }
 
                 if relationship.vipStatus {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Status")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(.secondary)
                         HStack(spacing: 4) {
                             Image(systemName: "star.circle.fill")
-                                .font(.caption)
+                                .font(Design.Typography.Caption.regular)
                                 .foregroundColor(.yellow)
                             Text("VIP")
-                                .font(.caption)
+                                .font(Design.Typography.Caption.regular)
                                 .fontWeight(.semibold)
                         }
                     }
@@ -186,7 +182,7 @@ struct RelationshipContextCard: View {
         }
         .padding()
         .background(Color.purple.opacity(0.1))
-        .cornerRadius(12)
+        .cornerRadius(Design.CornerRadius.lg)
         .padding(.horizontal)
     }
 
@@ -216,9 +212,9 @@ struct DraftOptionCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(draft.version.displayName)
-                            .font(.headline)
+                            .font(Design.Typography.Headline.semibold)
                         Text(draft.version.description)
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(.secondary)
                     }
 
@@ -232,7 +228,7 @@ struct DraftOptionCard: View {
                 }
 
                 Text(draft.body)
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
                     .foregroundColor(.primary)
                     .lineLimit(isSelected ? nil : 3)
 
@@ -241,7 +237,7 @@ struct DraftOptionCard: View {
                         Image(systemName: "text.word.spacing")
                             .font(.caption2)
                         Text("\(draft.wordCount) words")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                     }
 
                     Spacer()
@@ -250,7 +246,7 @@ struct DraftOptionCard: View {
                         Image(systemName: "clock")
                             .font(.caption2)
                         Text("\(draft.metadata.estimatedReadTime)s read")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                     }
 
                     Spacer()
@@ -261,7 +257,7 @@ struct DraftOptionCard: View {
             }
             .padding()
             .background(isSelected ? Color.tidePrimary.opacity(0.1) : Color.tideSurface)
-            .cornerRadius(12)
+            .cornerRadius(Design.CornerRadius.lg)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isSelected ? Color.tidePrimary : Color.clear, lineWidth: 2)
@@ -286,12 +282,12 @@ struct DraftEditorCard: View {
                 Image(systemName: "pencil")
                     .foregroundColor(.tidePrimary)
                 Text("Edit Draft")
-                    .font(.headline)
+                    .font(Design.Typography.Headline.semibold)
                 Spacer()
                 Button(isEditing ? "Done" : "Edit") {
                     isEditing.toggle()
                 }
-                .font(.subheadline)
+                .font(Design.Typography.Body.regular)
                 .buttonStyle(.bordered)
             }
 
@@ -299,7 +295,7 @@ struct DraftEditorCard: View {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Subject")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(.secondary)
                         TextField("Subject", text: $editedSubject)
                             .textFieldStyle(.roundedBorder)
@@ -307,29 +303,29 @@ struct DraftEditorCard: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Body")
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(.secondary)
                         TextEditor(text: $editedBody)
                             .frame(minHeight: 200)
                             .padding(8)
                             .background(Color.tideSurface.opacity(0.5))
-                            .cornerRadius(8)
+                            .cornerRadius(Design.CornerRadius.md)
                     }
                 }
             } else {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Subject: \(editedSubject)")
-                        .font(.subheadline)
+                        .font(Design.Typography.Body.regular)
                         .fontWeight(.semibold)
 
                     Text(editedBody)
-                        .font(.subheadline)
+                        .font(Design.Typography.Body.regular)
                 }
             }
         }
         .padding()
         .background(Color.tideSurface.opacity(0.5))
-        .cornerRadius(12)
+        .cornerRadius(Design.CornerRadius.lg)
         .padding(.horizontal)
     }
 }
@@ -337,7 +333,7 @@ struct DraftEditorCard: View {
 // MARK: - View Model
 
 @MainActor
-class EmailDraftViewModel: ObservableObject {
+final class EmailDraftViewModel: ObservableObject {
     @Published var drafts: [EmailDraft] = []
     @Published var selectedDraft: EmailDraft?
     @Published var relationship: RelationshipIntelligence?
@@ -350,10 +346,17 @@ class EmailDraftViewModel: ObservableObject {
     @Published var errorMessage = ""
 
     private let email: Email
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let supabaseManager: SupabaseManagerProtocol
 
-    init(email: Email) {
+    init(
+        email: Email,
+        apiClient: APIClientProtocol,
+        supabaseManager: SupabaseManagerProtocol
+    ) {
         self.email = email
+        self.apiClient = apiClient
+        self.supabaseManager = supabaseManager
     }
 
     func loadDrafts() async {
@@ -416,6 +419,6 @@ class EmailDraftViewModel: ObservableObject {
     }
 
     private func getCurrentUserId() async -> String? {
-        return await SupabaseManager.shared.getCurrentUserId()
+        return await supabaseManager.getCurrentUserId()
     }
 }

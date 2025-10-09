@@ -39,7 +39,7 @@ protocol SupabaseManagerProtocol: ObservableObject {
     func fetchCalendarEvents(from: Date, to: Date) async throws -> [DBCalendarEvent]
 
     // MARK: - Tasks
-    func fetchTasks(status: TaskStatus?) async throws -> [DBTask]
+    func fetchTasks(status: DBTaskStatus?) async throws -> [DBTask]
     func createTask(title: String, description: String?, dueAt: Date?) async throws -> DBTask
-    func updateTaskStatus(taskId: String, status: TaskStatus) async throws
+    func updateTaskStatus(taskId: String, status: DBTaskStatus) async throws
 }

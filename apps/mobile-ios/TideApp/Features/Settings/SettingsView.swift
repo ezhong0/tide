@@ -4,10 +4,17 @@
  */
 
 import SwiftUI
+import Supabase
 
 struct SettingsView: View {
-    @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var viewModel: SettingsViewModel
     @State private var showLogoutConfirmation = false
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: SettingsViewModel(
+            cacheManager: CacheManager.shared
+        ))
+    }
 
     var body: some View {
         List {
@@ -220,49 +227,89 @@ struct SettingsView: View {
 
 // MARK: - Accounts List View
 struct AccountsListView: View {
-    @StateObject private var viewModel = AccountsViewModel()
+    @StateObject private var viewModel: AccountsViewModel
+    @Environment(\.dependencies) private var dependencies
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: AccountsViewModel(
+            supabaseManager: dependencies.supabaseManager,
+            keychainManager: KeychainManager.shared
+        ))
+    }
 
     var body: some View {
-        List {
-            Section {
-                ForEach(viewModel.connectedAccounts) { account in
-                    AccountRow(account: account)
-                }
-            } header: {
-                Text("Connected")
-            }
-
-            Section {
-                ForEach(viewModel.availableAccounts) { account in
-                    Button {
-                        Task {
-                            await viewModel.connectAccount(account)
+        ZStack {
+            List {
+                if !viewModel.connectedAccounts.isEmpty {
+                    Section {
+                        ForEach(viewModel.connectedAccounts) { account in
+                            AccountRow(account: account, onDisconnect: {
+                                Task {
+                                    await viewModel.disconnectAccount(account)
+                                }
+                            })
                         }
-                    } label: {
-                        HStack {
-                            Image(systemName: account.icon)
-                                .foregroundColor(account.color)
-
-                            Text(account.name)
-
-                            Spacer()
-
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundColor(.blue)
-                        }
+                    } header: {
+                        Text("Connected")
                     }
                 }
-            } header: {
-                Text("Available")
+
+                Section {
+                    ForEach(viewModel.availableAccounts.filter { available in
+                        !viewModel.connectedAccounts.contains { $0.name == available.name }
+                    }) { account in
+                        Button {
+                            Task {
+                                await viewModel.connectAccount(account)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: account.icon)
+                                    .foregroundColor(account.color)
+
+                                Text(account.name)
+
+                                Spacer()
+
+                                if viewModel.isLoading {
+                                    ProgressView()
+                                } else {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                        }
+                        .disabled(viewModel.isLoading)
+                    }
+                } header: {
+                    Text("Available")
+                }
+            }
+
+            if viewModel.isLoading {
+                Color.black.opacity(0.2)
+                    .ignoresSafeArea()
+                ProgressView()
+                    .scaleEffect(1.5)
             }
         }
         .navigationTitle("Accounts")
+        .alert("Error", isPresented: $viewModel.showError) {
+            Button("OK", role: .cancel) {
+                viewModel.showError = false
+            }
+        } message: {
+            if let error = viewModel.error {
+                Text(error.localizedDescription)
+            }
+        }
     }
 }
 
 // MARK: - Account Row
 struct AccountRow: View {
     let account: ConnectedAccount
+    let onDisconnect: () -> Void
 
     var body: some View {
         HStack {
@@ -280,6 +327,12 @@ struct AccountRow: View {
 
             Spacer()
 
+            Button(action: onDisconnect) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.red.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+
             Circle()
                 .fill(account.isActive ? Color.green : Color.gray)
                 .frame(width: 8, height: 8)
@@ -289,7 +342,7 @@ struct AccountRow: View {
 
 // MARK: - View Models
 @MainActor
-class SettingsViewModel: ObservableObject {
+final class SettingsViewModel: ObservableObject {
     @Published var userName = "John Doe"
     @Published var userEmail = "john@example.com"
     @Published var notificationsEnabled = true
@@ -303,8 +356,15 @@ class SettingsViewModel: ObservableObject {
     @Published var emailSuggestions = true
     @Published var smartScheduling = true
     @Published var taskPrioritization = true
-    @Published var cacheSize = "42.5 MB"
+    @Published var cacheSize = "0 MB"
     @Published var offlineModeEnabled = true
+
+    private let cacheManager: CacheManagerProtocol
+
+    init(cacheManager: CacheManagerProtocol) {
+        self.cacheManager = cacheManager
+        updateCacheSize()
+    }
 
     var userInitials: String {
         userName.split(separator: " ")
@@ -318,57 +378,185 @@ class SettingsViewModel: ObservableObject {
         "1.0.0 (Alpha)"
     }
 
+    func updateCacheSize() {
+        cacheSize = cacheManager.getCacheSize()
+    }
+
     func clearCache() async {
-        // TODO: Implement cache clearing
-        try? await Task.sleep(nanoseconds: 500_000_000)
-        cacheSize = "0 MB"
+        cacheManager.clearAll()
+        updateCacheSize()
     }
 
     func logout() {
-        // TODO: Implement logout
-        print("Logging out...")
+        Logger.authEvent("User logging out...")
+        // Logout via AuthManager (handles token cleanup and Supabase signout)
+        Task {
+            do {
+                // Get AuthManager from environment or use shared instance
+                // Note: ViewModels should ideally get AuthManager via DI, but SettingsViewModel
+                // currently only has CacheManager. This is acceptable for 1.0.
+                AuthManager.shared.logout()
+            }
+        }
     }
 }
 
 @MainActor
-class AccountsViewModel: ObservableObject {
-    @Published var connectedAccounts: [ConnectedAccount] = [
-        ConnectedAccount(
-            id: "1",
-            name: "Google",
-            email: "john@gmail.com",
-            icon: "envelope.fill",
-            color: .red,
-            isActive: true
-        ),
-        ConnectedAccount(
-            id: "2",
-            name: "Microsoft",
-            email: "john@outlook.com",
-            icon: "envelope.fill",
-            color: .blue,
-            isActive: true
-        )
-    ]
+final class AccountsViewModel: ObservableObject {
+    @Published var connectedAccounts: [ConnectedAccount] = []
+    @Published var isLoading = false
+    @Published var error: Error?
+    @Published var showError = false
 
     @Published var availableAccounts: [AvailableAccount] = [
         AvailableAccount(
-            id: "3",
-            name: "iCloud",
-            icon: "cloud.fill",
+            id: "google",
+            name: "Google",
+            icon: "envelope.fill",
+            color: .red
+        ),
+        AvailableAccount(
+            id: "microsoft",
+            name: "Microsoft",
+            icon: "envelope.fill",
             color: .blue
         ),
         AvailableAccount(
-            id: "4",
-            name: "Yahoo",
-            icon: "envelope.fill",
-            color: .purple
+            id: "icloud",
+            name: "iCloud",
+            icon: "cloud.fill",
+            color: .blue
         )
     ]
 
+    private let oauthService: OAuthService
+    private let keychainManager: KeychainManagerProtocol
+
+    init(
+        supabaseManager: SupabaseManagerProtocol,
+        keychainManager: KeychainManagerProtocol
+    ) {
+        self.keychainManager = keychainManager
+        // Get the SupabaseClient from SupabaseManager
+        if let manager = supabaseManager as? SupabaseManager {
+            // Access the private client through the manager's auth methods
+            // For now, we'll create the OAuthService with the shared instance
+            self.oauthService = OAuthService(supabaseClient: SupabaseClient(
+                supabaseURL: URL(string: Config.supabaseURL)!,
+                supabaseKey: Config.supabaseAnonKey ?? ""
+            ))
+        } else {
+            // Fallback for mock/test scenarios
+            self.oauthService = OAuthService(supabaseClient: SupabaseClient(
+                supabaseURL: URL(string: "https://placeholder.supabase.co")!,
+                supabaseKey: "placeholder"
+            ))
+        }
+
+        loadConnectedAccounts()
+    }
+
+    func loadConnectedAccounts() {
+        var accounts: [ConnectedAccount] = []
+
+        // Check for Google OAuth tokens
+        if keychainManager.exists(for: .googleAccessToken) {
+            accounts.append(ConnectedAccount(
+                id: "google_connected",
+                name: "Google",
+                email: "Connected",
+                icon: "envelope.fill",
+                color: .red,
+                isActive: true
+            ))
+        }
+
+        // Check for Microsoft OAuth tokens (we'll add this to KeychainManager if needed)
+        // For now, this is a placeholder
+
+        connectedAccounts = accounts
+    }
+
     func connectAccount(_ account: AvailableAccount) async {
-        // TODO: Implement OAuth flow
-        try? await Task.sleep(nanoseconds: 500_000_000)
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            switch account.id {
+            case "google":
+                try await connectGoogleAccount()
+            case "microsoft":
+                try await connectMicrosoftAccount()
+            case "icloud":
+                // iCloud integration would be handled differently
+                error = NSError(domain: "AccountsViewModel", code: 1, userInfo: [
+                    NSLocalizedDescriptionKey: "iCloud integration coming soon"
+                ])
+                showError = true
+            default:
+                break
+            }
+
+            // Reload connected accounts
+            loadConnectedAccounts()
+        } catch {
+            self.error = error
+            self.showError = true
+            Logger.authError("Failed to connect \(account.name) account", error: error)
+        }
+    }
+
+    private func connectGoogleAccount() async throws {
+        Logger.authEvent("Starting Google OAuth flow")
+
+        let session = try await oauthService.signInWithGoogle()
+
+        // Store tokens in Keychain
+        try keychainManager.save(session.accessToken, for: .googleAccessToken)
+        if let refreshToken = session.refreshToken {
+            try keychainManager.save(refreshToken, for: .googleRefreshToken)
+        }
+
+        Logger.authEvent("Google OAuth flow completed successfully")
+    }
+
+    private func connectMicrosoftAccount() async throws {
+        Logger.authEvent("Starting Microsoft OAuth flow")
+
+        let session = try await oauthService.signInWithMicrosoft()
+
+        // Store tokens in Keychain
+        try keychainManager.save(session.accessToken, for: .accessToken)
+        if let refreshToken = session.refreshToken {
+            try keychainManager.save(refreshToken, for: .refreshToken)
+        }
+
+        Logger.authEvent("Microsoft OAuth flow completed successfully")
+    }
+
+    func disconnectAccount(_ account: ConnectedAccount) async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            // Remove tokens from Keychain
+            if account.name == "Google" {
+                try keychainManager.delete(for: .googleAccessToken)
+                try keychainManager.delete(for: .googleRefreshToken)
+            } else if account.name == "Microsoft" {
+                try keychainManager.delete(for: .accessToken)
+                try keychainManager.delete(for: .refreshToken)
+            }
+
+            // Reload connected accounts
+            loadConnectedAccounts()
+
+            Logger.authEvent("\(account.name) account disconnected")
+        } catch {
+            self.error = error
+            self.showError = true
+            Logger.authError("Failed to disconnect \(account.name) account", error: error)
+        }
     }
 }
 

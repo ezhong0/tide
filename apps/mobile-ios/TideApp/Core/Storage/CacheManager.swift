@@ -1,13 +1,14 @@
 /**
  * Cache Manager
- * Two-tier caching system with memory (NSCache) and disk (UserDefaults)
+ * Two-tier caching system with memory (NSCache) and disk (FileManager)
  * Supports TTL (time-to-live) for cache invalidation
+ * Uses FileManager with encryption for disk storage (secure and scalable)
  */
 
 import Foundation
 
 @MainActor
-class CacheManager {
+final class CacheManager {
     // MARK: - Singleton
     static let shared = CacheManager()
 
@@ -16,8 +17,8 @@ class CacheManager {
     /// Memory cache (fast, cleared on app termination)
     private let memoryCache = NSCache<NSString, CacheEntry>()
 
-    /// Disk cache key prefix
-    private let diskCachePrefix = "TideCache_"
+    /// Disk cache directory
+    private let cacheDirectory: URL
 
     /// Default TTL: 5 minutes
     private let defaultTTL: TimeInterval = 300
@@ -28,6 +29,14 @@ class CacheManager {
         // Configure memory cache limits
         memoryCache.countLimit = 100 // Max 100 items
         memoryCache.totalCostLimit = 50 * 1024 * 1024 // 50 MB
+
+        // Setup disk cache directory
+        let fileManager = FileManager.default
+        let cacheDir = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        self.cacheDirectory = cacheDir.appendingPathComponent("TideCache", isDirectory: true)
+
+        // Create cache directory if it doesn't exist
+        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
 
     // MARK: - Public API
@@ -40,7 +49,7 @@ class CacheManager {
         // Store in memory
         memoryCache.setObject(entry, forKey: key as NSString)
 
-        // Store in disk
+        // Store on disk
         saveToDisk(entry, forKey: key)
     }
 
@@ -57,11 +66,11 @@ class CacheManager {
         }
 
         // Try disk cache
-        if let entry = loadFromDisk(forKey: key) {
+        if let entry: CacheEntry<T> = loadFromDisk(forKey: key) {
             if entry.isValid {
                 // Restore to memory cache
                 memoryCache.setObject(entry, forKey: key as NSString)
-                return entry.value as? T
+                return entry.value
             } else {
                 // Expired - remove from disk
                 removeFromDisk(forKey: key)
@@ -90,113 +99,124 @@ class CacheManager {
         // They'll be removed when accessed via get()
 
         // Clear expired from disk
-        let keys = UserDefaults.standard.dictionaryRepresentation().keys
-        for key in keys where key.hasPrefix(diskCachePrefix) {
-            if let entry = loadFromDisk(forKey: String(key.dropFirst(diskCachePrefix.count))),
+        let fileManager = FileManager.default
+        guard let enumerator = fileManager.enumerator(at: cacheDirectory, includingPropertiesForKeys: nil) else {
+            return
+        }
+
+        for case let fileURL as URL in enumerator {
+            // Try to decode and check expiry
+            if let data = try? Data(contentsOf: fileURL),
+               let entry = try? JSONDecoder().decode(GenericCacheEntry.self, from: data),
                !entry.isValid {
-                UserDefaults.standard.removeObject(forKey: key)
+                try? fileManager.removeItem(at: fileURL)
             }
         }
     }
 
+    /// Get total cache size
+    func getCacheSize() -> String {
+        let fileManager = FileManager.default
+        var totalSize: Int64 = 0
+
+        guard let enumerator = fileManager.enumerator(at: cacheDirectory, includingPropertiesForKeys: [.fileSizeKey]) else {
+            return "0 MB"
+        }
+
+        for case let fileURL as URL in enumerator {
+            if let resourceValues = try? fileURL.resourceValues(forKeys: [.fileSizeKey]),
+               let fileSize = resourceValues.fileSize {
+                totalSize += Int64(fileSize)
+            }
+        }
+
+        let mb = Double(totalSize) / (1024 * 1024)
+        return String(format: "%.1f MB", mb)
+    }
+
     // MARK: - Disk Cache Operations
 
-    private func saveToDisk(_ entry: CacheEntry, forKey key: String) {
-        let diskKey = diskCachePrefix + key
+    private func saveToDisk<T: Codable>(_ entry: CacheEntry<T>, forKey key: String) {
+        let fileURL = cacheDirectory.appendingPathComponent(key.sha256Hash)
 
         do {
             let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
             let data = try encoder.encode(entry)
-            UserDefaults.standard.set(data, forKey: diskKey)
+
+            // Write with file protection (encrypted when device is locked)
+            try data.write(to: fileURL, options: .completeFileProtection)
         } catch {
-            print("❌ Failed to save to disk cache: \(error.localizedDescription)")
+            Logger.error("Failed to save to disk cache", error: error)
         }
     }
 
-    private func loadFromDisk(forKey key: String) -> CacheEntry? {
-        let diskKey = diskCachePrefix + key
-
-        guard let data = UserDefaults.standard.data(forKey: diskKey) else {
-            return nil
-        }
+    private func loadFromDisk<T: Codable>(forKey key: String) -> CacheEntry<T>? {
+        let fileURL = cacheDirectory.appendingPathComponent(key.sha256Hash)
 
         do {
+            let data = try Data(contentsOf: fileURL)
             let decoder = JSONDecoder()
-            return try decoder.decode(CacheEntry.self, from: data)
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(CacheEntry<T>.self, from: data)
         } catch {
-            print("❌ Failed to load from disk cache: \(error.localizedDescription)")
+            // File doesn't exist or decoding failed - this is normal
             return nil
         }
     }
 
     private func removeFromDisk(forKey key: String) {
-        let diskKey = diskCachePrefix + key
-        UserDefaults.standard.removeObject(forKey: diskKey)
+        let fileURL = cacheDirectory.appendingPathComponent(key.sha256Hash)
+        try? FileManager.default.removeItem(at: fileURL)
     }
 
     private func clearDiskCache() {
-        let keys = UserDefaults.standard.dictionaryRepresentation().keys
-        for key in keys where key.hasPrefix(diskCachePrefix) {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: cacheDirectory)
+        try? fileManager.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
 }
 
-// MARK: - Cache Entry
+// MARK: - Cache Entry (Generic)
 
-private class CacheEntry: Codable {
-    let value: Any
+private class CacheEntry<T: Codable>: Codable {
+    let value: T
     let expiryDate: Date
 
     var isValid: Bool {
         return Date() < expiryDate
     }
 
-    init(value: Any, expiryDate: Date) {
+    init(value: T, expiryDate: Date) {
         self.value = value
         self.expiryDate = expiryDate
     }
+}
 
-    // MARK: - Codable
+// MARK: - Generic Cache Entry (For Expiry Checking Only)
 
-    enum CodingKeys: String, CodingKey {
-        case value
-        case expiryDate
-    }
+private struct GenericCacheEntry: Codable {
+    let expiryDate: Date
 
-    required init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        expiryDate = try container.decode(Date.self, forKey: .expiryDate)
-
-        // Decode value as Data
-        let valueData = try container.decode(Data.self, forKey: .value)
-        value = valueData
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(expiryDate, forKey: .expiryDate)
-
-        // Encode value as Data if it's Codable
-        if let codableValue = value as? Encodable {
-            let jsonEncoder = JSONEncoder()
-            let valueData = try jsonEncoder.encode(AnyEncodable(codableValue))
-            try container.encode(valueData, forKey: .value)
-        }
+    var isValid: Bool {
+        return Date() < expiryDate
     }
 }
 
-// MARK: - Any Encodable Wrapper
+// MARK: - String Extension (SHA256)
 
-private struct AnyEncodable: Encodable {
-    let value: Encodable
+private extension String {
+    /// Simple hash for filename generation
+    var sha256Hash: String {
+        let data = Data(self.utf8)
+        var hash = [UInt8](repeating: 0, count: 32)
 
-    init(_ value: Encodable) {
-        self.value = value
-    }
+        // Simple hash function (for filename generation, not cryptographic security)
+        for (index, byte) in data.enumerated() {
+            hash[index % 32] ^= byte
+        }
 
-    func encode(to encoder: Encoder) throws {
-        try value.encode(to: encoder)
+        return hash.map { String(format: "%02x", $0) }.joined()
     }
 }
 

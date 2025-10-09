@@ -7,7 +7,7 @@ import Foundation
 import Security
 
 @MainActor
-class AuthManager: ObservableObject, AuthManagerProtocol {
+final class AuthManager: ObservableObject, AuthManagerProtocol {
     // Keep shared for backward compatibility, but deprecate
     @available(*, deprecated, message: "Use dependency injection instead of shared instance")
     static let shared = AuthManager(supabaseManager: SupabaseManager.shared)
@@ -34,7 +34,7 @@ class AuthManager: ObservableObject, AuthManagerProtocol {
             // Create Supabase client for OAuth service
             guard let supabaseURL = URL(string: Config.supabaseURL),
                   let anonKey = Config.supabaseAnonKey, !anonKey.isEmpty else {
-                print("❌ CRITICAL: Invalid Supabase configuration in AuthManager")
+                Logger.authError("CRITICAL: Invalid Supabase configuration in AuthManager")
                 // Create placeholder to prevent crash
                 let placeholderURL = URL(string: "https://placeholder.supabase.co")!
                 let supabaseClient = SupabaseClient(
@@ -75,7 +75,7 @@ class AuthManager: ObservableObject, AuthManagerProtocol {
                 isAuthenticated = false
             }
         } catch {
-            print("❌ Failed to check authentication state: \(error.localizedDescription)")
+            Logger.authError("Failed to check authentication state", error: error)
             isAuthenticated = false
         }
     }
@@ -216,7 +216,7 @@ class AuthManager: ObservableObject, AuthManagerProtocol {
             do {
                 try await supabaseManager.signOut()
             } catch {
-                print("❌ Logout error: \(error.localizedDescription)")
+                Logger.authError("Logout error", error: error)
             }
 
             // Clear local state
@@ -258,7 +258,7 @@ class AuthManager: ObservableObject, AuthManagerProtocol {
                 )
             }
         } catch {
-            print("❌ Failed to load user profile: \(error.localizedDescription)")
+            Logger.authError("Failed to load user profile", error: error)
         }
     }
 }

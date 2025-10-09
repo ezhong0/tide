@@ -8,7 +8,7 @@ import AuthenticationServices
 import Supabase
 
 @MainActor
-class OAuthService: NSObject, ObservableObject {
+final class OAuthService: NSObject, ObservableObject {
     // MARK: - Properties
 
     @Published var isAuthenticating = false

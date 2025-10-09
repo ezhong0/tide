@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class MockAuthManager: ObservableObject, AuthManagerProtocol {
+final class MockAuthManager: ObservableObject, AuthManagerProtocol {
     // MARK: - Published Properties
     @Published var isAuthenticated: Bool
     @Published var currentUser: User?

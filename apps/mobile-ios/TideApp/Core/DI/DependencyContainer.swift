@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class DependencyContainer: ObservableObject {
+final class DependencyContainer: ObservableObject {
     // MARK: - Singleton (for app entry point only)
     static let shared = DependencyContainer()
 
@@ -175,6 +175,28 @@ class DependencyContainer: ObservableObject {
         return DailySnapshotViewModel(
             apiClient: apiClient,
             authManager: authManager
+        )
+    }
+
+    func makeEmailDraftViewModel(email: Email) -> EmailDraftViewModel {
+        return EmailDraftViewModel(
+            email: email,
+            apiClient: apiClient,
+            supabaseManager: supabaseManager
+        )
+    }
+
+    func makeAutomatedEmailActionsViewModel() -> AutomatedEmailActionsViewModel {
+        return AutomatedEmailActionsViewModel(
+            apiClient: apiClient,
+            supabaseManager: supabaseManager
+        )
+    }
+
+    func makeMeetingBriefsViewModel() -> MeetingBriefsViewModel {
+        return MeetingBriefsViewModel(
+            apiClient: apiClient,
+            supabaseManager: supabaseManager
         )
     }
 

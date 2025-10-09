@@ -4,10 +4,11 @@
  */
 
 import Foundation
+import SwiftUI
 import Combine
 
 @MainActor
-class CalendarGridViewModel: ObservableObject {
+final class CalendarGridViewModel: ObservableObject {
     @Published var calendarDays: [CalendarDay] = []
     @Published var allEvents: [CalendarEvent] = []
     @Published var currentMonth: Date
@@ -47,7 +48,7 @@ class CalendarGridViewModel: ObservableObject {
             // Calculate start and end of month for API call
             guard let startOfMonth = currentMonth.startOfMonth(calendar: calendar),
                   let endOfMonth = currentMonth.endOfMonth(calendar: calendar) else {
-                print("⚠️ Failed to calculate month boundaries")
+                Logger.warning("Failed to calculate month boundaries")
                 error = "Failed to calculate month boundaries"
                 return
             }
@@ -80,7 +81,7 @@ class CalendarGridViewModel: ObservableObject {
             error = nil
 
         } catch {
-            print("Error loading events: \(error)")
+            Logger.error("Error loading events", error: error)
             self.error = "Failed to load events"
             allEvents = []
             generateCalendarDays()
@@ -99,7 +100,7 @@ class CalendarGridViewModel: ObservableObject {
 
     func previousMonth() {
         guard let newMonth = currentMonth.safeAdd(.month, value: -1, calendar: calendar) else {
-            print("⚠️ Failed to navigate to previous month")
+            Logger.warning("Failed to navigate to previous month")
             return
         }
         currentMonth = newMonth
@@ -108,7 +109,7 @@ class CalendarGridViewModel: ObservableObject {
 
     func nextMonth() {
         guard let newMonth = currentMonth.safeAdd(.month, value: 1, calendar: calendar) else {
-            print("⚠️ Failed to navigate to next month")
+            Logger.warning("Failed to navigate to next month")
             return
         }
         currentMonth = newMonth
@@ -127,7 +128,7 @@ class CalendarGridViewModel: ObservableObject {
 
         // Get first day of the month
         guard let startOfMonth = currentMonth.startOfMonth(calendar: calendar) else {
-            print("⚠️ Failed to get start of month")
+            Logger.warning("Failed to get start of month")
             return
         }
 
@@ -143,14 +144,14 @@ class CalendarGridViewModel: ObservableObject {
             value: -daysFromPreviousMonth,
             calendar: calendar
         ) else {
-            print("⚠️ Failed to calculate grid start date")
+            Logger.warning("Failed to calculate grid start date")
             return
         }
 
         // Generate 42 days (6 weeks × 7 days)
         for dayOffset in 0..<42 {
             guard let date = gridStartDate.safeAdd(.day, value: dayOffset, calendar: calendar) else {
-                print("⚠️ Failed to generate day \(dayOffset)")
+                Logger.warning("Failed to generate day \(dayOffset)")
                 continue
             }
 
@@ -170,21 +171,5 @@ class CalendarGridViewModel: ObservableObject {
 
             calendarDays.append(calendarDay)
         }
-    }
-}
-
-// MARK: - Supporting Models
-
-struct CalendarDay: Identifiable, Equatable {
-    let id = UUID()
-    let date: Date
-    let day: Int
-    let isCurrentMonth: Bool
-    let isToday: Bool
-    let hasEvents: Bool
-    let events: [CalendarEvent]
-
-    static func == (lhs: CalendarDay, rhs: CalendarDay) -> Bool {
-        return lhs.id == rhs.id
     }
 }

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LoadingView: View {
     var body: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Design.Spacing.md) {
             ProgressView()
                 .scaleEffect(1.5)
 
@@ -29,7 +29,7 @@ struct LoadingOverlay: View {
             Color.black.opacity(0.3)
                 .ignoresSafeArea()
 
-            VStack(spacing: Spacing.md) {
+            VStack(spacing: Design.Spacing.md) {
                 ProgressView()
                     .scaleEffect(1.5)
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -38,7 +38,7 @@ struct LoadingOverlay: View {
                     .font(.tideBodyMedium)
                     .foregroundColor(.white)
             }
-            .padding(Spacing.xl)
+            .padding(Design.Spacing.xl)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.black.opacity(0.8))
@@ -85,14 +85,14 @@ struct ListShimmerView: View {
     }
 
     var body: some View {
-        VStack(spacing: Spacing.md) {
+        VStack(spacing: Design.Spacing.md) {
             ForEach(0..<rows, id: \.self) { _ in
-                HStack(spacing: Spacing.md) {
+                HStack(spacing: Design.Spacing.md) {
                     ShimmerView()
                         .frame(width: 50, height: 50)
                         .cornerRadius(8)
 
-                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                    VStack(alignment: .leading, spacing: Design.Spacing.xs) {
                         ShimmerView()
                             .frame(height: 16)
                             .frame(maxWidth: .infinity)
@@ -102,12 +102,12 @@ struct ListShimmerView: View {
                             .frame(width: 120)
                     }
                 }
-                .padding(Spacing.md)
+                .padding(Design.Spacing.md)
                 .background(Color.tideSurface)
                 .cornerRadius(12)
             }
         }
-        .padding(Spacing.md)
+        .padding(Design.Spacing.md)
     }
 }
 

@@ -6,7 +6,7 @@
 import Foundation
 
 @MainActor
-class SupabaseManager {
+final class SupabaseManager {
     static let shared = SupabaseManager()
 
     private let baseURL: String

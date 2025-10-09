@@ -12,7 +12,7 @@ struct EventCard: View {
         HStack(spacing: 12) {
             // Time indicator stripe
             Rectangle()
-                .fill(event.color.color)
+                .fill(event.color)
                 .frame(width: 4)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -81,7 +81,7 @@ struct EventCard: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color(uiColor: .secondarySystemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -103,15 +103,13 @@ struct EventCard: View {
         EventCard(event: CalendarEvent(
             id: "1",
             title: "Team Standup",
-            description: "Daily sync",
             startTime: Date(),
             endTime: Date().addingTimeInterval(1800),
             location: "Conference Room A",
-            attendees: [
-                Attendee(name: "John Doe", email: "john@example.com", status: .accepted),
-                Attendee(name: "Jane Smith", email: "jane@example.com", status: .tentative)
-            ],
-            color: CodableColor(color: .blue),
+            description: "Daily sync",
+            attendees: ["john@example.com", "jane@example.com"],
+            color: .blue,
+            hasConflict: false,
             hasPrep: false,
             meetingPrep: nil
         ))
@@ -119,16 +117,13 @@ struct EventCard: View {
         EventCard(event: CalendarEvent(
             id: "2",
             title: "Q4 Strategy Meeting with Leadership Team",
-            description: "Quarterly planning",
             startTime: Date().addingTimeInterval(3600),
             endTime: Date().addingTimeInterval(7200),
             location: "Executive Conference Room",
-            attendees: [
-                Attendee(name: "Sarah Chen", email: "sarah@example.com", status: .accepted),
-                Attendee(name: "Mike Johnson", email: "mike@example.com", status: .accepted),
-                Attendee(name: "Lisa Park", email: "lisa@example.com", status: .tentative)
-            ],
-            color: CodableColor(color: .purple),
+            description: "Quarterly planning",
+            attendees: ["sarah@example.com", "mike@example.com", "lisa@example.com"],
+            color: .purple,
+            hasConflict: false,
             hasPrep: true,
             meetingPrep: nil
         ))
@@ -136,14 +131,13 @@ struct EventCard: View {
         EventCard(event: CalendarEvent(
             id: "3",
             title: "1:1 with Manager",
-            description: nil,
             startTime: Date().addingTimeInterval(5400),
             endTime: Date().addingTimeInterval(7200),
             location: nil,
-            attendees: [
-                Attendee(name: "Alex Rodriguez", email: "alex@example.com", status: .accepted)
-            ],
-            color: CodableColor(color: .green),
+            description: nil,
+            attendees: ["alex@example.com"],
+            color: .green,
+            hasConflict: false,
             hasPrep: false,
             meetingPrep: nil
         ))

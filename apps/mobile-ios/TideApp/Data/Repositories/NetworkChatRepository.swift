@@ -5,7 +5,7 @@
 
 import Foundation
 
-class NetworkChatRepository: ChatRepository {
+final class NetworkChatRepository: ChatRepository {
     private let apiClient: APIClientProtocol
 
     init(apiClient: APIClientProtocol) {
@@ -43,7 +43,6 @@ class NetworkChatRepository: ChatRepository {
     }
 
     func deleteConversation(id: String) async throws {
-        // TODO: Implement delete conversation endpoint when backend is ready
-        throw RepositoryError.notImplemented
+        try await apiClient.deleteConversation(id: id)
     }
 }

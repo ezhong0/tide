@@ -27,12 +27,12 @@ struct EmptyStateView: View {
     }
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(spacing: Design.Spacing.lg) {
             Image(systemName: icon)
                 .font(.system(size: 64))
                 .foregroundColor(.tideSecondaryText)
 
-            VStack(spacing: Spacing.sm) {
+            VStack(spacing: Design.Spacing.sm) {
                 Text(title)
                     .font(.tideHeadlineLarge)
                     .foregroundColor(.tidePrimaryText)
@@ -49,14 +49,14 @@ struct EmptyStateView: View {
                         .font(.tideLabelMedium)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
-                        .padding(.horizontal, Spacing.lg)
-                        .padding(.vertical, Spacing.md)
+                        .padding(.horizontal, Design.Spacing.lg)
+                        .padding(.vertical, Design.Spacing.md)
                         .background(Color.tidePrimary)
                         .cornerRadius(12)
                 }
             }
         }
-        .padding(Spacing.xl)
+        .padding(Design.Spacing.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

@@ -10,6 +10,7 @@ enum Endpoint {
     case aiChat
     case aiConversations
     case aiConversationMessages(conversationId: String)
+    case aiConversationDelete(conversationId: String)
 
     // MARK: - Email Service
     case emailMessages(query: String? = nil)
@@ -89,6 +90,8 @@ enum Endpoint {
             return "/api/ai/conversations"
         case .aiConversationMessages(let conversationId):
             return "/api/ai/conversations/\(conversationId)/messages"
+        case .aiConversationDelete(let conversationId):
+            return "/api/ai/conversations/\(conversationId)"
 
         // Email Service
         case .emailMessages(let query):

@@ -6,7 +6,11 @@
 import SwiftUI
 
 struct AutomatedEmailActionsView: View {
-    @StateObject private var viewModel = AutomatedEmailActionsViewModel()
+    @StateObject private var viewModel: AutomatedEmailActionsViewModel
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: dependencies.makeAutomatedEmailActionsViewModel())
+    }
 
     var body: some View {
         ScrollView {
@@ -23,7 +27,7 @@ struct AutomatedEmailActionsView: View {
                 if !viewModel.todayActions.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Today's Automated Actions")
-                            .font(.headline)
+                            .font(Design.Typography.Headline.semibold)
                             .padding(.horizontal)
 
                         ForEach(viewModel.todayActions) { action in
@@ -42,7 +46,7 @@ struct AutomatedEmailActionsView: View {
                 if !viewModel.weekActions.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("This Week")
-                            .font(.headline)
+                            .font(Design.Typography.Headline.semibold)
                             .padding(.horizontal)
 
                         ForEach(viewModel.weekActions.prefix(5)) { action in
@@ -59,7 +63,7 @@ struct AutomatedEmailActionsView: View {
                             Button("Show All (\(viewModel.weekActions.count))") {
                                 viewModel.showingAllActions = true
                             }
-                            .font(.subheadline)
+                            .font(Design.Typography.Body.regular)
                             .padding(.horizontal)
                         }
                     }
@@ -115,9 +119,9 @@ struct ActionsSummaryCard: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("AI Handled")
-                        .font(.headline)
+                        .font(Design.Typography.Headline.semibold)
                     Text("\(summary.totalCount) emails today")
-                        .font(.subheadline)
+                        .font(Design.Typography.Body.regular)
                         .foregroundColor(.secondary)
                 }
 
@@ -138,12 +142,12 @@ struct ActionsSummaryCard: View {
                             .frame(width: 24)
 
                         Text(category.name)
-                            .font(.subheadline)
+                            .font(Design.Typography.Body.regular)
 
                         Spacer()
 
                         Text("\(category.count)")
-                            .font(.subheadline)
+                            .font(Design.Typography.Body.regular)
                             .fontWeight(.semibold)
                             .foregroundColor(.secondary)
                     }
@@ -155,13 +159,13 @@ struct ActionsSummaryCard: View {
                 Image(systemName: "clock.fill")
                     .foregroundColor(.green)
                 Text("Estimated time saved: \(summary.timeSavedMinutes) minutes")
-                    .font(.caption)
+                    .font(Design.Typography.Caption.regular)
                     .foregroundColor(.secondary)
             }
         }
         .padding()
         .background(Color.purple.opacity(0.1))
-        .cornerRadius(16)
+        .cornerRadius(Design.CornerRadius.xl)
         .padding(.horizontal)
     }
 
@@ -193,11 +197,11 @@ struct AutomatedActionCard: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(action.actionType.displayName)
-                        .font(.subheadline)
+                        .font(Design.Typography.Body.regular)
                         .fontWeight(.semibold)
 
                     Text(action.emailSubject ?? "Email")
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
                 }
@@ -212,10 +216,10 @@ struct AutomatedActionCard: View {
             if showingDetails {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Reasoning")
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .foregroundColor(.secondary)
                     Text(action.reasoning)
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
 
                     HStack(spacing: 4) {
                         Image(systemName: "sparkles")
@@ -235,7 +239,7 @@ struct AutomatedActionCard: View {
                         showingDetails.toggle()
                     }
                 }
-                .font(.caption)
+                .font(Design.Typography.Caption.regular)
                 .buttonStyle(.bordered)
 
                 if action.userFeedback == nil {
@@ -246,7 +250,7 @@ struct AutomatedActionCard: View {
                                 Text("Good")
                             }
                         }
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .buttonStyle(.bordered)
                         .tint(.green)
 
@@ -256,7 +260,7 @@ struct AutomatedActionCard: View {
                                 Text("Bad")
                             }
                         }
-                        .font(.caption)
+                        .font(Design.Typography.Caption.regular)
                         .buttonStyle(.bordered)
                         .tint(.red)
                     }
@@ -268,7 +272,7 @@ struct AutomatedActionCard: View {
                     Button("Undo") {
                         onUndo()
                     }
-                    .font(.caption)
+                    .font(Design.Typography.Caption.regular)
                     .buttonStyle(.bordered)
                     .tint(.orange)
                 }
@@ -280,7 +284,7 @@ struct AutomatedActionCard: View {
         }
         .padding()
         .background(Color.tideSurface)
-        .cornerRadius(12)
+        .cornerRadius(Design.CornerRadius.lg)
         .padding(.horizontal)
     }
 
@@ -319,7 +323,7 @@ struct LearningInsightsCard: View {
                 Image(systemName: "brain.head.profile")
                     .foregroundColor(.blue)
                 Text("Learning Insights")
-                    .font(.headline)
+                    .font(Design.Typography.Headline.semibold)
             }
 
             ForEach(insights) { insight in
@@ -330,11 +334,11 @@ struct LearningInsightsCard: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(insight.title)
-                            .font(.subheadline)
+                            .font(Design.Typography.Body.regular)
                             .fontWeight(.semibold)
 
                         Text(insight.description)
-                            .font(.caption)
+                            .font(Design.Typography.Caption.regular)
                             .foregroundColor(.secondary)
 
                         if let accuracy = insight.accuracy {
@@ -350,7 +354,7 @@ struct LearningInsightsCard: View {
         }
         .padding()
         .background(Color.blue.opacity(0.1))
-        .cornerRadius(12)
+        .cornerRadius(Design.CornerRadius.lg)
         .padding(.horizontal)
     }
 }
@@ -383,11 +387,11 @@ struct EmptyAutomatedActionsView: View {
                 .foregroundColor(.secondary)
 
             Text("No Automated Actions Yet")
-                .font(.title3)
+                .font(Design.Typography.Title.semibold)
                 .fontWeight(.semibold)
 
             Text("The AI will start handling routine emails autonomously")
-                .font(.body)
+                .font(Design.Typography.Body.regular)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -426,17 +430,17 @@ struct AutomatedActionRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(action.actionType.displayName)
-                    .font(.subheadline)
+                    .font(Design.Typography.Body.regular)
                     .fontWeight(.semibold)
                 Spacer()
                 Text(action.executedAt.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
+                    .font(Design.Typography.Caption.regular)
                     .foregroundColor(.secondary)
             }
 
             if let subject = action.emailSubject {
                 Text(subject)
-                    .font(.caption)
+                    .font(Design.Typography.Caption.regular)
                     .foregroundColor(.secondary)
             }
         }
@@ -508,7 +512,7 @@ struct LearningInsight: Codable, Identifiable {
 // MARK: - View Model
 
 @MainActor
-class AutomatedEmailActionsViewModel: ObservableObject {
+final class AutomatedEmailActionsViewModel: ObservableObject {
     @Published var todayActions: [AutomatedEmailAction] = []
     @Published var weekActions: [AutomatedEmailAction] = []
     @Published var allActions: [AutomatedEmailAction] = []
@@ -520,7 +524,16 @@ class AutomatedEmailActionsViewModel: ObservableObject {
     @Published var showingAllActions = false
     @Published var errorMessage = ""
 
-    private let apiClient = APIClient.shared
+    private let apiClient: APIClientProtocol
+    private let supabaseManager: SupabaseManagerProtocol
+
+    init(
+        apiClient: APIClientProtocol,
+        supabaseManager: SupabaseManagerProtocol
+    ) {
+        self.apiClient = apiClient
+        self.supabaseManager = supabaseManager
+    }
 
     func loadActions() async {
         isLoading = true
@@ -590,6 +603,6 @@ class AutomatedEmailActionsViewModel: ObservableObject {
     }
 
     private func getCurrentUserId() async -> String? {
-        return await SupabaseManager.shared.getCurrentUserId()
+        return await supabaseManager.getCurrentUserId()
     }
 }

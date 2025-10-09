@@ -11,6 +11,9 @@ protocol EmailRepository {
     func getEmail(id: String) async throws -> Email
     func sendEmail(to: [String], subject: String, body: String) async throws
     func deleteEmail(id: String) async throws
+    func archiveEmail(id: String) async throws
+    func starEmail(id: String) async throws
+    func unstarEmail(id: String) async throws
 
     // MARK: - Draft Operations
     func generateDrafts(emailId: String, userId: String, context: EmailComposeContext?) async throws -> [EmailDraft]

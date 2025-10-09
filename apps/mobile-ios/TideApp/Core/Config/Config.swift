@@ -170,15 +170,15 @@ struct Config {
     
     static func printConfiguration() {
         #if DEBUG
-        print("=== Tide Configuration ===")
-        print("Environment: \(Environment.current.name)")
-        print("App Version: \(fullVersion)")
-        print("Supabase URL: \(supabaseURL)")
-        print("API Base URL: \(apiBaseURL)")
-        print("Google OAuth: \(googleClientID.isEmpty ? "Not configured" : "Configured")")
-        print("Offline Mode: \(FeatureFlags.enableOfflineMode)")
-        print("Analytics: \(FeatureFlags.enableAnalytics)")
-        print("=========================")
+        Logger.info("=== Tide Configuration ===")
+        Logger.info("Environment: \(Environment.current.name)")
+        Logger.info("App Version: \(fullVersion)")
+        Logger.info("Supabase URL: \(supabaseURL)")
+        Logger.info("API Base URL: \(apiBaseURL)")
+        Logger.info("Google OAuth: \(googleClientID.isEmpty ? "Not configured" : "Configured")")
+        Logger.info("Offline Mode: \(FeatureFlags.enableOfflineMode)")
+        Logger.info("Analytics: \(FeatureFlags.enableAnalytics)")
+        Logger.info("=========================")
         #endif
     }
 }

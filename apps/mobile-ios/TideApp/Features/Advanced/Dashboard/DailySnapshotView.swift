@@ -67,7 +67,7 @@ struct DailySnapshotView: View {
 
                 // Empty state
                 if !viewModel.isLoading && viewModel.isEmpty {
-                    EmptyStateView()
+                    DashboardEmptyStateView()
                 }
             }
             .padding()
@@ -461,7 +461,7 @@ struct PredictiveActionCard: View {
 
 // MARK: - Empty State
 
-struct EmptyStateView: View {
+struct DashboardEmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "checkmark.circle.fill")

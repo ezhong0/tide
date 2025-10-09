@@ -37,12 +37,15 @@ struct TaskDetailView: View {
                                 .font(.title2)
                                 .foregroundColor(task.status == .done ? .green : .gray)
                         }
+                        .accessibilityLabel(task.status == .done ? "Mark task incomplete" : "Mark task complete")
+                        .accessibilityHint("Toggle the completion status of this task")
 
                         Text(task.title)
                             .font(.title2)
                             .fontWeight(.bold)
                             .strikethrough(task.status == .done)
                     }
+                    .accessibilityElement(children: .contain)
 
                     // Status
                     HStack(spacing: 12) {
@@ -53,6 +56,7 @@ struct TaskDetailView: View {
                             .padding(.vertical, 6)
                             .background(task.status.color.opacity(0.1))
                             .cornerRadius(8)
+                            .accessibilityLabel("Status: \(task.status.title)")
 
                         // Priority
                         if task.priority != .none {
@@ -63,6 +67,7 @@ struct TaskDetailView: View {
                                 .padding(.vertical, 6)
                                 .background(task.priority.color.opacity(0.1))
                                 .cornerRadius(8)
+                                .accessibilityLabel("Priority: \(task.priority.title)")
                         }
                     }
 
@@ -78,6 +83,9 @@ struct TaskDetailView: View {
                                 .foregroundColor(isDueDateOverdue(dueDate, status: task.status) ? .red : .primary)
                                 .padding(.leading, 28)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Due date: \(dueDateString(dueDate))")
+                        .accessibilityValue(isDueDateOverdue(dueDate, status: task.status) ? "Overdue" : "")
                     }
 
                     // Description
@@ -91,6 +99,8 @@ struct TaskDetailView: View {
                                 .font(.callout)
                                 .padding(.leading, 28)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Description: \(description)")
                     }
 
                     // Tags
@@ -110,11 +120,14 @@ struct TaskDetailView: View {
                                             .background(Color.blue.opacity(0.1))
                                             .foregroundColor(.blue)
                                             .cornerRadius(16)
+                                            .accessibilityLabel("Tag: \(tag)")
                                     }
                                 }
                                 .padding(.leading, 28)
                             }
                         }
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("Tags: \(tags.joined(separator: ", "))")
                     }
 
                     // Created/Updated timestamps
@@ -174,6 +187,8 @@ struct TaskDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("Task actions")
+                .accessibilityHint("Edit, mark complete, or delete this task")
             }
         }
         .alert("Delete Task?", isPresented: $showDeleteConfirmation) {
@@ -211,7 +226,7 @@ struct TaskDetailView: View {
 
 // MARK: - View Model
 @MainActor
-class TaskDetailViewModel: ObservableObject {
+final class TaskDetailViewModel: ObservableObject {
     @Published var task: TideTaskDetail?
     @Published var isLoading = false
     @Published var error: Error?
@@ -247,7 +262,7 @@ class TaskDetailViewModel: ObservableObject {
             )
 
         } catch {
-            print("Error loading task: \(error)")
+            Logger.error("Error loading task", error: error)
             self.error = error
         }
     }
@@ -283,7 +298,7 @@ class TaskDetailViewModel: ObservableObject {
         do {
             try await apiClient.updateTaskStatus(taskId: taskId, status: newStatus.rawValue)
         } catch {
-            print("Error updating task status: \(error)")
+            Logger.error("Error updating task status", error: error)
             // Reload on error
             await loadTask()
         }
@@ -293,7 +308,7 @@ class TaskDetailViewModel: ObservableObject {
         do {
             try await apiClient.deleteTask(id: taskId)
         } catch {
-            print("Error deleting task: \(error)")
+            Logger.error("Error deleting task", error: error)
             self.error = error
         }
     }

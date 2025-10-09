@@ -306,7 +306,7 @@ struct EmptyActionsView: View {
 // MARK: - View Model
 
 @MainActor
-class ActionsViewModel: ObservableObject {
+final class ActionsViewModel: ObservableObject {
     @Published var pendingActions: [ActionSuggestion] = []
     @Published var actionHistory: [ActionSuggestion] = []
     @Published var autonomousCount: Int = 0

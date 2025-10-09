@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "TideIOS",
     platforms: [
-        .iOS(.v17)
+        .iOS(.v17),
+        .macOS(.v13)
     ],
     products: [
         .library(
@@ -26,11 +27,24 @@ let package = Package(
                 .product(name: "Supabase", package: "supabase-swift"),
                 .product(name: "KeychainSwift", package: "keychain-swift"),
             ],
-            path: "."
+            path: ".",
+            exclude: [
+                "TideAppTests",
+                "README.md",
+                "SETUP_XCODE.md",
+                "create-xcode-project.sh",
+                ".build",
+                ".swiftpm",
+                "Core",
+                "Features",
+                "Models",
+                "Services"
+            ]
         ),
         .testTarget(
             name: "TideIOSTests",
-            dependencies: ["TideIOS"]
+            dependencies: ["TideIOS"],
+            path: "TideAppTests"
         )
     ]
 )

@@ -40,7 +40,7 @@ enum Tab: Int, CaseIterable {
 }
 
 // MARK: - Navigation State
-class NavigationState: ObservableObject {
+final class NavigationState: ObservableObject {
     @Published var selectedTab: Tab = .chat
     @Published var chatPath = NavigationPath()
     @Published var emailPath = NavigationPath()

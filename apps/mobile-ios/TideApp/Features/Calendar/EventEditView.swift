@@ -34,21 +34,31 @@ struct EventEditView: View {
                 // Title
                 Section(header: Text("Event Details")) {
                     TextField("Title", text: $viewModel.title)
+                        .accessibilityLabel("Event title")
+                        .accessibilityHint("Enter a title for this event")
 
                     TextField("Description (optional)", text: $viewModel.description, axis: .vertical)
                         .lineLimit(3...6)
+                        .accessibilityLabel("Event description")
+                        .accessibilityHint("Enter an optional description for this event")
                 }
 
                 // Date & Time
                 Section(header: Text("Date & Time")) {
                     DatePicker("Start", selection: $viewModel.startTime, displayedComponents: [.date, .hourAndMinute])
+                        .accessibilityLabel("Event start time")
+                        .accessibilityHint("Select the date and time when this event starts")
 
                     DatePicker("End", selection: $viewModel.endTime, displayedComponents: [.date, .hourAndMinute])
+                        .accessibilityLabel("Event end time")
+                        .accessibilityHint("Select the date and time when this event ends")
                 }
 
                 // Location (optional)
                 Section(header: Text("Location")) {
                     TextField("Add location", text: $viewModel.location)
+                        .accessibilityLabel("Event location")
+                        .accessibilityHint("Enter the location where this event will take place")
                 }
 
                 // Delete button (edit mode only)
@@ -63,6 +73,8 @@ struct EventEditView: View {
                                 Spacer()
                             }
                         }
+                        .accessibilityLabel("Delete event")
+                        .accessibilityHint("Permanently delete this event")
                     }
                 }
 
@@ -86,6 +98,8 @@ struct EventEditView: View {
                             dismiss()
                         }
                     }
+                    .accessibilityLabel("Cancel")
+                    .accessibilityHint(viewModel.hasChanges ? "Discard changes and return to previous screen" : "Return to previous screen")
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -98,6 +112,8 @@ struct EventEditView: View {
                         }
                     }
                     .disabled(!viewModel.canSave || viewModel.isSaving)
+                    .accessibilityLabel("Save event")
+                    .accessibilityHint(viewModel.canSave ? "Save this event" : "Complete all required fields to save")
                 }
             }
             .alert("Delete Event?", isPresented: $showDeleteConfirmation) {
@@ -150,7 +166,7 @@ struct EventEditView: View {
 
 // MARK: - View Model
 @MainActor
-class EventEditViewModel: ObservableObject {
+final class EventEditViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var description: String = ""
     @Published var startTime: Date = Date()
@@ -231,7 +247,7 @@ class EventEditViewModel: ObservableObject {
             saveSuccess = true
 
         } catch {
-            print("Error saving event: \(error)")
+            Logger.error("Error saving event", error: error)
             self.error = error
             self.showError = true
         }
@@ -247,7 +263,7 @@ class EventEditViewModel: ObservableObject {
             try await apiClient.deleteEvent(id: event.id)
             deleteSuccess = true
         } catch {
-            print("Error deleting event: \(error)")
+            Logger.error("Error deleting event", error: error)
             self.error = error
             self.showError = true
         }
