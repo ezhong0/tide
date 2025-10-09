@@ -16,7 +16,7 @@ export class APIError extends Error {
     public statusCode: number,
     public message: string,
     public code?: string,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'APIError';
@@ -28,55 +28,55 @@ export class APIError extends Error {
  * Common API Errors
  */
 export class BadRequestError extends APIError {
-  constructor(message: string = 'Bad Request', details?: any) {
+  constructor(message: string = 'Bad Request', details?: unknown) {
     super(400, message, 'BAD_REQUEST', details);
   }
 }
 
 export class UnauthorizedError extends APIError {
-  constructor(message: string = 'Unauthorized', details?: any) {
+  constructor(message: string = 'Unauthorized', details?: unknown) {
     super(401, message, 'UNAUTHORIZED', details);
   }
 }
 
 export class ForbiddenError extends APIError {
-  constructor(message: string = 'Forbidden', details?: any) {
+  constructor(message: string = 'Forbidden', details?: unknown) {
     super(403, message, 'FORBIDDEN', details);
   }
 }
 
 export class NotFoundError extends APIError {
-  constructor(message: string = 'Resource not found', details?: any) {
+  constructor(message: string = 'Resource not found', details?: unknown) {
     super(404, message, 'NOT_FOUND', details);
   }
 }
 
 export class ConflictError extends APIError {
-  constructor(message: string = 'Conflict', details?: any) {
+  constructor(message: string = 'Conflict', details?: unknown) {
     super(409, message, 'CONFLICT', details);
   }
 }
 
 export class ValidationError extends APIError {
-  constructor(message: string = 'Validation failed', details?: any) {
+  constructor(message: string = 'Validation failed', details?: unknown) {
     super(422, message, 'VALIDATION_ERROR', details);
   }
 }
 
 export class TooManyRequestsError extends APIError {
-  constructor(message: string = 'Too many requests', details?: any) {
+  constructor(message: string = 'Too many requests', details?: unknown) {
     super(429, message, 'TOO_MANY_REQUESTS', details);
   }
 }
 
 export class InternalServerError extends APIError {
-  constructor(message: string = 'Internal server error', details?: any) {
+  constructor(message: string = 'Internal server error', details?: unknown) {
     super(500, message, 'INTERNAL_SERVER_ERROR', details);
   }
 }
 
 export class ServiceUnavailableError extends APIError {
-  constructor(message: string = 'Service unavailable', details?: any) {
+  constructor(message: string = 'Service unavailable', details?: unknown) {
     super(503, message, 'SERVICE_UNAVAILABLE', details);
   }
 }
@@ -85,6 +85,13 @@ export class ServiceUnavailableError extends APIError {
  * Error Handler Middleware
  * Must be registered LAST in the middleware chain
  */
+interface ErrorResponse {
+  error: string;
+  message: string;
+  details?: unknown;
+  stack?: string;
+}
+
 export const errorHandler = (
   err: Error | APIError,
   req: Request,
@@ -95,7 +102,7 @@ export const errorHandler = (
   let statusCode = 500;
   let errorCode = 'INTERNAL_SERVER_ERROR';
   let message = 'An unexpected error occurred';
-  let details: any = undefined;
+  let details: unknown = undefined;
 
   // Handle APIError instances
   if (err instanceof APIError) {
@@ -109,7 +116,8 @@ export const errorHandler = (
     statusCode = 422;
     errorCode = 'VALIDATION_ERROR';
     message = 'Validation failed';
-    details = (err as any).errors || (err as any).details;
+    details = (err as unknown as { errors?: unknown; details?: unknown }).errors ||
+              (err as unknown as { errors?: unknown; details?: unknown }).details;
   }
   // Handle JWT errors
   else if (err.name === 'JsonWebTokenError') {
@@ -160,19 +168,12 @@ export const errorHandler = (
   }
 
   // Send error response
-  const errorResponse: any = {
+  const errorResponse: ErrorResponse = {
     error: errorCode,
     message,
+    ...(details && { details }),
+    ...(process.env.NODE_ENV === 'development' && err.stack && { stack: err.stack }),
   };
-
-  if (details) {
-    errorResponse.details = details;
-  }
-
-  // Include stack trace in development
-  if (process.env.NODE_ENV === 'development') {
-    errorResponse.stack = err.stack;
-  }
 
   res.status(statusCode).json(errorResponse);
 };
@@ -199,7 +200,7 @@ export const notFoundHandler = (req: Request, res: Response) => {
  *   }));
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);

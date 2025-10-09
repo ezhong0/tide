@@ -82,7 +82,7 @@ export const rateLimit = (options: RateLimitOptions = {}) => {
       if (skipSuccessfulRequests || skipFailedRequests) {
         // Intercept response to conditionally increment counter
         const originalSend = res.send;
-        res.send = function (body: any) {
+        res.send = function (this: Response, body?: unknown) {
           const statusCode = res.statusCode;
           const isSuccess = statusCode >= 200 && statusCode < 300;
           const shouldSkip =

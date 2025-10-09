@@ -109,7 +109,7 @@ export abstract class RepositoryBase<T extends { id: string }> implements Reposi
     try {
       const { data: created, error } = await this.db
         .from(this.tableName)
-        .insert(data as any)
+        .insert(data as Record<string, unknown>)
         .select()
         .single();
 
@@ -132,7 +132,7 @@ export abstract class RepositoryBase<T extends { id: string }> implements Reposi
     try {
       const { data: updated, error } = await this.db
         .from(this.tableName)
-        .update(data as any)
+        .update(data as Record<string, unknown>)
         .eq('id', id)
         .select()
         .single();
@@ -174,7 +174,7 @@ export abstract class RepositoryBase<T extends { id: string }> implements Reposi
    * Execute custom query with error handling
    */
   protected async executeQuery<R>(
-    queryFn: () => Promise<{ data: R | null; error: any }>,
+    queryFn: () => Promise<{ data: R | null; error: unknown }>,
     operation: string
   ): Promise<R> {
     try {
@@ -202,7 +202,7 @@ export abstract class RepositoryBase<T extends { id: string }> implements Reposi
 export class RepositoryError extends Error {
   constructor(
     message: string,
-    public readonly cause?: any
+    public readonly cause?: unknown
   ) {
     super(message);
     this.name = 'RepositoryError';
