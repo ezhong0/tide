@@ -80,11 +80,20 @@ final class SupabaseManager: ObservableObject {
     // MARK: - OAuth Methods
 
     /// Get OAuth URL for sign in with provider
-    func getOAuthSignInURL(provider: Provider, redirectTo: URL, scopes: String) async throws -> URL {
-        return try await client.auth.getOAuthSignInURL(
-            provider: provider,
+    func getOAuthSignInURL(provider: Provider, redirectTo: URL, scopes: String, queryParams: [String: String]? = nil) async throws -> URL {
+        var options = SignInWithOAuthOptions(
             redirectTo: redirectTo,
             scopes: scopes
+        )
+
+        // Add query params if provided (for access_type=offline, prompt=consent, etc.)
+        if let queryParams = queryParams {
+            options.queryParams = queryParams
+        }
+
+        return try await client.auth.getOAuthSignInURL(
+            provider: provider,
+            options: options
         )
     }
 

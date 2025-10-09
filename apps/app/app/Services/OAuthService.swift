@@ -46,11 +46,15 @@ final class OAuthService: NSObject, ObservableObject {
                     // Request Gmail and Calendar scopes
                     let scopes = "email profile https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar"
 
-                    // Get the OAuth URL from Supabase
+                    // Get the OAuth URL from Supabase with special params to get refresh token
                     let authURL = try await supabaseManager.getOAuthSignInURL(
                         provider: provider,
                         redirectTo: redirectURL,
-                        scopes: scopes
+                        scopes: scopes,
+                        queryParams: [
+                            "access_type": "offline",  // Get refresh token
+                            "prompt": "consent"        // Force consent screen
+                        ]
                     )
 
                     // Open OAuth in web authentication session
@@ -80,6 +84,24 @@ final class OAuthService: NSObject, ObservableObject {
                                     continuation.resume(throwing: OAuthError.noSession)
                                     return
                                 }
+
+                                // Extract and store provider tokens in backend
+                                if let providerToken = session.providerToken,
+                                   let providerRefreshToken = session.providerRefreshToken {
+                                    do {
+                                        try await self?.storeProviderTokens(
+                                            userId: session.user.id.uuidString,
+                                            provider: "gmail",
+                                            accessToken: providerToken,
+                                            refreshToken: providerRefreshToken
+                                        )
+                                        print("✅ Provider tokens stored in backend")
+                                    } catch {
+                                        print("⚠️ Failed to store provider tokens: \(error.localizedDescription)")
+                                        // Continue anyway - user is authenticated, tokens can be re-requested
+                                    }
+                                }
+
                                 continuation.resume(returning: session)
                             } catch {
                                 continuation.resume(throwing: error)
@@ -123,7 +145,10 @@ final class OAuthService: NSObject, ObservableObject {
                     let authURL = try await supabaseManager.getOAuthSignInURL(
                         provider: provider,
                         redirectTo: redirectURL,
-                        scopes: scopes
+                        scopes: scopes,
+                        queryParams: [
+                            "prompt": "consent"  // Force consent screen for refresh token
+                        ]
                     )
 
                     let session = ASWebAuthenticationSession(
@@ -151,6 +176,24 @@ final class OAuthService: NSObject, ObservableObject {
                                     continuation.resume(throwing: OAuthError.noSession)
                                     return
                                 }
+
+                                // Extract and store provider tokens in backend
+                                if let providerToken = session.providerToken,
+                                   let providerRefreshToken = session.providerRefreshToken {
+                                    do {
+                                        try await self?.storeProviderTokens(
+                                            userId: session.user.id.uuidString,
+                                            provider: "exchange",
+                                            accessToken: providerToken,
+                                            refreshToken: providerRefreshToken
+                                        )
+                                        print("✅ Provider tokens stored in backend")
+                                    } catch {
+                                        print("⚠️ Failed to store provider tokens: \(error.localizedDescription)")
+                                        // Continue anyway - user is authenticated, tokens can be re-requested
+                                    }
+                                }
+
                                 continuation.resume(returning: session)
                             } catch {
                                 continuation.resume(throwing: error)
@@ -178,6 +221,64 @@ final class OAuthService: NSObject, ObservableObject {
     /// Handle OAuth callback URL
     func handleOAuthCallback(url: URL) async throws -> Session {
         return try await supabaseManager.handleOAuthCallback(url: url)
+    }
+
+    // MARK: - Private Methods
+
+    /// Store provider tokens in backend
+    private func storeProviderTokens(
+        userId: String,
+        provider: String,
+        accessToken: String,
+        refreshToken: String
+    ) async throws {
+        struct TokenRequest: Codable {
+            let userId: String
+            let tokens: OAuthTokens
+
+            struct OAuthTokens: Codable {
+                let accessToken: String
+                let refreshToken: String
+                let expiresAt: Date
+                let scope: [String]?
+            }
+        }
+
+        let expiresAt = Date(timeIntervalSinceNow: 3600) // 1 hour default
+
+        let request = TokenRequest(
+            userId: userId,
+            tokens: TokenRequest.OAuthTokens(
+                accessToken: accessToken,
+                refreshToken: refreshToken,
+                expiresAt: expiresAt,
+                scope: nil
+            )
+        )
+
+        // Get Supabase session token for authentication
+        guard let session = try? await supabaseManager.getCurrentSession(),
+              let accessToken = session?.accessToken else {
+            throw OAuthError.tokenExchangeFailed
+        }
+
+        // Call backend to store tokens
+        var urlRequest = URLRequest(url: URL(string: "\(Config.apiBaseURL)/api/email/connect/\(provider)")!)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        urlRequest.httpBody = try JSONEncoder().encode(request)
+
+        let (data, response) = try await URLSession.shared.data(for: urlRequest)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            print("❌ Failed to store tokens: \(errorMessage)")
+            throw OAuthError.tokenExchangeFailed
+        }
+
+        print("✅ Tokens stored successfully in backend")
     }
 }
 
