@@ -77,16 +77,8 @@ export interface Entity {
   confidence: number;
 }
 
-// Note: AIResponse is exported from ./ai.contract below
-// The duplicate simplified interface has been removed to prevent conflicts
-
-export interface SuggestedAction {
-  id: string;
-  type: string;
-  description: string;
-  preview: string;
-  confidence: number;
-}
+// Note: AIResponse and SuggestedAction are exported from ./ai.contract below
+// The duplicate simplified interfaces have been removed to prevent conflicts
 
 // Email types
 export interface Email {
@@ -148,7 +140,11 @@ export interface Workflow {
   progress: number;
 }
 
-// Message types
+// AI Contracts - imported for use in Message type
+import type { SuggestedAction } from './ai.contract';
+export * from './ai.contract';
+
+// Message types (uses SuggestedAction from ai.contract)
 export interface Message {
   id: string;
   userId: string;
@@ -167,6 +163,3 @@ export interface Conversation {
   createdAt: Date;
   updatedAt: Date;
 }
-
-// AI Contracts
-export * from './ai.contract';

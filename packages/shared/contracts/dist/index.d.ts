@@ -62,13 +62,6 @@ export interface Entity {
     value: string;
     confidence: number;
 }
-export interface SuggestedAction {
-    id: string;
-    type: string;
-    description: string;
-    preview: string;
-    confidence: number;
-}
 export interface Email {
     id: string;
     from: Contact;
@@ -120,6 +113,8 @@ export interface Workflow {
     completedSteps: number;
     progress: number;
 }
+import type { SuggestedAction } from './ai.contract';
+export * from './ai.contract';
 export interface Message {
     id: string;
     userId: string;
@@ -137,4 +132,3 @@ export interface Conversation {
     createdAt: Date;
     updatedAt: Date;
 }
-export * from './ai.contract';

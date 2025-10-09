@@ -21,11 +21,49 @@ class MockAIService {
     }
     async generateResponse(intent, context) {
         await this.delay();
-        return {
-            content: `I understand you want help with ${intent.type}. I'm processing your request...`,
+        const fullIntent = {
+            category: intent.type === 'email' ? 'email_triage' :
+                intent.type === 'calendar' ? 'calendar_schedule' :
+                    intent.type === 'task' ? 'task_create' : 'question_answer',
+            action: `Handle ${intent.type} request`,
             confidence: intent.confidence,
+            entities: intent.entities.map(e => ({
+                type: 'action_item',
+                value: e.value,
+                confidence: e.confidence,
+                span: [0, 0],
+                normalized: e.value
+            }))
+        };
+        return {
+            requestId: `mock-${Date.now()}`,
+            content: `I understand you want help with ${intent.type}. I'm processing your request...`,
+            intents: [fullIntent],
             suggestedActions: this.generateActions(intent),
-            reasoning: `Detected intent: ${intent.type} with ${intent.confidence * 100}% confidence`
+            confidence: intent.confidence,
+            reasoning: {
+                steps: [{
+                        step: 1,
+                        description: 'Analyze user intent',
+                        input: { type: intent.type },
+                        output: { confidence: intent.confidence },
+                        reasoning: `Detected intent: ${intent.type} with ${intent.confidence * 100}% confidence`,
+                        confidence: intent.confidence,
+                        model: 'gpt-5-mini',
+                        verified: true
+                    }],
+                finalConclusion: `User wants help with ${intent.type}`,
+                confidence: intent.confidence,
+                verified: true
+            },
+            executionTime: this.responseDelay,
+            model: {
+                primary: 'gpt-5-mini',
+                reasoning: 'Mock model for testing'
+            },
+            tokensUsed: 150,
+            cost: 0.0001,
+            timestamp: Date.now()
         };
     }
     async triageEmail(email) {
@@ -62,28 +100,37 @@ class MockAIService {
             case 'email':
                 actions.push({
                     id: 'draft_email',
-                    type: 'email.draft',
+                    type: 'email_send',
+                    title: 'Draft Email Response',
                     description: 'Draft a response',
                     preview: 'I can help you draft a professional response',
-                    confidence: 0.9
+                    confidence: 0.9,
+                    payload: { template: 'professional_reply' },
+                    requiresConfirmation: true
                 });
                 break;
             case 'calendar':
                 actions.push({
                     id: 'schedule_meeting',
-                    type: 'calendar.schedule',
+                    type: 'calendar_create',
+                    title: 'Schedule Meeting',
                     description: 'Schedule a meeting',
                     preview: 'Let me find available times',
-                    confidence: 0.85
+                    confidence: 0.85,
+                    payload: { duration: 30 },
+                    requiresConfirmation: true
                 });
                 break;
             case 'task':
                 actions.push({
                     id: 'create_workflow',
-                    type: 'workflow.create',
+                    type: 'workflow_start',
+                    title: 'Create Workflow',
                     description: 'Create a workflow',
                     preview: 'I can automate this process',
-                    confidence: 0.8
+                    confidence: 0.8,
+                    payload: { workflowType: 'automated_task' },
+                    requiresConfirmation: true
                 });
                 break;
         }
