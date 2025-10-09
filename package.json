@@ -5,7 +5,11 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev",
-    "test": "pnpm -r test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:packages": "pnpm -r test",
     "test:integration": "./scripts/test-week0-integration.sh",
     "test:alpha": "./scripts/run-alpha-integration.sh",
     "dev:start": "./scripts/dev-start.sh",
@@ -16,7 +20,10 @@
     "type-check": "pnpm -r type-check"
   },
   "devDependencies": {
-    "typescript": "^5.3.0"
+    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.4"
   },
   "pnpm": {
     "overrides": {
