@@ -22,4 +22,6 @@ __exportStar(require("./utils"), exports);
 __exportStar(require("./events"), exports);
 // Re-export contracts
 __exportStar(require("@tide/contracts"), exports);
+// Express type augmentation
+require("./express");
 //# sourceMappingURL=index.js.map

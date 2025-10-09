@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
 import { createSupabase } from '@tide/database';
+import { authenticateJWT, moderateRateLimit, errorHandler, notFoundHandler, } from '@tide/middleware';
 import { GmailProvider } from './providers/gmail.provider.js';
 import { ExchangeProvider } from './providers/exchange.provider.js';
 import { EmailTriageEngine } from './triage/triage-engine.js';
@@ -29,12 +30,15 @@ class EmailService {
         this.app.use(helmet());
         this.app.use(cors());
         this.app.use(express.json());
+        // Rate limiting (100 req/min)
+        this.app.use(moderateRateLimit);
         // Request logging
         this.app.use((req, res, next) => {
             logger.info({
                 method: req.method,
                 path: req.path,
                 ip: req.ip,
+                userId: req.user?.userId,
             }, 'Incoming request');
             next();
         });
@@ -52,7 +56,7 @@ class EmailService {
             });
         });
         // Exchange OAuth code for tokens (new endpoint for mobile OAuth)
-        this.app.post('/connect/:provider/oauth', async (req, res) => {
+        this.app.post('/connect/:provider/oauth', authenticateJWT, async (req, res) => {
             try {
                 const { provider } = req.params;
                 const { authCode, userId } = req.body;
@@ -113,7 +117,7 @@ class EmailService {
             }
         });
         // Connect email provider (legacy endpoint - keep for backwards compatibility)
-        this.app.post('/connect/:provider', async (req, res) => {
+        this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {
             try {
                 const { provider } = req.params;
                 const { userId, tokens } = req.body;
@@ -150,7 +154,7 @@ class EmailService {
             }
         });
         // Fetch emails
-        this.app.get('/emails/:userId/:provider', async (req, res) => {
+        this.app.get('/emails/:userId/:provider', authenticateJWT, async (req, res) => {
             try {
                 const { userId, provider } = req.params;
                 const { limit, unreadOnly } = req.query;
@@ -295,7 +299,7 @@ class EmailService {
             }
         });
         // Triage email
-        this.app.post('/triage', async (req, res) => {
+        this.app.post('/triage', authenticateJWT, async (req, res) => {
             try {
                 const { email } = req.body;
                 if (!email) {
@@ -310,7 +314,7 @@ class EmailService {
             }
         });
         // Compose email drafts
-        this.app.post('/compose', async (req, res) => {
+        this.app.post('/compose', authenticateJWT, async (req, res) => {
             try {
                 const request = req.body;
                 if (!request.userId || !request.recipient) {
@@ -325,7 +329,7 @@ class EmailService {
             }
         });
         // Send email
-        this.app.post('/send/:userId/:provider', async (req, res) => {
+        this.app.post('/send/:userId/:provider', authenticateJWT, async (req, res) => {
             try {
                 const { userId, provider } = req.params;
                 const { draft, to } = req.body;
@@ -345,7 +349,7 @@ class EmailService {
             }
         });
         // Search emails
-        this.app.post('/search', async (req, res) => {
+        this.app.post('/search', authenticateJWT, async (req, res) => {
             try {
                 const { query, userId, filters, limit, offset, sort, order } = req.body;
                 if (!userId) {
@@ -368,7 +372,7 @@ class EmailService {
             }
         });
         // Get search suggestions
-        this.app.get('/search/suggestions', async (req, res) => {
+        this.app.get('/search/suggestions', authenticateJWT, async (req, res) => {
             try {
                 const { userId, query, limit } = req.query;
                 if (!userId) {
@@ -383,7 +387,7 @@ class EmailService {
             }
         });
         // Get popular searches
-        this.app.get('/search/popular', async (req, res) => {
+        this.app.get('/search/popular', authenticateJWT, async (req, res) => {
             try {
                 const { userId, limit } = req.query;
                 if (!userId) {
@@ -397,15 +401,10 @@ class EmailService {
                 res.status(500).json({ error: 'Failed to get popular searches' });
             }
         });
-        // 404 handler
-        this.app.use((req, res) => {
-            res.status(404).json({ error: 'Not found' });
-        });
-        // Error handler
-        this.app.use((err, req, res, next) => {
-            logger.error({ error: err }, 'Unhandled error');
-            res.status(500).json({ error: 'Internal server error' });
-        });
+        // 404 handler - must be before error handler
+        this.app.use(notFoundHandler);
+        // Error handler - must be last
+        this.app.use(errorHandler);
     }
     /**
      * Get email provider instance

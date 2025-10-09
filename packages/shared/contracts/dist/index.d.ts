@@ -62,12 +62,6 @@ export interface Entity {
     value: string;
     confidence: number;
 }
-export interface AIResponse {
-    content: string;
-    confidence: number;
-    suggestedActions: SuggestedAction[];
-    reasoning?: string;
-}
 export interface SuggestedAction {
     id: string;
     type: string;

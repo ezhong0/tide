@@ -88,6 +88,7 @@ export interface AIContext {
     activeTasks?: TaskContext[];
     currentTime: number;
     timezone: string;
+    userEmail?: string;
 }
 export interface ContextMessage {
     role: 'user' | 'assistant';
@@ -156,6 +157,7 @@ export interface AIResponse {
     tokensUsed: number;
     cost: number;
     timestamp: number;
+    metadata?: Record<string, any>;
 }
 export interface SuggestedAction {
     id: string;
