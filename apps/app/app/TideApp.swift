@@ -53,7 +53,7 @@ struct TideApp: App {
 // MARK: - App State
 class AppState: ObservableObject {
     @Published var isAuthenticated: Bool = false
-    @Published var currentUser: User?
+    @Published var currentUser: TideUser?
 
     init() {
         checkAuthStatus()

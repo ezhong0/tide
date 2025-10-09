@@ -10,7 +10,7 @@ import Supabase
 final class SupabaseManager: ObservableObject {
     static let shared = SupabaseManager()
 
-    @Published var currentUser: User?
+    @Published var currentUser: Supabase.User?
     @Published var isAuthenticated: Bool = false
 
     let client: SupabaseClient

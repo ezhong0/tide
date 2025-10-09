@@ -116,7 +116,7 @@ struct AuthenticationView: View {
             }
             .padding(.horizontal, TideTheme.Spacing.lg)
         }
-        .onChange(of: authManager.isAuthenticated) { newValue in
+        .onChange(of: authManager.isAuthenticated) { _, newValue in
             if newValue {
                 appState.isAuthenticated = true
             }
