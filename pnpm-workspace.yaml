@@ -7,6 +7,7 @@ packages:
 
   # Service packages - microservices
   - 'packages/services/*'
+  - 'packages/services/shared/*'
 
   # Mock packages - development mocks
   - 'packages/mocks'
