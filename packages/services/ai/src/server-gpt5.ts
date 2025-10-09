@@ -36,7 +36,8 @@ export class TideAIServer {
       model: config.model || process.env.GPT5_MODEL || 'gpt-5-mini',
       reasoningEffort: config.reasoningEffort || 'medium',
       verbosity: config.verbosity || 'medium',
-      includeIntelligenceTools: config.includeIntelligenceTools ?? true,
+      // Disable intelligence tools by default to avoid complex agent dependencies
+      includeIntelligenceTools: config.includeIntelligenceTools ?? (process.env.ENABLE_INTELLIGENCE_TOOLS === 'true'),
       includeCustomTools: config.includeCustomTools ?? false,
     };
 
