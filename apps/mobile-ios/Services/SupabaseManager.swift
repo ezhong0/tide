@@ -439,11 +439,6 @@ enum TaskStatus: String, Codable {
     case cancelled
 }
 
-enum OAuthProvider: String {
-    case google
-    case microsoft
-}
-
 // MARK: - Request Models
 
 struct CreateConversationRequest: Codable {

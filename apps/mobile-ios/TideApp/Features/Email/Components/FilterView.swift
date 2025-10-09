@@ -46,8 +46,11 @@ struct FilterView: View {
                 }
             }
             .navigationTitle("Filters")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") {
                         dismiss()
@@ -63,6 +66,23 @@ struct FilterView: View {
                     .accessibilityLabel("Reset filters")
                     .accessibilityHint("Double tap to clear all filter selections")
                 }
+                #else
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .accessibilityLabel("Done")
+                    .accessibilityHint("Double tap to close filters and apply selections")
+                }
+
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") {
+                        viewModel.resetFilters()
+                    }
+                    .accessibilityLabel("Reset filters")
+                    .accessibilityHint("Double tap to clear all filter selections")
+                }
+                #endif
             }
         }
     }

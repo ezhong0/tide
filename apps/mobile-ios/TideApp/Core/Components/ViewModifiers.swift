@@ -112,7 +112,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             .foregroundColor(Design.Colors.primary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Design.Spacing.md)
-            .background(Design.Colors.backgroundSecondary)
+            .background(Design.ColorHelpers.Background.secondary)
             .cornerRadius(Design.CornerRadius.md)
             .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
             .animation(Design.Animation.quick, value: configuration.isPressed)
@@ -257,4 +257,67 @@ extension View {
     }
     .card(elevation: .medium)
     .padding()
+}
+
+// MARK: - Platform Compatibility Extensions
+
+#if os(iOS)
+import UIKit
+#endif
+
+extension View {
+    /// Platform-compatible navigation bar title display mode
+    /// On iOS: Sets the display mode, on macOS: No-op
+    @ViewBuilder
+    func navigationBarTitleDisplayModeCompat(_ displayMode: NavigationBarItem.TitleDisplayMode) -> some View {
+        #if os(iOS)
+        self.navigationBarTitleDisplayMode(displayMode)
+        #else
+        self
+        #endif
+    }
+
+    /// Platform-compatible keyboard type
+    /// On iOS: Sets keyboard type, on macOS: No-op
+    @ViewBuilder
+    func keyboardTypeCompat(_ keyboardType: UIKeyboardType) -> some View {
+        #if os(iOS)
+        self.keyboardType(keyboardType)
+        #else
+        self
+        #endif
+    }
+
+    /// Platform-compatible text content type
+    /// On iOS: Sets text content type for autofill, on macOS: No-op
+    @ViewBuilder
+    func textContentTypeCompat(_ textContentType: UITextContentType?) -> some View {
+        #if os(iOS)
+        self.textContentType(textContentType)
+        #else
+        self
+        #endif
+    }
+
+    /// Platform-compatible autocapitalization
+    /// On iOS: Sets autocapitalization, on macOS: No-op
+    @ViewBuilder
+    func autocapitalizationCompat(_ style: TextInputAutocapitalization) -> some View {
+        #if os(iOS)
+        self.autocapitalization(style)
+        #else
+        self
+        #endif
+    }
+
+    /// Platform-compatible text case
+    /// On iOS: Sets text case, on macOS: No-op
+    @ViewBuilder
+    func textCaseCompat(_ textCase: Text.Case?) -> some View {
+        #if os(iOS)
+        self.textCase(textCase)
+        #else
+        self
+        #endif
+    }
 }

@@ -52,6 +52,8 @@ struct MeetingBriefDetailView: View {
             .padding()
         }
         .navigationTitle("Meeting Brief")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 }

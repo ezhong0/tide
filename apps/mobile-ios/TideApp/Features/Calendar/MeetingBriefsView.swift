@@ -96,7 +96,7 @@ struct MeetingBriefsView: View {
                 .padding(.horizontal)
 
             ForEach(viewModel.conflicts) { conflict in
-                ConflictCard(
+                MeetingConflictCard(
                     conflict: conflict,
                     onResolve: { option in
                         viewModel.resolveConflict(conflict, with: option)

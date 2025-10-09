@@ -41,7 +41,7 @@ struct DetailAttachmentsSection: View {
                     .accessibilityHint("Double tap to download this attachment")
                 }
                 .padding(Design.Spacing.md)
-                .background(Design.Colors.Background.secondary)
+                .background(Design.ColorHelpers.Background.secondary)
                 .cornerRadius(Design.CornerRadius.md)
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("Attachment: \(attachment.filename), \(formatFileSize(attachment.size))")

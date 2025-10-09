@@ -61,8 +61,11 @@ struct EmailComposeView: View {
                 }
             }
             .navigationTitle(navigationTitle)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
+                #if os(iOS)
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
                         if viewModel.hasChanges {
@@ -96,6 +99,41 @@ struct EmailComposeView: View {
                     .accessibilityHint(viewModel.canSend ? "Double tap to send this email" : "Complete all required fields to send")
                     .accessibilityValue(viewModel.isSending ? "In progress" : "")
                 }
+                #else
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        if viewModel.hasChanges {
+                            showCancelConfirmation = true
+                        } else {
+                            dismiss()
+                        }
+                    }
+                    .accessibilityLabel("Cancel composing email")
+                    .accessibilityHint("Double tap to discard this draft and close")
+                }
+
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        Task {
+                            await viewModel.send()
+                            if viewModel.sendSuccess {
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        if viewModel.isSending {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        } else {
+                            Text("Send")
+                        }
+                    }
+                    .disabled(!viewModel.canSend || viewModel.isSending)
+                    .accessibilityLabel(viewModel.isSending ? "Sending email" : "Send email")
+                    .accessibilityHint(viewModel.canSend ? "Double tap to send this email" : "Complete all required fields to send")
+                    .accessibilityValue(viewModel.isSending ? "In progress" : "")
+                }
+                #endif
             }
             .alert("Discard Draft?", isPresented: $showCancelConfirmation) {
                 Button("Discard", role: .destructive) {

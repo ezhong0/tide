@@ -78,8 +78,8 @@ export class GPT5Orchestrator {
         tools,
         tool_choice: 'auto',
         temperature: this.temperature,
-        reasoning_effort: this.reasoningEffort as any,
-        verbosity: this.verbosity as any,
+        // Note: reasoning_effort and verbosity are not yet supported in OpenAI SDK
+        // Will be enabled when SDK is updated
       });
 
       let iterations = 0;
@@ -170,8 +170,6 @@ export class GPT5Orchestrator {
           tools,
           tool_choice: 'auto',
           temperature: this.temperature,
-          reasoning_effort: this.reasoningEffort as any,
-          verbosity: this.verbosity as any,
         });
 
         toolCalls = response.choices[0].message.tool_calls || [];

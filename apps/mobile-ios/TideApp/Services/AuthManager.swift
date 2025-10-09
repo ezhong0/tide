@@ -250,12 +250,7 @@ final class AuthManager: ObservableObject, AuthManagerProtocol {
         do {
             // Get user from Supabase auth
             if let supabaseUser = supabaseManager.currentUser {
-                currentUser = User(
-                    id: supabaseUser.id.uuidString,
-                    email: supabaseUser.email ?? "",
-                    name: supabaseUser.userMetadata["full_name"]?.value as? String ?? supabaseUser.email ?? "User",
-                    avatarUrl: supabaseUser.userMetadata["avatar_url"]?.value as? String
-                )
+                currentUser = TideUser(from: supabaseUser)
             }
         } catch {
             Logger.authError("Failed to load user profile", error: error)
@@ -265,12 +260,32 @@ final class AuthManager: ObservableObject, AuthManagerProtocol {
 
 // MARK: - Models
 
-struct User: Codable, Identifiable {
+struct TideUser: Codable, Identifiable {
     let id: String
     let email: String
     let name: String
     let avatarUrl: String?
+
+    // Convenience initializer from Supabase.User
+    init(from supabaseUser: Supabase.User) {
+        self.id = supabaseUser.id.uuidString
+        self.email = supabaseUser.email ?? ""
+        self.name = supabaseUser.userMetadata["full_name"]?.value as? String
+                    ?? supabaseUser.email ?? "User"
+        self.avatarUrl = supabaseUser.userMetadata["avatar_url"]?.value as? String
+    }
+
+    // Direct initializer
+    init(id: String, email: String, name: String, avatarUrl: String? = nil) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.avatarUrl = avatarUrl
+    }
 }
+
+// Type alias for backward compatibility
+typealias User = TideUser
 
 enum OAuthProvider: String {
     case google
@@ -283,6 +298,7 @@ enum AuthError: LocalizedError {
     case invalidCredentials
     case networkError
     case notImplemented(String)
+    case notAuthenticated
     case unknown
 
     var errorDescription: String? {
@@ -295,6 +311,8 @@ enum AuthError: LocalizedError {
             return "Network error. Please try again."
         case .notImplemented(let message):
             return message
+        case .notAuthenticated:
+            return "You must be logged in to perform this action"
         case .unknown:
             return "An unknown error occurred"
         }

@@ -359,9 +359,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var cacheSize = "0 MB"
     @Published var offlineModeEnabled = true
 
-    private let cacheManager: CacheManagerProtocol
+    private let cacheManager: CacheManager
 
-    init(cacheManager: CacheManagerProtocol) {
+    init(cacheManager: CacheManager) {
         self.cacheManager = cacheManager
         updateCacheSize()
     }

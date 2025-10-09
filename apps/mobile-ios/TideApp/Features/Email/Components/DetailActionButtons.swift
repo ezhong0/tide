@@ -42,7 +42,7 @@ struct DetailActionButtons: View {
             .accessibilityHint("Double tap to forward this email to others")
         }
         .padding(Design.Spacing.md)
-        .background(Design.Colors.Background.primary)
+        .background(Design.ColorHelpers.Background.primary)
         .shadow(
             color: Design.Shadow.md.color,
             radius: Design.Shadow.md.radius,

@@ -13,7 +13,7 @@ final class TokenRefreshManager: ObservableObject {
 
     @Published private(set) var isRefreshing = false
 
-    private let keychain: KeychainManagerProtocol
+    private var keychain: KeychainManagerProtocol
     private var refreshTask: Task<String, Error>?
 
     // MARK: - Initialization

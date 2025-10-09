@@ -14,19 +14,19 @@ final class NetworkTaskRepository: TaskRepository {
 
     // MARK: - Task Operations
 
-    func getTasks(status: String?) async throws -> [Task] {
+    func getTasks(status: String?) async throws -> [TaskAPIModel] {
         return try await apiClient.getTasks(status: status)
     }
 
-    func getTask(id: String) async throws -> Task {
+    func getTask(id: String) async throws -> TaskAPIModel {
         return try await apiClient.getTask(id: id)
     }
 
-    func createTask(task: CreateTaskRequest) async throws -> Task {
+    func createTask(task: CreateTaskRequest) async throws -> TaskAPIModel {
         return try await apiClient.createTask(task: task)
     }
 
-    func updateTask(id: String, task: CreateTaskRequest) async throws -> Task {
+    func updateTask(id: String, task: CreateTaskRequest) async throws -> TaskAPIModel {
         return try await apiClient.updateTask(id: id, task: task)
     }
 

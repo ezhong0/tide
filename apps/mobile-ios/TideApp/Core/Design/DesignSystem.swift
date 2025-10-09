@@ -87,18 +87,10 @@ enum Design {
     }
 
     // MARK: - Colors
+    // Note: Colors are defined in Colors.swift
+    // This section kept for reference to nested Background and Border enums
 
-    enum Colors {
-        // Semantic colors
-        enum Semantic {
-            static let primary = Color.tidePrimary
-            static let secondary = Color.tideSecondary
-            static let success = Color.tideSuccess
-            static let warning = Color.tideWarning
-            static let error = Color.tideError
-            static let info = Color.tideInfo
-        }
-
+    enum ColorHelpers {
         // Background colors
         enum Background {
             static let primary = Color.tideBackground
@@ -108,13 +100,6 @@ enum Design {
             #else
             static let tertiary = Color(NSColor.controlBackgroundColor)
             #endif
-        }
-
-        // Text colors
-        enum Text {
-            static let primary = Color.tidePrimaryText
-            static let secondary = Color.tideSecondaryText
-            static let tertiary = Color.tideTertiaryText
         }
 
         // Border colors
@@ -129,12 +114,6 @@ enum Design {
             static let dark = Color(NSColor.tertiaryLabelColor)
             #endif
         }
-
-        // Legacy accessors for backwards compatibility
-        static let primary = Semantic.primary
-        static let error = Semantic.error
-        static let background = Background.primary
-        static let backgroundSecondary = Background.secondary
     }
 
     // MARK: - Corner Radius
@@ -182,6 +161,37 @@ enum Design {
         static let scale = AnyTransition.scale
         static let fadeAndSlide = AnyTransition.opacity.combined(with: .move(edge: .bottom))
     }
+}
+
+// MARK: - Font Extensions
+
+// Typealias to disambiguate from Font.Design
+private typealias TideDesign = Design
+
+extension Font {
+    // Body
+    static var tideBodyLarge: Font { TideDesign.Typography.Body.bold }
+    static var tideBodyMedium: Font { TideDesign.Typography.Body.medium }
+    static var tideBodySmall: Font { TideDesign.Typography.Body.regular }
+
+    // Label
+    static var tideLabelLarge: Font { TideDesign.Typography.Label.bold }
+    static var tideLabelMedium: Font { TideDesign.Typography.Label.medium }
+    static var tideLabelSmall: Font { TideDesign.Typography.Label.regular }
+
+    // Headline
+    static var tideHeadlineLarge: Font { TideDesign.Typography.Headline.bold }
+    static var tideHeadlineMedium: Font { TideDesign.Typography.Headline.semibold }
+    static var tideHeadlineSmall: Font { TideDesign.Typography.Headline.regular }
+
+    // Title
+    static var tideTitleLarge: Font { TideDesign.Typography.Title.bold }
+    static var tideTitleMedium: Font { TideDesign.Typography.Title.semibold }
+    static var tideTitleSmall: Font { TideDesign.Typography.Title.regular }
+
+    // Caption
+    static var tideCaption: Font { TideDesign.Typography.Caption.regular }
+    static var tideCaptionMedium: Font { TideDesign.Typography.Caption.medium }
 }
 
 // MARK: - View Extensions

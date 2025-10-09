@@ -22,6 +22,7 @@ protocol SupabaseManagerProtocol: ObservableObject {
     func getCurrentSession() async throws -> Session?
 
     // MARK: - User Profile
+    func getCurrentUserId() async -> String?
     func fetchUserProfile() async throws -> UserProfile
     func updateUserProfile(_ profile: UserProfile) async throws
 

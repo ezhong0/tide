@@ -6,7 +6,12 @@
 import SwiftUI
 
 struct ActionsView: View {
-    @StateObject private var viewModel = ActionsViewModel()
+    @StateObject private var viewModel: ActionsViewModel
+    @EnvironmentObject var container: DependencyContainer
+
+    init(dependencies: DependencyContainer = .shared) {
+        _viewModel = StateObject(wrappedValue: dependencies.makeActionsViewModel())
+    }
 
     var body: some View {
         ScrollView {
@@ -159,25 +164,6 @@ struct ActionApprovalCard: View {
         .padding()
         .background(Color.tideSurface)
         .cornerRadius(16)
-    }
-}
-
-struct ConfidenceBadge: View {
-    let confidence: Double
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "sparkles")
-                .font(.caption2)
-            Text("\(Int(confidence * 100))%")
-                .font(.caption)
-                .fontWeight(.semibold)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color.purple.opacity(0.2))
-        .foregroundColor(.purple)
-        .cornerRadius(8)
     }
 }
 
