@@ -55,6 +55,22 @@ importers:
         specifier: ^1.2.0
         version: 1.6.1(@types/node@20.19.19)(@vitest/ui@1.6.1)
 
+  packages/libraries/encryption:
+    dependencies:
+      crypto:
+        specifier: ^1.0.1
+        version: 1.0.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.19
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.4
+        version: 1.6.1(@types/node@20.19.19)(@vitest/ui@1.6.1)
+
   packages/libraries/logger:
     dependencies:
       '@tide/config':
@@ -318,6 +334,9 @@ importers:
       '@tide/database':
         specifier: workspace:*
         version: link:../../libraries/database
+      '@tide/encryption':
+        specifier: workspace:*
+        version: link:../../libraries/encryption
       '@tide/errors':
         specifier: workspace:*
         version: link:../../shared/errors
@@ -4217,6 +4236,11 @@ packages:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  /crypto@1.0.1:
+    resolution: {integrity: sha512-VxBKmeNcqQdiUQUW2Tzq0t377b54N2bMtXO/qiLa+6eRRmmC4qT3D4OnTGoT/U6O9aklQ/jTwbOtRMTTY8G0Ig==}
+    deprecated: This package is no longer supported. It's now a built-in Node module. If you've depended on crypto, you should switch to the one that's built-in.
+    dev: false
 
   /dateformat@4.6.3:
     resolution: {integrity: sha512-2P0p0pFGzHS5EMnhdxQi7aJN+iMheud0UhG4dlE1DLAlvL8JHjJJTX/CSm4JXwV0Ka5nGk3zC5mcb5bUQUxxMA==}
