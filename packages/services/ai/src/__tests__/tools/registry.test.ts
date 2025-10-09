@@ -111,7 +111,7 @@ describe('ToolRegistry', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toEqual({ echoed: 'Hello, world!' });
-      expect(result.executionTime).toBeGreaterThan(0);
+      expect(result.executionTime).toBeGreaterThanOrEqual(0); // Can be 0 in fast environments
     });
 
     it('handles tool not found', async () => {
@@ -141,7 +141,7 @@ describe('ToolRegistry', () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Tool failed intentionally');
-      expect(result.executionTime).toBeGreaterThan(0);
+      expect(result.executionTime).toBeGreaterThanOrEqual(0); // Can be 0 in fast environments
     });
 
     it('passes context to tool handler', async () => {

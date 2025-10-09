@@ -8,13 +8,16 @@ import { toolRegistry } from '../../tools/registry.js';
 import type { TideTool, ToolContext } from '../../tools/types.js';
 import type { AIRequest } from '@tide/contracts';
 
+// Create a shared mock function that all tests can access
+const mockCreate = vi.fn();
+
 // Mock OpenAI
 vi.mock('openai', () => {
   return {
     default: class MockOpenAI {
       chat = {
         completions: {
-          create: vi.fn(),
+          create: mockCreate,
         },
       };
     },
@@ -28,6 +31,9 @@ describe('GPT5Orchestrator', () => {
   beforeEach(() => {
     // Clear tool registry
     toolRegistry.clear();
+
+    // Reset mock
+    mockCreate.mockReset();
 
     orchestrator = new GPT5Orchestrator({
       apiKey: 'test-api-key',
@@ -50,10 +56,7 @@ describe('GPT5Orchestrator', () => {
       };
 
       // Mock OpenAI response
-      const mockOpenAI = await import('openai');
-      const createMock = mockOpenAI.default.prototype.chat.completions.create as any;
-
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -101,11 +104,8 @@ describe('GPT5Orchestrator', () => {
         context: {},
       };
 
-      const mockOpenAI = await import('openai');
-      const createMock = mockOpenAI.default.prototype.chat.completions.create as any;
-
       // First call: GPT decides to call tool
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -128,7 +128,7 @@ describe('GPT5Orchestrator', () => {
       });
 
       // Second call: GPT responds with results
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -169,11 +169,8 @@ describe('GPT5Orchestrator', () => {
         context: {},
       };
 
-      const mockOpenAI = await import('openai');
-      const createMock = mockOpenAI.default.prototype.chat.completions.create as any;
-
       // First call: GPT calls failing tool
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -196,7 +193,7 @@ describe('GPT5Orchestrator', () => {
       });
 
       // Second call: GPT handles error
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -229,11 +226,8 @@ describe('GPT5Orchestrator', () => {
         context: {},
       };
 
-      const mockOpenAI = await import('openai');
-      const createMock = mockOpenAI.default.prototype.chat.completions.create as any;
-
       // Always return tool calls (infinite loop)
-      createMock.mockResolvedValue({
+      mockCreate.mockResolvedValue({
         choices: [
           {
             message: {
@@ -295,11 +289,8 @@ describe('GPT5Orchestrator', () => {
         context: {},
       };
 
-      const mockOpenAI = await import('openai');
-      const createMock = mockOpenAI.default.prototype.chat.completions.create as any;
-
       // Call both tools
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
@@ -330,7 +321,7 @@ describe('GPT5Orchestrator', () => {
       });
 
       // Final response
-      createMock.mockResolvedValueOnce({
+      mockCreate.mockResolvedValueOnce({
         choices: [
           {
             message: {
