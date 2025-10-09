@@ -78,82 +78,8 @@ class EmailService {
       });
     });
 
-    // Exchange OAuth code for tokens (new endpoint for mobile OAuth)
-    // Note: This endpoint is public (no authenticateJWT) because it's part of the auth flow
-    this.app.post('/connect/:provider/oauth', async (req, res) => {
-      try {
-        const { provider } = req.params;
-        const { authCode, userId } = req.body;
-
-        if (!userId || !authCode) {
-          return res.status(400).json({ error: 'Missing userId or authCode' });
-        }
-
-        // Exchange auth code for tokens using Google OAuth2
-        // For iOS OAuth, use the iOS client ID (no secret required)
-        const clientId = env.GOOGLE_IOS_CLIENT_ID || env.GOOGLE_CLIENT_ID || '';
-        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            code: authCode,
-            client_id: clientId,
-            redirect_uri: `com.googleusercontent.apps.${clientId.split('.')[0]}:/oauth2redirect`,
-            grant_type: 'authorization_code',
-          }).toString(),
-        });
-
-        if (!tokenResponse.ok) {
-          const errorData = await tokenResponse.text();
-          logger.error({ error: errorData }, 'Failed to exchange auth code');
-          return res.status(500).json({ error: 'Failed to exchange authorization code' });
-        }
-
-        const tokens = await tokenResponse.json() as {
-          access_token: string;
-          refresh_token: string;
-          expires_in: number;
-          scope?: string;
-        };
-
-        // Initialize email provider
-        const emailProvider = this.getProvider(provider as EmailProvider);
-        await emailProvider.initialize(userId as UserId, {
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-          expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-          scope: tokens.scope?.split(' ') || [],
-        } as OAuthTokens);
-
-        this.providers.set(`${userId}-${provider}`, emailProvider);
-
-        // Store OAuth tokens in database
-        const { error: dbError } = await this.db
-          .from('oauth_tokens')
-          .upsert({
-            user_id: userId,
-            provider: 'google',
-            service: 'email',
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
-            scope: tokens.scope || null,
-          }, {
-            onConflict: 'user_id,provider,service',
-          });
-
-        if (dbError) {
-          logger.error({ error: dbError }, 'Failed to store OAuth tokens');
-        }
-
-        logger.info({ userId, provider }, 'Email provider connected via OAuth');
-
-        res.json({ success: true, provider });
-      } catch (error) {
-        logger.error({ error }, 'Failed to connect email provider via OAuth');
-        res.status(500).json({ error: 'Failed to connect email provider' });
-      }
-    });
+    // NOTE: OAuth endpoint removed - using Supabase OAuth instead
+    // Tokens are stored in Supabase's oauth_tokens table via Supabase Auth
 
     // Connect email provider (legacy endpoint - keep for backwards compatibility)
     this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {

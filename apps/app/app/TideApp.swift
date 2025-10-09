@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct TideApp: App {
     @StateObject private var appState = AppState()
+    @StateObject private var authManager = AuthManager.shared
     @StateObject private var tideCore = TideCore.shared
 
     init() {
@@ -14,7 +15,12 @@ struct TideApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .environmentObject(authManager)
                 .environmentObject(tideCore)
+                .onOpenURL { url in
+                    // Handle OAuth callback URLs
+                    handleOAuthCallback(url)
+                }
         }
     }
 
@@ -25,6 +31,22 @@ struct TideApp: App {
         #else
         print("🌊 Tide App Launching (Release)")
         #endif
+    }
+
+    private func handleOAuthCallback(_ url: URL) {
+        print("🔐 Received OAuth callback: \(url)")
+
+        // Handle Supabase OAuth callbacks
+        if url.scheme == "com.tide.app" {
+            Task {
+                do {
+                    try await authManager.handleOAuthCallback(url: url)
+                    print("✅ OAuth callback handled successfully")
+                } catch {
+                    print("❌ OAuth callback error: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 

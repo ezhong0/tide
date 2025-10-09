@@ -2,7 +2,7 @@ import SwiftUI
 
 struct AuthenticationView: View {
     @EnvironmentObject var appState: AppState
-    @StateObject private var oauthService = GoogleOAuthService.shared
+    @StateObject private var authManager = AuthManager.shared
     @State private var showError = false
     @State private var errorMessage = ""
 
@@ -63,10 +63,31 @@ struct AuthenticationView: View {
                         .cornerRadius(TideTheme.CornerRadius.medium)
                         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
                     }
-                    .disabled(oauthService.isAuthenticating)
+                    .disabled(authManager.isAuthenticated)
+
+                    // Sign in with Microsoft
+                    Button {
+                        Task {
+                            await signInWithMicrosoft()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "cloud.fill")
+                                .font(.title3)
+                            Text("Sign in with Microsoft")
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(red: 0/255, green: 164/255, blue: 239/255))
+                        .foregroundColor(.white)
+                        .cornerRadius(TideTheme.CornerRadius.medium)
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                    }
+                    .disabled(authManager.isAuthenticated)
 
                     // Loading indicator
-                    if oauthService.isAuthenticating {
+                    if authManager.isAuthenticated {
                         ProgressView("Connecting...")
                             .padding()
                     }
@@ -87,7 +108,7 @@ struct AuthenticationView: View {
                 Spacer()
 
                 // Info text
-                Text("Connect your Gmail to get started")
+                Text("Connect your email to get started")
                     .font(TideTheme.Typography.caption1)
                     .foregroundColor(TideTheme.textSecondary)
                     .multilineTextAlignment(.center)
@@ -95,19 +116,52 @@ struct AuthenticationView: View {
             }
             .padding(.horizontal, TideTheme.Spacing.lg)
         }
+        .onChange(of: authManager.isAuthenticated) { newValue in
+            if newValue {
+                appState.isAuthenticated = true
+            }
+        }
     }
 
     private func signInWithGoogle() async {
         do {
-            // Use a test user ID for now
-            let testUserId = "00000000-0000-0000-0000-000000000001"
-            try await oauthService.connectGmail(userId: testUserId)
-
-            // Mark as authenticated
-            appState.isAuthenticated = true
+            try await authManager.loginWithGoogle()
+            print("✅ Google login successful")
         } catch {
-            errorMessage = error.localizedDescription
+            let errorDesc = (error as? OAuthError)?.errorDescription ?? error.localizedDescription
+
+            // Only show error if not cancelled
+            if case OAuthError.cancelled = error {
+                return
+            }
+
+            errorMessage = errorDesc
             showError = true
+            print("❌ Google login error: \(errorDesc)")
+
+            // Hide error after 5 seconds
+            Task {
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                showError = false
+            }
+        }
+    }
+
+    private func signInWithMicrosoft() async {
+        do {
+            try await authManager.loginWithMicrosoft()
+            print("✅ Microsoft login successful")
+        } catch {
+            let errorDesc = (error as? OAuthError)?.errorDescription ?? error.localizedDescription
+
+            // Only show error if not cancelled
+            if case OAuthError.cancelled = error {
+                return
+            }
+
+            errorMessage = errorDesc
+            showError = true
+            print("❌ Microsoft login error: \(errorDesc)")
 
             // Hide error after 5 seconds
             Task {
