@@ -56,7 +56,8 @@ class EmailService {
             });
         });
         // Exchange OAuth code for tokens (new endpoint for mobile OAuth)
-        this.app.post('/connect/:provider/oauth', authenticateJWT, async (req, res) => {
+        // Note: This endpoint is public (no authenticateJWT) because it's part of the auth flow
+        this.app.post('/connect/:provider/oauth', async (req, res) => {
             try {
                 const { provider } = req.params;
                 const { authCode, userId } = req.body;
