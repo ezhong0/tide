@@ -94,5 +94,9 @@ async function main(): Promise<void> {
 
 // Start if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  main().catch((error) => {
+    console.error('FATAL ERROR during startup:', error);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  });
 }

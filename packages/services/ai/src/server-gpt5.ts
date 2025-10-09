@@ -30,6 +30,11 @@ export class TideAIServer {
   private config: ServerConfig;
 
   constructor(config: Partial<ServerConfig> = {}) {
+    console.log('=== TideAIServer Constructor Starting ===');
+    console.log('Config received:', JSON.stringify(config, null, 2));
+    console.log('PORT env:', process.env.PORT);
+    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+
     this.config = {
       port: config.port || parseInt(process.env.PORT || '3001', 10),
       openaiApiKey: config.openaiApiKey || process.env.OPENAI_API_KEY || '',
@@ -41,6 +46,8 @@ export class TideAIServer {
       includeCustomTools: config.includeCustomTools ?? false,
     };
 
+    console.log('Final config:', JSON.stringify(this.config, null, 2));
+
     // Validate API key
     if (!this.config.openaiApiKey) {
       logger.warn('OPENAI_API_KEY not configured - service will be limited');
@@ -49,18 +56,32 @@ export class TideAIServer {
     }
 
     // Initialize tools
-    initializeTools({
-      includeIntelligenceTools: this.config.includeIntelligenceTools,
-      includeCustomTools: this.config.includeCustomTools,
-    });
+    console.log('=== Initializing tools ===');
+    try {
+      initializeTools({
+        includeIntelligenceTools: this.config.includeIntelligenceTools,
+        includeCustomTools: this.config.includeCustomTools,
+      });
+      console.log('=== Tools initialized successfully ===');
+    } catch (error) {
+      console.error('=== FATAL: Tool initialization failed ===', error);
+      throw error;
+    }
 
     // Initialize GPT-5 orchestrator (use dummy key if not configured)
-    this.orchestrator = new GPT5Orchestrator({
-      apiKey: this.config.openaiApiKey || 'sk-dummy-key-for-startup',
-      model: this.config.model,
-      reasoningEffort: this.config.reasoningEffort,
-      verbosity: this.config.verbosity,
-    });
+    console.log('=== Initializing GPT-5 orchestrator ===');
+    try {
+      this.orchestrator = new GPT5Orchestrator({
+        apiKey: this.config.openaiApiKey || 'sk-dummy-key-for-startup',
+        model: this.config.model,
+        reasoningEffort: this.config.reasoningEffort,
+        verbosity: this.config.verbosity,
+      });
+      console.log('=== Orchestrator initialized successfully ===');
+    } catch (error) {
+      console.error('=== FATAL: Orchestrator initialization failed ===', error);
+      throw error;
+    }
 
     // Create HTTP server
     this.server = http.createServer(this.handleRequest.bind(this));
