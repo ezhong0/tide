@@ -3,6 +3,11 @@
  * Validates JWT tokens and extracts user information
  */
 import { Request, Response, NextFunction } from 'express';
+/**
+ * Initialize and validate JWT configuration at startup
+ * Call this in your service's main initialization
+ */
+export declare function initializeAuth(): void;
 declare global {
     namespace Express {
         interface Request {
