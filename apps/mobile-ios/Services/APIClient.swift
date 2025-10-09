@@ -56,7 +56,7 @@ class APIClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Add auth token if available
-        if let accessToken = KeychainService.shared.getAccessToken() {
+        if let accessToken = KeychainManager.shared.accessToken {
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         }
 
