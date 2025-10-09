@@ -17,9 +17,13 @@ final class SupabaseManager: ObservableObject {
 
     private init() {
         // Initialize Supabase client
-        guard let supabaseURL = URL(string: Config.supabaseURL),
-              let anonKey = Config.supabaseAnonKey, !anonKey.isEmpty else {
-            fatalError("CRITICAL: Invalid Supabase configuration. Check Config.swift")
+        guard let supabaseURL = URL(string: Config.supabaseURL) else {
+            fatalError("CRITICAL: Invalid Supabase URL configuration. Check Config.swift")
+        }
+
+        let anonKey = Config.supabaseAnonKey
+        guard !anonKey.isEmpty else {
+            fatalError("CRITICAL: Missing Supabase anon key. Check Config.swift")
         }
 
         self.client = SupabaseClient(
@@ -50,18 +54,20 @@ final class SupabaseManager: ObservableObject {
     // MARK: - Authentication Methods
 
     func signIn(email: String, password: String) async throws -> Session {
-        let session = try await client.auth.signIn(email: email, password: password)
+        let response = try await client.auth.signIn(email: email, password: password)
+        let session = response.session
         currentUser = session.user
         isAuthenticated = true
         return session
     }
 
     func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
-        let session = try await client.auth.signUp(
+        let response = try await client.auth.signUp(
             email: email,
             password: password,
             data: data
         )
+        let session = response.session
         currentUser = session.user
         isAuthenticated = true
         return session
@@ -81,19 +87,18 @@ final class SupabaseManager: ObservableObject {
 
     /// Get OAuth URL for sign in with provider
     func getOAuthSignInURL(provider: Provider, redirectTo: URL, scopes: String, queryParams: [String: String]? = nil) async throws -> URL {
-        var options = SignInWithOAuthOptions(
-            redirectTo: redirectTo,
-            scopes: scopes
-        )
+        // Build query parameters including scopes and any additional params
+        var allQueryParams = queryParams ?? [:]
 
-        // Add query params if provided (for access_type=offline, prompt=consent, etc.)
-        if let queryParams = queryParams {
-            options.queryParams = queryParams
+        // Add scopes to query params
+        if !scopes.isEmpty {
+            allQueryParams["scopes"] = scopes
         }
 
         return try await client.auth.getOAuthSignInURL(
             provider: provider,
-            options: options
+            redirectTo: redirectTo,
+            queryParams: allQueryParams
         )
     }
 
