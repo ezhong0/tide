@@ -309,6 +309,9 @@ importers:
       '@tide/logger':
         specifier: workspace:*
         version: link:../../libraries/logger
+      '@tide/middleware':
+        specifier: workspace:*
+        version: link:../shared/middleware
       '@tide/types':
         specifier: workspace:*
         version: link:../../shared/types

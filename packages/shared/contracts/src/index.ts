@@ -77,12 +77,8 @@ export interface Entity {
   confidence: number;
 }
 
-export interface AIResponse {
-  content: string;
-  confidence: number;
-  suggestedActions: SuggestedAction[];
-  reasoning?: string;
-}
+// Note: AIResponse is exported from ./ai.contract below
+// The duplicate simplified interface has been removed to prevent conflicts
 
 export interface SuggestedAction {
   id: string;
