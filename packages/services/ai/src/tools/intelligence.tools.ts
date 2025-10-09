@@ -6,9 +6,16 @@
 import { createLogger } from '@tide/logger';
 import type { TideTool, ToolContext } from './types.js';
 import type { AgentTask, AgentExecutionContext } from '../types/index.js';
-import { ModelClientFactory } from '../models/clients/index.js';
 
 const logger = createLogger({ component: 'IntelligenceTools' });
+
+/**
+ * Lazy load ModelClientFactory to avoid initialization issues
+ */
+async function getModelClient(modelId: string) {
+  const { ModelClientFactory } = await import('../models/clients/index.js');
+  return ModelClientFactory.getClient(modelId);
+}
 
 /**
  * Prepare comprehensive meeting brief
@@ -58,7 +65,7 @@ export const prepareMeetingTool: TideTool = {
         requestId: context.requestId,
         userId: context.userId,
         timestamp: context.timestamp,
-        modelClient: ModelClientFactory.getClient('gpt-5'),
+        modelClient: await getModelClient('gpt-5'),
       };
 
       const result = await agent.execute(task, execContext);
@@ -122,7 +129,7 @@ export const analyzeRelationshipTool: TideTool = {
         requestId: context.requestId,
         userId: context.userId,
         timestamp: context.timestamp,
-        modelClient: ModelClientFactory.getClient('gpt-5-nano'),
+        modelClient: await getModelClient('gpt-5-nano'),
       };
 
       const result = await agent.execute(task, execContext);
@@ -187,7 +194,7 @@ export const recommendDecisionTool: TideTool = {
         requestId: context.requestId,
         userId: context.userId,
         timestamp: context.timestamp,
-        modelClient: ModelClientFactory.getClient('gpt-5-mini'),
+        modelClient: await getModelClient('gpt-5-mini'),
       };
 
       const result = await agent.execute(task, execContext);
@@ -274,7 +281,7 @@ export const composeEmailAdvancedTool: TideTool = {
         requestId: context.requestId,
         userId: context.userId,
         timestamp: context.timestamp,
-        modelClient: ModelClientFactory.getClient('gpt-5-mini'),
+        modelClient: await getModelClient('gpt-5-mini'),
       };
 
       const result = await agent.execute(task, execContext);
