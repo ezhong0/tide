@@ -1,0 +1,38 @@
+# Node modules (will be installed during build)
+node_modules
+
+# Development files
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+
+# Test and documentation
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+**/__tests__
+**/tests
+*.md
+!README.md
+
+# Build artifacts from CI/CD
+.github
+
+# iOS specific
+apps/mobile-ios
+
+# IMPORTANT: Do NOT ignore dist folders - they are needed in the Docker container
+# Even though dist/ is in .gitignore, we need the built files in the container
+# !dist/
+# !**/dist/
