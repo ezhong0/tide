@@ -60,10 +60,22 @@ app.get('/health', (req, res) => {
 });
 
 // Service URLs from environment
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3003';
-const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3001';
-const CALENDAR_SERVICE_URL = process.env.CALENDAR_SERVICE_URL || 'http://localhost:3002';
-const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3004';
+// Prefer Railway internal URLs for inter-service communication (faster, no egress fees)
+const AI_SERVICE_URL = process.env.RAILWAY_SERVICE_AI_URL
+  ? `http://${process.env.RAILWAY_SERVICE_AI_URL}`
+  : (process.env.AI_SERVICE_URL || 'http://localhost:3003');
+
+const EMAIL_SERVICE_URL = process.env.RAILWAY_SERVICE_EMAIL_URL
+  ? `http://${process.env.RAILWAY_SERVICE_EMAIL_URL}`
+  : (process.env.EMAIL_SERVICE_URL || 'http://localhost:3001');
+
+const CALENDAR_SERVICE_URL = process.env.RAILWAY_SERVICE_CALENDAR_URL
+  ? `http://${process.env.RAILWAY_SERVICE_CALENDAR_URL}`
+  : (process.env.CALENDAR_SERVICE_URL || 'http://localhost:3002');
+
+const WORKFLOW_SERVICE_URL = process.env.RAILWAY_SERVICE_WORKFLOW_URL
+  ? `http://${process.env.RAILWAY_SERVICE_WORKFLOW_URL}`
+  : (process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3004');
 
 // Proxy routes to backend services
 app.use('/api/ai', createProxyMiddleware({
