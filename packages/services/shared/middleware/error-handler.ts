@@ -148,6 +148,17 @@ export const errorHandler = (
     });
   }
 
+  // Check if headers have already been sent
+  if (res.headersSent) {
+    logger.warn('Headers already sent, cannot send error response', {
+      statusCode,
+      errorCode,
+      url: req.url,
+      method: req.method,
+    });
+    return next(err);
+  }
+
   // Send error response
   const errorResponse: any = {
     error: errorCode,

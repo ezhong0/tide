@@ -131,6 +131,16 @@ export const errorHandler = (err, req, res, next) => {
             userId: req.user?.userId,
         });
     }
+    // Check if headers have already been sent
+    if (res.headersSent) {
+        logger.warn('Headers already sent, cannot send error response', {
+            statusCode,
+            errorCode,
+            url: req.url,
+            method: req.method,
+        });
+        return next(err);
+    }
     // Send error response
     const errorResponse = {
         error: errorCode,

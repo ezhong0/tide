@@ -11,6 +11,13 @@ import type { UserId } from '@tide/types';
  * This file verifies Supabase JWTs using the Supabase client.
  */
 
+// Validate that Supabase config is available (required for gateway)
+if (!supabaseConfig.url || !supabaseConfig.anonKey) {
+  throw new Error(
+    'Gateway requires SUPABASE_URL and SUPABASE_ANON_KEY environment variables'
+  );
+}
+
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
 export interface AuthContext {
