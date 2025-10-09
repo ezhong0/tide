@@ -122,12 +122,15 @@ export class TideAIServer {
   ): Promise<void> {
     const { method, url } = req;
 
+    console.log(`=== REQUEST RECEIVED === ${method} ${url}`, new Date().toISOString());
+
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (method === 'OPTIONS') {
+      console.log('OPTIONS request, sending 204');
       res.writeHead(204);
       res.end();
       return;
@@ -135,6 +138,7 @@ export class TideAIServer {
 
     // Routes
     if (url === '/health' && method === 'GET') {
+      console.log('Routing to health check handler');
       await this.handleHealth(res);
       return;
     }
@@ -159,6 +163,9 @@ export class TideAIServer {
    * Health check endpoint
    */
   private async handleHealth(res: http.ServerResponse): Promise<void> {
+    console.log('=== HEALTH CHECK CALLED ===', new Date().toISOString());
+    logger.info('Health check endpoint called');
+
     const health = {
       status: 'healthy',
       service: 'tide-ai',
@@ -173,8 +180,10 @@ export class TideAIServer {
       },
     };
 
+    console.log('=== HEALTH RESPONSE ===', JSON.stringify(health));
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(health, null, 2));
+    console.log('=== HEALTH CHECK COMPLETE ===');
   }
 
   /**
