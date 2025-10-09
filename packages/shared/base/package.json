@@ -1,0 +1,23 @@
+{
+  "name": "@tide/base",
+  "version": "0.1.0",
+  "description": "Base architectural patterns for Tide services",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@tide/logger": "workspace:*",
+    "@supabase/supabase-js": "^2.39.0",
+    "pino": "^8.17.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3"
+  }
+}
