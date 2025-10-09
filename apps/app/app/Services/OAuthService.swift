@@ -257,10 +257,10 @@ final class OAuthService: NSObject, ObservableObject {
         )
 
         // Get Supabase session token for authentication
-        guard let session = try await supabaseManager.getCurrentSession(),
-              let accessToken = session.accessToken else {
+        guard let session = try await supabaseManager.getCurrentSession() else {
             throw OAuthError.tokenExchangeFailed
         }
+        let accessToken = session.accessToken
 
         // Call backend to store tokens
         var urlRequest = URLRequest(url: URL(string: "\(Config.apiBaseURL)/api/email/connect/\(provider)")!)
@@ -286,8 +286,10 @@ final class OAuthService: NSObject, ObservableObject {
 
 extension OAuthService: ASWebAuthenticationPresentationContextProviding {
     nonisolated func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        // Return the key window
-        return ASPresentationAnchor()
+        // Return the key window - call MainActor-isolated init from nonisolated context
+        return MainActor.assumeIsolated {
+            ASPresentationAnchor()
+        }
     }
 }
 

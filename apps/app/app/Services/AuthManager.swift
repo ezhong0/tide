@@ -18,7 +18,18 @@ final class AuthManager: ObservableObject {
 
     // MARK: - Initialization
 
-    init(supabaseManager: SupabaseManager = .shared) {
+    private init() {
+        self.supabaseManager = SupabaseManager.shared
+        self.oauthService = OAuthService(supabaseManager: SupabaseManager.shared)
+
+        // Check if user is already authenticated on init
+        Task {
+            await checkAuthenticationState()
+        }
+    }
+
+    /// Custom initializer for testing with dependency injection
+    init(supabaseManager: SupabaseManager) {
         self.supabaseManager = supabaseManager
         self.oauthService = OAuthService(supabaseManager: supabaseManager)
 
