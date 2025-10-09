@@ -5,9 +5,9 @@
  * OAuth is configured in the Supabase Dashboard, not here.
  */
 export declare const supabaseConfig: {
-    url: string;
-    anonKey: string;
-    serviceRoleKey: string;
+    url: string | undefined;
+    anonKey: string | undefined;
+    serviceRoleKey: string | undefined;
     jwtSecret: string | undefined;
 };
 /**
