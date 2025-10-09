@@ -18,6 +18,19 @@ import { EmailTriageEngine } from './triage/triage-engine.js';
 import { SmartComposer } from './composer/smart-composer.js';
 import { emailSearch } from './search/email-search.js';
 import type { EmailProvider, OAuthTokens, ComposeRequest } from './types/index.js';
+import {
+  validate,
+  ConnectProviderSchema,
+  FetchEmailsParamsSchema,
+  FetchEmailsQuerySchema,
+  TriageEmailSchema,
+  ComposeRequestSchema,
+  SendEmailParamsSchema,
+  SendEmailBodySchema,
+  SearchEmailsSchema,
+  SearchSuggestionsSchema,
+  PopularSearchesSchema,
+} from './validation.js';
 
 /**
  * Email service main application
@@ -92,14 +105,13 @@ class EmailService {
     // Tokens are stored in Supabase's oauth_tokens table via Supabase Auth
 
     // Connect email provider (legacy endpoint - keep for backwards compatibility)
-    this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {
+    this.app.post('/connect/:provider',
+      authenticateJWT,
+      validate(ConnectProviderSchema, 'body'),
+      async (req, res) => {
       try {
         const { provider } = req.params;
         const { userId, tokens } = req.body;
-
-        if (!userId || !tokens) {
-          return res.status(400).json({ error: 'Missing userId or tokens' });
-        }
 
         const emailProvider = this.getProvider(provider as EmailProvider);
         await emailProvider.initialize(userId as UserId, tokens as OAuthTokens);
@@ -139,7 +151,11 @@ class EmailService {
     });
 
     // Fetch emails
-    this.app.get('/emails/:userId/:provider', authenticateJWT, async (req, res) => {
+    this.app.get('/emails/:userId/:provider',
+      authenticateJWT,
+      validate(FetchEmailsParamsSchema, 'params'),
+      validate(FetchEmailsQuerySchema, 'query'),
+      async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { limit, unreadOnly } = req.query;
@@ -305,13 +321,12 @@ class EmailService {
     });
 
     // Triage email
-    this.app.post('/triage', authenticateJWT, async (req, res) => {
+    this.app.post('/triage',
+      authenticateJWT,
+      validate(TriageEmailSchema, 'body'),
+      async (req, res) => {
       try {
         const { email } = req.body;
-
-        if (!email) {
-          return res.status(400).json({ error: 'Missing email data' });
-        }
 
         const triageResult = await this.triageEngine.analyze(email);
 
@@ -323,13 +338,12 @@ class EmailService {
     });
 
     // Compose email drafts
-    this.app.post('/compose', authenticateJWT, async (req, res) => {
+    this.app.post('/compose',
+      authenticateJWT,
+      validate(ComposeRequestSchema, 'body'),
+      async (req, res) => {
       try {
-        const request = req.body as ComposeRequest;
-
-        if (!request.userId || !request.recipient) {
-          return res.status(400).json({ error: 'Missing required fields' });
-        }
+        const request = req.body;
 
         const drafts = await this.composer.compose(request);
 
@@ -341,14 +355,14 @@ class EmailService {
     });
 
     // Send email
-    this.app.post('/send/:userId/:provider', authenticateJWT, async (req, res) => {
+    this.app.post('/send/:userId/:provider',
+      authenticateJWT,
+      validate(SendEmailParamsSchema, 'params'),
+      validate(SendEmailBodySchema, 'body'),
+      async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { draft, to } = req.body;
-
-        if (!draft || !to) {
-          return res.status(400).json({ error: 'Missing draft or recipients' });
-        }
 
         const emailProvider = this.providers.get(`${userId}-${provider}`);
         if (!emailProvider) {
@@ -365,13 +379,12 @@ class EmailService {
     });
 
     // Search emails
-    this.app.post('/search', authenticateJWT, async (req, res) => {
+    this.app.post('/search',
+      authenticateJWT,
+      validate(SearchEmailsSchema, 'body'),
+      async (req, res) => {
       try {
         const { query, userId, filters, limit, offset, sort, order } = req.body;
-
-        if (!userId) {
-          return res.status(400).json({ error: 'Missing userId' });
-        }
 
         const results = await emailSearch.search({
           query: query || '',
@@ -391,13 +404,12 @@ class EmailService {
     });
 
     // Get search suggestions
-    this.app.get('/search/suggestions', authenticateJWT, async (req, res) => {
+    this.app.get('/search/suggestions',
+      authenticateJWT,
+      validate(SearchSuggestionsSchema, 'query'),
+      async (req, res) => {
       try {
         const { userId, query, limit } = req.query;
-
-        if (!userId) {
-          return res.status(400).json({ error: 'Missing userId' });
-        }
 
         const suggestions = await emailSearch.getSuggestions(
           userId as UserId,
@@ -413,13 +425,12 @@ class EmailService {
     });
 
     // Get popular searches
-    this.app.get('/search/popular', authenticateJWT, async (req, res) => {
+    this.app.get('/search/popular',
+      authenticateJWT,
+      validate(PopularSearchesSchema, 'query'),
+      async (req, res) => {
       try {
         const { userId, limit } = req.query;
-
-        if (!userId) {
-          return res.status(400).json({ error: 'Missing userId' });
-        }
 
         const popular = await emailSearch.getPopularSearches(
           userId as UserId,
