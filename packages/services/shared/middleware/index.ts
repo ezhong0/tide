@@ -35,3 +35,9 @@ export {
   InternalServerError,
   ServiceUnavailableError,
 } from './error-handler.js';
+
+export {
+  correlationMiddleware,
+  getCorrelationId,
+  createCorrelatedHeaders,
+} from './correlation.js';
