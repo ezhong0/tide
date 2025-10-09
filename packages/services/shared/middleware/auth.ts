@@ -5,6 +5,32 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { logger } from '@tide/logger';
+
+/**
+ * JWT Configuration
+ */
+let jwtSecret: string | null = null;
+
+/**
+ * Initialize and validate JWT configuration at startup
+ * Call this in your service's main initialization
+ */
+export function initializeAuth(): void {
+  jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || null;
+
+  if (!jwtSecret) {
+    logger.error('CRITICAL: JWT_SECRET or SUPABASE_JWT_SECRET must be configured');
+    throw new Error('JWT_SECRET or SUPABASE_JWT_SECRET environment variable is required');
+  }
+
+  if (jwtSecret.length < 32) {
+    logger.error('CRITICAL: JWT secret must be at least 32 characters');
+    throw new Error('JWT secret must be at least 32 characters for security');
+  }
+
+  logger.info('JWT authentication initialized successfully');
+}
 
 // Extend Express Request to include user
 declare global {
@@ -37,11 +63,9 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Get JWT secret from environment
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
-
+    // JWT secret should be initialized at startup
     if (!jwtSecret) {
-      console.error('❌ JWT_SECRET not configured');
+      logger.error('JWT secret not initialized - call initializeAuth() at startup');
       return res.status(500).json({
         error: 'Internal Server Error',
         message: 'Authentication configuration error'
@@ -87,7 +111,7 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
       });
     }
 
-    console.error('❌ Authentication error:', error);
+    logger.error({ error }, 'Authentication error');
     return res.status(500).json({
       error: 'Internal Server Error',
       message: 'Authentication failed'
@@ -109,7 +133,6 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
     }
 
     const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET;
 
     if (!jwtSecret) {
       // Configuration error - continue without user

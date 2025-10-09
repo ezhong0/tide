@@ -7,6 +7,7 @@ import { createSupabase } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   authenticateJWT,
+  initializeAuth,
   moderateRateLimit,
   errorHandler,
   notFoundHandler,
@@ -49,6 +50,14 @@ class EmailService {
     this.providers = new Map();
     this.db = createSupabase(true); // Use service role for backend operations
 
+    // Initialize authentication
+    try {
+      initializeAuth();
+    } catch (error) {
+      logger.error({ error }, 'Failed to initialize authentication');
+      throw new Error('Authentication initialization failed');
+    }
+
     // Initialize encryption for OAuth tokens
     try {
       initializeEncryption();
@@ -67,7 +76,25 @@ class EmailService {
    */
   private setupMiddleware(): void {
     this.app.use(helmet());
-    this.app.use(cors());
+
+    // CORS configuration
+    const allowedOrigins = env.ALLOWED_ORIGINS?.split(',') || [];
+    this.app.use(cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, Postman, etc.)
+        if (!origin) return callback(null, true);
+
+        // Allow configured origins or any origin in development
+        if (env.NODE_ENV !== 'production' || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`Origin ${origin} not allowed by CORS`));
+        }
+      },
+      credentials: true,
+      maxAge: 86400, // 24 hours
+    }));
+
     this.app.use(express.json());
 
     // Rate limiting (100 req/min)
