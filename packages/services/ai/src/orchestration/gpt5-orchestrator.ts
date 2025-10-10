@@ -5,6 +5,8 @@
 
 import OpenAI from 'openai';
 import { createLogger } from '@tide/logger';
+import { thresholds, timeouts } from '@tide/config';
+import { withTimeout } from '@tide/utils';
 import { toolRegistry, type ToolContext, type ToolExecutionLog } from '../tools/index.js';
 import type { AIRequest, AIResponse } from '@tide/contracts';
 
@@ -30,10 +32,10 @@ export class GPT5Orchestrator {
   constructor(config: GPT5OrchestratorConfig) {
     this.client = new OpenAI({ apiKey: config.apiKey });
     this.model = config.model || 'gpt-5-mini'; // gpt-5, gpt-5-mini, gpt-5-nano
-    this.maxIterations = config.maxIterations || 10;
-    this.temperature = config.temperature || 0.7;
-    this.reasoningEffort = config.reasoningEffort || 'medium';
-    this.verbosity = config.verbosity || 'medium';
+    this.maxIterations = config.maxIterations !== undefined ? config.maxIterations : thresholds.ai.maxIterations;
+    this.temperature = config.temperature !== undefined ? config.temperature : thresholds.ai.temperature;
+    this.reasoningEffort = config.reasoningEffort || thresholds.ai.reasoningEffort;
+    this.verbosity = config.verbosity || thresholds.ai.verbosity;
 
     logger.info('GPT5Orchestrator initialized', {
       model: this.model,
@@ -109,10 +111,11 @@ export class GPT5Orchestrator {
                 args,
               });
 
-              const result = await toolRegistry.execute(
-                call.function.name,
-                args,
-                context
+              // Execute tool with timeout protection
+              const result = await withTimeout(
+                toolRegistry.execute(call.function.name, args, context),
+                timeouts.toolExecution,
+                `Tool: ${call.function.name}`
               );
 
               const log: ToolExecutionLog = {

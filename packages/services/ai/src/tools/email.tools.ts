@@ -4,6 +4,8 @@
 
 import type { TideTool } from './types.js';
 import { createLogger } from '@tide/logger';
+import { serviceUrls, timeouts, retryConfig } from '@tide/config';
+import { withTimeout, retryWithBackoff, retryPatterns } from '@tide/utils';
 
 const logger = createLogger({ component: 'EmailTools' });
 
@@ -55,30 +57,42 @@ export const searchEmailsTool: TideTool = {
       userId: context.userId,
     });
 
-    // In production, this would call the email service
-    // For now, returning a structured response for testing
-    const response = await fetch(`${process.env.EMAIL_SERVICE_URL}/api/emails/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`, // In production, use proper JWT
+    // Call the email service with timeout and retry logic
+    return await retryWithBackoff(
+      async () => {
+        const response = await withTimeout(
+          fetch(`${serviceUrls.email}/api/emails/search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
+            },
+            body: JSON.stringify({
+              userId: context.userId,
+              query,
+              from,
+              dateFrom,
+              dateTo,
+              isUnread,
+              limit,
+            }),
+          }),
+          timeouts.externalApi,
+          'searchEmails'
+        );
+
+        if (!response.ok) {
+          throw new Error(`Email search failed: ${response.statusText}`);
+        }
+
+        return await response.json();
       },
-      body: JSON.stringify({
-        userId: context.userId,
-        query,
-        from,
-        dateFrom,
-        dateTo,
-        isUnread,
-        limit,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Email search failed: ${response.statusText}`);
-    }
-
-    return await response.json();
+      {
+        ...retryConfig,
+        retryableErrors: [...retryPatterns.network, ...retryPatterns.serviceUnavailable],
+        name: 'searchEmails',
+      }
+    );
   },
 };
 
@@ -131,35 +145,48 @@ export const composeEmailTool: TideTool = {
       userId: context.userId,
     });
 
-    const response = await fetch(`${process.env.EMAIL_SERVICE_URL}/api/emails/compose`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+    return await retryWithBackoff(
+      async () => {
+        const response = await withTimeout(
+          fetch(`${serviceUrls.email}/api/emails/compose`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
+            },
+            body: JSON.stringify({
+              userId: context.userId,
+              to,
+              subject,
+              context: emailContext,
+              tone,
+              length,
+              replyToEmailId,
+            }),
+          }),
+          timeouts.externalApi,
+          'composeEmail'
+        );
+
+        if (!response.ok) {
+          throw new Error(`Email composition failed: ${response.statusText}`);
+        }
+
+        const result = await response.json() as { body: string; subject?: string };
+
+        return {
+          draft: result.body,
+          subject: result.subject || subject,
+          previewText: result.body.substring(0, 200),
+          wordCount: result.body.split(/\s+/).length,
+        };
       },
-      body: JSON.stringify({
-        userId: context.userId,
-        to,
-        subject,
-        context: emailContext,
-        tone,
-        length,
-        replyToEmailId,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Email composition failed: ${response.statusText}`);
-    }
-
-    const result = await response.json() as { body: string; subject?: string };
-
-    return {
-      draft: result.body,
-      subject: result.subject || subject,
-      previewText: result.body.substring(0, 200),
-      wordCount: result.body.split(/\s+/).length,
-    };
+      {
+        ...retryConfig,
+        retryableErrors: [...retryPatterns.network, ...retryPatterns.serviceUnavailable],
+        name: 'composeEmail',
+      }
+    );
   },
 };
 
@@ -213,33 +240,47 @@ export const sendEmailTool: TideTool = {
       userId: context.userId,
     });
 
-    const response = await fetch(`${process.env.EMAIL_SERVICE_URL}/api/emails/send`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+    return await retryWithBackoff(
+      async () => {
+        const response = await withTimeout(
+          fetch(`${serviceUrls.email}/api/emails/send`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
+            },
+            body: JSON.stringify({
+              userId: context.userId,
+              to,
+              subject,
+              body,
+              cc,
+              bcc,
+            }),
+          }),
+          timeouts.externalApi,
+          'sendEmail'
+        );
+
+        if (!response.ok) {
+          throw new Error(`Email send failed: ${response.statusText}`);
+        }
+
+        const result = await response.json() as { messageId: string };
+
+        return {
+          sent: true,
+          messageId: result.messageId,
+          timestamp: new Date().toISOString(),
+        };
       },
-      body: JSON.stringify({
-        userId: context.userId,
-        to,
-        subject,
-        body,
-        cc,
-        bcc,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Email send failed: ${response.statusText}`);
-    }
-
-    const result = await response.json() as { messageId: string };
-
-    return {
-      sent: true,
-      messageId: result.messageId,
-      timestamp: new Date().toISOString(),
-    };
+      {
+        ...retryConfig,
+        maxAttempts: 2, // Don't retry sending emails too many times
+        retryableErrors: retryPatterns.network, // Only retry network errors, not 4xx/5xx
+        name: 'sendEmail',
+      }
+    );
   },
 };
 
@@ -272,23 +313,36 @@ export const categorizeEmailsTool: TideTool = {
       userId: context.userId,
     });
 
-    const response = await fetch(`${process.env.EMAIL_SERVICE_URL}/api/emails/categorize`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+    return await retryWithBackoff(
+      async () => {
+        const response = await withTimeout(
+          fetch(`${serviceUrls.email}/api/emails/categorize`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
+            },
+            body: JSON.stringify({
+              userId: context.userId,
+              emailIds,
+            }),
+          }),
+          timeouts.externalApi,
+          'categorizeEmails'
+        );
+
+        if (!response.ok) {
+          throw new Error(`Email categorization failed: ${response.statusText}`);
+        }
+
+        return await response.json();
       },
-      body: JSON.stringify({
-        userId: context.userId,
-        emailIds,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Email categorization failed: ${response.statusText}`);
-    }
-
-    return await response.json();
+      {
+        ...retryConfig,
+        retryableErrors: [...retryPatterns.network, ...retryPatterns.serviceUnavailable],
+        name: 'categorizeEmails',
+      }
+    );
   },
 };
 

@@ -10,8 +10,20 @@ export type { DatabaseConfig, RedisConfig, KafkaConfig } from './database';
 export { supabaseConfig, googleOAuthConfig, azureOAuthConfig } from './auth';
 
 // Export service configuration
-export { aiServiceConfig, vectorConfig, monitoringConfig, serviceUrls } from './services';
+export { 
+  aiServiceConfig, 
+  vectorConfig, 
+  monitoringConfig, 
+  serviceUrls,
+  timeouts,
+  circuitBreakerConfig,
+  retryConfig,
+} from './services';
 export type { AIServiceConfig } from './services';
+
+// Export thresholds configuration
+export { thresholds } from './thresholds';
+export type { ThresholdsConfig } from './thresholds';
 
 // Export feature flags
 export { features, isFeatureEnabled, requireFeature } from './features';

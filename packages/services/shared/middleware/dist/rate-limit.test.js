@@ -77,13 +77,19 @@ describe('rateLimit', () => {
     it('should track separate limits per IP', () => {
         const limiter = rateLimit({ maxRequests: 2, windowMs: 60000 });
         // First IP makes 2 requests
-        mockReq.ip = '192.168.1.1';
-        mockReq.socket = { remoteAddress: '192.168.1.1' };
+        mockReq = {
+            ...mockReq,
+            ip: '192.168.1.1',
+            socket: { remoteAddress: '192.168.1.1' },
+        };
         limiter(mockReq, mockRes, mockNext);
         limiter(mockReq, mockRes, mockNext);
         // Second IP should still be allowed
-        mockReq.ip = '192.168.1.2';
-        mockReq.socket = { remoteAddress: '192.168.1.2' };
+        mockReq = {
+            ...mockReq,
+            ip: '192.168.1.2',
+            socket: { remoteAddress: '192.168.1.2' },
+        };
         limiter(mockReq, mockRes, mockNext);
         expect(mockNext).toHaveBeenCalledTimes(3);
     });
@@ -99,8 +105,11 @@ describe('rateLimit', () => {
     });
     it('should handle missing IP gracefully', () => {
         const limiter = rateLimit({ maxRequests: 5, windowMs: 60000 });
-        mockReq.ip = undefined;
-        mockReq.socket = {};
+        mockReq = {
+            ...mockReq,
+            ip: undefined,
+            socket: {},
+        };
         limiter(mockReq, mockRes, mockNext);
         // Should still work with 'unknown' IP
         expect(mockNext).toHaveBeenCalled();
@@ -129,8 +138,11 @@ describe('rateLimit', () => {
     it('should handle errors gracefully', () => {
         const limiter = rateLimit({ maxRequests: 5, windowMs: 60000 });
         // Create an error-prone request
-        mockReq.ip = undefined;
-        mockReq.socket = undefined;
+        mockReq = {
+            ...mockReq,
+            ip: undefined,
+            socket: undefined,
+        };
         mockReq.user = undefined;
         // Should not throw, just call next
         expect(() => limiter(mockReq, mockRes, mockNext)).not.toThrow();

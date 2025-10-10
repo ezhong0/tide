@@ -147,7 +147,7 @@ export abstract class ServiceBase {
       // Close HTTP server first (stop accepting new requests)
       if (this.server) {
         await new Promise<void>((resolve, reject) => {
-          this.server.close((err?: Error) => {
+          this.server!.close((err?: Error) => {
             if (err) reject(err);
             else resolve();
           });

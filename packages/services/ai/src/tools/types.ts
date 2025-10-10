@@ -9,6 +9,7 @@ export interface ToolContext {
   userId: string;
   requestId: string;
   userEmail?: string;
+  jwtToken?: string; // JWT token for service-to-service auth
   timestamp: number;
 }
 

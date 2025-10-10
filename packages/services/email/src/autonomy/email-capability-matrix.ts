@@ -71,11 +71,13 @@ export class EmailCapabilityMatrix {
       id: 'rule_high_financial',
       name: 'High Financial Impact',
       priority: 95,
-      condition: (email) =>
-        email.involveMoney === true && (email.financialAmount || 0) > 1000,
+      condition: (email) => {
+        const threshold = parseInt(process.env.HIGH_FINANCIAL_THRESHOLD || '1000');
+        return email.involveMoney === true && (email.financialAmount || 0) > threshold;
+      },
       canActAlone: false,
       requiresApproval: true,
-      reasoning: 'Emails involving >$1000 require your approval for financial safety'
+      reasoning: `Emails involving >${process.env.HIGH_FINANCIAL_THRESHOLD || '1000'} require your approval for financial safety`
     },
 
     {

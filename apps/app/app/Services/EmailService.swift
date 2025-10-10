@@ -36,6 +36,20 @@ class EmailService {
         let count: Int
     }
 
+    struct SendEmailRequest: Codable {
+        let userId: String
+        let provider: String
+        let to: [String]
+        let subject: String
+        let body: String
+    }
+
+    struct SendEmailResponse: Codable {
+        let success: Bool
+        let messageId: String?
+        let message: String?
+    }
+
     // MARK: - Public Methods
 
     /// Fetch emails from the API gateway
@@ -55,6 +69,37 @@ class EmailService {
         return response.emails.compactMap { emailResponse in
             convertToEmail(emailResponse)
         }
+    }
+
+    /// Send an email via the API gateway
+    func sendEmail(to recipients: [String], subject: String, body: String) async throws {
+        // Get the actual logged-in user's ID from AuthManager
+        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+            throw EmailServiceError.notAuthenticated
+        }
+
+        let provider = "gmail" // TODO: Support multiple providers
+
+        let request = SendEmailRequest(
+            userId: userId,
+            provider: provider,
+            to: recipients,
+            subject: subject,
+            body: body
+        )
+
+        let endpoint = "/api/email/send"
+
+        let response: SendEmailResponse = try await APIClient.shared.post(
+            endpoint: endpoint,
+            body: request
+        )
+
+        if !response.success {
+            throw EmailServiceError.sendFailed(response.message ?? "Unknown error")
+        }
+
+        print("✅ Email sent successfully: \(response.messageId ?? "no message ID")")
     }
 
     // MARK: - Private Helpers
@@ -116,6 +161,7 @@ class EmailService {
 enum EmailServiceError: LocalizedError {
     case notAuthenticated
     case invalidProvider
+    case sendFailed(String)
 
     var errorDescription: String? {
         switch self {
@@ -123,6 +169,8 @@ enum EmailServiceError: LocalizedError {
             return "User not authenticated. Please login first."
         case .invalidProvider:
             return "Invalid email provider"
+        case .sendFailed(let message):
+            return "Failed to send email: \(message)"
         }
     }
 }

@@ -89,7 +89,7 @@ struct ChatView: View {
         let text = messageText
         messageText = ""
 
-        Task {
+        _Concurrency.Task {
             _ = await tide.sendMessage(text)
         }
     }
@@ -108,9 +108,9 @@ struct EmptyChatState: View {
                 .fontWeight(.semibold)
 
             VStack(alignment: .leading, spacing: 8) {
-                ExamplePrompt(text: ""Show me urgent emails"")
-                ExamplePrompt(text: ""What's on my calendar today?"")
-                ExamplePrompt(text: ""Summarize my inbox"")
+                ExamplePrompt(text: "Show me urgent emails")
+                ExamplePrompt(text: "What's on my calendar today?")
+                ExamplePrompt(text: "Summarize my inbox")
             }
             .padding(.top, 8)
         }
