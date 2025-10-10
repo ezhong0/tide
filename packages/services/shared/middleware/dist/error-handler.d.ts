@@ -10,43 +10,39 @@ export declare class APIError extends Error {
     statusCode: number;
     message: string;
     code?: string | undefined;
-    details?: any | undefined;
-    constructor(statusCode: number, message: string, code?: string | undefined, details?: any | undefined);
+    details?: unknown | undefined;
+    constructor(statusCode: number, message: string, code?: string | undefined, details?: unknown | undefined);
 }
 /**
  * Common API Errors
  */
 export declare class BadRequestError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class UnauthorizedError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class ForbiddenError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class NotFoundError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class ConflictError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class ValidationError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class TooManyRequestsError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class InternalServerError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
 export declare class ServiceUnavailableError extends APIError {
-    constructor(message?: string, details?: any);
+    constructor(message?: string, details?: unknown);
 }
-/**
- * Error Handler Middleware
- * Must be registered LAST in the middleware chain
- */
 export declare const errorHandler: (err: Error | APIError, req: Request, res: Response, next: NextFunction) => void;
 /**
  * 404 Not Found Handler
@@ -63,5 +59,5 @@ export declare const notFoundHandler: (req: Request, res: Response) => void;
  *     res.json(users);
  *   }));
  */
-export declare const asyncHandler: (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) => (req: Request, res: Response, next: NextFunction) => void;
+export declare const asyncHandler: (fn: (req: Request, res: Response, next: NextFunction) => Promise<void>) => (req: Request, res: Response, next: NextFunction) => void;
 //# sourceMappingURL=error-handler.d.ts.map

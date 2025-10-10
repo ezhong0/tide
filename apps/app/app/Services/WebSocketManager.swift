@@ -77,9 +77,9 @@ class WebSocketManager: ObservableObject {
 
         if let token = accessToken {
             // Reconnect after a delay
-            Task {
+            Task { @MainActor in
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                await connect(token: token)
+                connect(token: token)
             }
         }
     }
@@ -157,11 +157,15 @@ class WebSocketManager: ObservableObject {
             case .success(let message):
                 switch message {
                 case .string(let text):
-                    self.handleMessage(text)
+                    Task { @MainActor in
+                        self.handleMessage(text)
+                    }
 
                 case .data(let data):
                     if let text = String(data: data, encoding: .utf8) {
-                        self.handleMessage(text)
+                        Task { @MainActor in
+                            self.handleMessage(text)
+                        }
                     }
 
                 @unknown default:
@@ -169,7 +173,9 @@ class WebSocketManager: ObservableObject {
                 }
 
                 // Continue listening for next message
-                self.receiveMessage()
+                Task { @MainActor in
+                    self.receiveMessage()
+                }
 
             case .failure(let error):
                 print("WebSocket receive error: \(error.localizedDescription)")
@@ -232,7 +238,7 @@ class WebSocketManager: ObservableObject {
             break
 
         case "error":
-            if let errorPayload = message.payload as? [String: Any],
+            if let errorPayload = message.payload?.value as? [String: Any],
                let errorMessage = errorPayload["error"] as? String {
                 connectionError = errorMessage
                 print("Server error: \(errorMessage)")

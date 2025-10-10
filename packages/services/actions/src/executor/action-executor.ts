@@ -180,7 +180,7 @@ export class ActionExecutor {
 
     // Update email status in database
     const { error } = await this.db
-      .from('email_messages')
+      .from('emails')
       .update({ is_archived: true, archived_at: new Date().toISOString() })
       .eq('id', emailId);
 
@@ -199,7 +199,7 @@ export class ActionExecutor {
     const emailId = action.execution_result.undoData.emailId;
 
     const { error } = await this.db
-      .from('email_messages')
+      .from('emails')
       .update({ is_archived: false, archived_at: null })
       .eq('id', emailId);
 
@@ -243,7 +243,7 @@ export class ActionExecutor {
 
     // Send decline response (simplified)
     const { error } = await this.db
-      .from('calendar_events')
+      .from('events')
       .update({ status: 'declined', declined_reason: reason })
       .eq('id', eventId);
 

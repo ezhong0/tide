@@ -24,6 +24,7 @@ export declare class SupabasePoolAdapter {
 /**
  * Supabase-native task repository
  * Uses Supabase client methods instead of raw SQL
+ * Updated for optimized schema with JSONB structure and intelligence fields
  */
 export declare class SupabaseTaskRepository {
     private supabase;
@@ -41,7 +42,7 @@ export declare class SupabaseTaskRepository {
     getSubtasksByParent(taskId: string): Promise<any[]>;
     getTaskDependencies(taskId: string): Promise<any[]>;
     updateSubtask(subtask: any): Promise<void>;
-    deleteSubtask(subtaskId: string): Promise<void>;
+    deleteSubtask(subtaskId: string, parentId: string): Promise<void>;
     recordExecution(execution: any): Promise<void>;
     mapRowToTask(row: any): any;
     mapRowToSubtask(row: any): any;
@@ -63,6 +64,7 @@ export declare class SupabaseWorkflowRepository {
 }
 /**
  * Supabase-native pattern repository
+ * Updated for optimized schema using user_intelligence table
  */
 export declare class SupabasePatternRepository {
     private supabase;

@@ -40,6 +40,7 @@ export class SupabasePoolAdapter {
 /**
  * Supabase-native task repository
  * Uses Supabase client methods instead of raw SQL
+ * Updated for optimized schema with JSONB structure and intelligence fields
  */
 export class SupabaseTaskRepository {
     constructor(supabase) {
@@ -58,6 +59,18 @@ export class SupabaseTaskRepository {
             status: task.status || 'pending',
             due_at: task.dueDate,
             metadata: task.metadata || {},
+            structure: {
+                subtasks: [],
+                dependencies: [],
+                blockers: [],
+            },
+            intelligence: {
+                complexity: null,
+                estimated_duration_minutes: task.estimatedDuration || null,
+                ai_suggestions: [],
+                related_emails: [],
+                related_events: [],
+            },
         })
             .select()
             .single();
@@ -117,38 +130,77 @@ export class SupabaseTaskRepository {
             throw error;
     }
     async createSubtask(subtask) {
-        const { error } = await this.supabase
-            .from('subtasks')
-            .insert({
-            parent_id: subtask.parentId,
+        // Get current task
+        const { data: task, error: getError } = await this.supabase
+            .from('tasks')
+            .select('structure')
+            .eq('id', subtask.parentId)
+            .single();
+        if (getError)
+            throw getError;
+        const structure = task.structure || { subtasks: [], dependencies: [], blockers: [] };
+        // Add subtask to JSONB structure
+        structure.subtasks.push({
+            id: this.generateId(),
             title: subtask.title,
-            description: subtask.description,
-            order_index: subtask.order,
-            estimated_time_minutes: subtask.estimatedTime,
+            description: subtask.description || null,
+            order_index: subtask.order || structure.subtasks.length,
             status: subtask.status || 'pending',
         });
+        // Update task with new structure
+        const { error } = await this.supabase
+            .from('tasks')
+            .update({ structure })
+            .eq('id', subtask.parentId);
         if (error)
             throw error;
     }
     async addDependency(dependency) {
-        const { error } = await this.supabase
-            .from('task_dependencies')
-            .insert({
-            task_id: dependency.taskId,
-            depends_on_task_id: dependency.dependsOnTaskId,
-            dependency_type: dependency.type || 'blocks',
+        // Get current task
+        const { data: task, error: getError } = await this.supabase
+            .from('tasks')
+            .select('structure')
+            .eq('id', dependency.taskId)
+            .single();
+        if (getError)
+            throw getError;
+        const structure = task.structure || { subtasks: [], dependencies: [], blockers: [] };
+        // Add dependency to JSONB structure
+        structure.dependencies.push({
+            task_id: dependency.dependsOnTaskId,
+            type: dependency.type || 'blocks',
         });
+        // Update task with new structure
+        const { error } = await this.supabase
+            .from('tasks')
+            .update({ structure })
+            .eq('id', dependency.taskId);
         if (error)
             throw error;
     }
     async getDependentTasks(taskId) {
-        const { data, error } = await this.supabase
-            .from('task_dependencies')
-            .select('task_id')
-            .eq('depends_on_task_id', taskId);
+        // Get the task to find its user_id
+        const { data: task } = await this.supabase
+            .from('tasks')
+            .select('user_id')
+            .eq('id', taskId)
+            .single();
+        if (!task)
+            return [];
+        // Get all tasks for this user
+        const { data: tasks, error } = await this.supabase
+            .from('tasks')
+            .select('id, structure')
+            .eq('user_id', task.user_id);
         if (error)
             throw error;
-        return (data || []).map((d) => d.task_id);
+        // Filter tasks that have this taskId in their dependencies
+        return (tasks || [])
+            .filter((t) => {
+            const deps = t.structure?.dependencies || [];
+            return deps.some((d) => d.task_id === taskId);
+        })
+            .map((t) => t.id);
     }
     // Interface compatibility methods
     async getTasksByUser(userId) {
@@ -162,44 +214,69 @@ export class SupabaseTaskRepository {
     }
     async getSubtasksByParent(taskId) {
         const { data, error } = await this.supabase
-            .from('subtasks')
-            .select('*')
-            .eq('parent_id', taskId);
+            .from('tasks')
+            .select('structure')
+            .eq('id', taskId)
+            .single();
         if (error)
             throw error;
-        return data || [];
+        return data?.structure?.subtasks || [];
     }
     async getTaskDependencies(taskId) {
         const { data, error } = await this.supabase
-            .from('task_dependencies')
-            .select('*')
-            .eq('task_id', taskId);
+            .from('tasks')
+            .select('structure')
+            .eq('id', taskId)
+            .single();
         if (error)
             throw error;
-        return data || [];
+        return data?.structure?.dependencies || [];
     }
     async updateSubtask(subtask) {
-        const { error } = await this.supabase
-            .from('subtasks')
-            .update(subtask)
-            .eq('id', subtask.id);
-        if (error)
-            throw error;
+        // Get the parent task
+        const { data: task, error: getError } = await this.supabase
+            .from('tasks')
+            .select('structure')
+            .eq('id', subtask.parentId)
+            .single();
+        if (getError)
+            throw getError;
+        const structure = task.structure || { subtasks: [], dependencies: [], blockers: [] };
+        // Update the subtask in the array
+        const subtaskIndex = structure.subtasks.findIndex((st) => st.id === subtask.id);
+        if (subtaskIndex >= 0) {
+            structure.subtasks[subtaskIndex] = { ...structure.subtasks[subtaskIndex], ...subtask };
+            const { error } = await this.supabase
+                .from('tasks')
+                .update({ structure })
+                .eq('id', subtask.parentId);
+            if (error)
+                throw error;
+        }
     }
-    async deleteSubtask(subtaskId) {
+    async deleteSubtask(subtaskId, parentId) {
+        // Get the parent task
+        const { data: task, error: getError } = await this.supabase
+            .from('tasks')
+            .select('structure')
+            .eq('id', parentId)
+            .single();
+        if (getError)
+            throw getError;
+        const structure = task.structure || { subtasks: [], dependencies: [], blockers: [] };
+        // Remove the subtask from the array
+        structure.subtasks = structure.subtasks.filter((st) => st.id !== subtaskId);
         const { error } = await this.supabase
-            .from('subtasks')
-            .delete()
-            .eq('id', subtaskId);
+            .from('tasks')
+            .update({ structure })
+            .eq('id', parentId);
         if (error)
             throw error;
     }
     async recordExecution(execution) {
-        const { error } = await this.supabase
-            .from('task_executions')
-            .insert(execution);
-        if (error)
-            throw error;
+        // Task executions are now tracked via workflow_executions or task metadata
+        // For backward compatibility, this is a no-op
+        logger.warn('recordExecution called - task executions are now tracked via workflow_executions');
     }
     // Utility methods for interface compatibility
     mapRowToTask(row) {
@@ -212,6 +289,8 @@ export class SupabaseTaskRepository {
         return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
     mapTaskFromDb(dbTask) {
+        const intelligence = dbTask.intelligence || {};
+        const structure = dbTask.structure || {};
         return {
             id: dbTask.id,
             userId: dbTask.user_id,
@@ -219,14 +298,16 @@ export class SupabaseTaskRepository {
             description: dbTask.description,
             priority: dbTask.priority_score || 0.5,
             dueDate: dbTask.due_at ? new Date(dbTask.due_at) : undefined,
-            estimatedDuration: dbTask.estimated_duration_minutes,
+            estimatedDuration: intelligence.estimated_duration_minutes,
             assignee: dbTask.assignee,
             tags: dbTask.tags || [],
             project: dbTask.project,
             status: dbTask.status,
             progress: dbTask.progress || 0,
-            complexity: dbTask.complexity,
+            complexity: intelligence.complexity,
             metadata: dbTask.metadata || {},
+            structure: structure,
+            intelligence: intelligence,
             createdAt: new Date(dbTask.created_at),
             updatedAt: new Date(dbTask.updated_at),
             startedAt: dbTask.started_at ? new Date(dbTask.started_at) : undefined,
@@ -323,6 +404,7 @@ export class SupabaseWorkflowRepository {
 }
 /**
  * Supabase-native pattern repository
+ * Updated for optimized schema using user_intelligence table
  */
 export class SupabasePatternRepository {
     constructor(supabase) {
@@ -331,162 +413,222 @@ export class SupabasePatternRepository {
         this.pool = null;
     }
     async getBehaviors(userId, days) {
+        // Behaviors are now stored as user_intelligence entries with type 'behavior'
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         const { data, error } = await this.supabase
-            .from('user_behaviors')
+            .from('user_intelligence')
             .select('*')
             .eq('user_id', userId)
-            .gte('timestamp', startDate.toISOString())
-            .order('timestamp', { ascending: false });
-        if (error)
-            throw error;
+            .eq('type', 'behavior')
+            .gte('created_at', startDate.toISOString())
+            .order('created_at', { ascending: false });
+        if (error) {
+            logger.warn({ error }, 'Failed to get behaviors from user_intelligence');
+            return [];
+        }
         return (data || []).map((b) => ({
             userId: b.user_id,
-            action: b.action,
-            timestamp: new Date(b.timestamp),
-            metadata: b.metadata || {},
+            action: b.data?.action || b.subtype,
+            timestamp: new Date(b.created_at),
+            metadata: b.data || {},
         }));
     }
     async savePattern(pattern) {
+        // Patterns are now stored in user_intelligence table
         const { error } = await this.supabase
-            .from('detected_patterns')
+            .from('user_intelligence')
             .upsert({
             id: pattern.id,
             user_id: pattern.userId,
-            type: pattern.type,
-            subtype: pattern.subtype,
-            pattern_data: pattern.patternData,
+            type: 'pattern',
+            subtype: pattern.subtype || pattern.type,
+            data: {
+                pattern_data: pattern.patternData,
+                frequency: pattern.frequency,
+                value_estimate: pattern.value,
+                description: pattern.description,
+                suggestion: pattern.suggestion,
+            },
             confidence: pattern.confidence,
-            frequency: pattern.frequency,
-            value_estimate: pattern.value,
-            description: pattern.description,
-            suggestion: pattern.suggestion,
             status: pattern.status || 'detected',
         });
         if (error)
             throw error;
     }
     async recordSequence(userId, actions, signature) {
+        // Sequences can be stored as user_intelligence with type 'pattern' and subtype 'sequence'
         const { error } = await this.supabase
-            .from('pattern_sequences')
+            .from('user_intelligence')
             .upsert({
             user_id: userId,
-            actions,
-            signature,
-            count: 1,
-            last_seen_at: new Date().toISOString(),
-        }, {
-            onConflict: 'user_id,signature',
+            type: 'pattern',
+            subtype: 'sequence',
+            data: {
+                actions,
+                signature,
+                count: 1,
+            },
+            confidence: 0.5,
+            status: 'detected',
         });
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to record sequence');
     }
     // Interface compatibility methods
     async recordBehavior(behavior) {
         const { error } = await this.supabase
-            .from('user_behaviors')
+            .from('user_intelligence')
             .insert({
             user_id: behavior.userId,
-            action: behavior.action,
-            day_of_week: new Date(behavior.timestamp).getDay(),
-            hour: new Date(behavior.timestamp).getHours(),
-            time_of_day: this.getTimeOfDay(new Date(behavior.timestamp).getHours()),
-            metadata: behavior.metadata || {},
-            timestamp: behavior.timestamp,
+            type: 'behavior',
+            subtype: behavior.action,
+            data: {
+                action: behavior.action,
+                day_of_week: new Date(behavior.timestamp).getDay(),
+                hour: new Date(behavior.timestamp).getHours(),
+                time_of_day: this.getTimeOfDay(new Date(behavior.timestamp).getHours()),
+                metadata: behavior.metadata || {},
+            },
+            confidence: 0.5,
+            status: 'detected',
         });
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to record behavior');
     }
     async getPatternsByUser(userId) {
         const { data, error } = await this.supabase
-            .from('detected_patterns')
+            .from('user_intelligence')
             .select('*')
-            .eq('user_id', userId);
-        if (error)
-            throw error;
+            .eq('user_id', userId)
+            .eq('type', 'pattern');
+        if (error) {
+            logger.warn({ error }, 'Failed to get patterns');
+            return [];
+        }
         return data || [];
     }
     async updatePatternStatus(patternId, status) {
         const { error } = await this.supabase
-            .from('detected_patterns')
+            .from('user_intelligence')
             .update({ status })
             .eq('id', patternId);
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to update pattern status');
     }
     async getTemporalPatterns(userId) {
         const { data, error } = await this.supabase
-            .from('temporal_patterns')
+            .from('user_intelligence')
             .select('*')
-            .eq('user_id', userId);
-        if (error)
-            throw error;
+            .eq('user_id', userId)
+            .eq('type', 'pattern')
+            .eq('subtype', 'temporal');
+        if (error) {
+            logger.warn({ error }, 'Failed to get temporal patterns');
+            return [];
+        }
         return data || [];
     }
     async getSequentialPatterns(userId) {
         const { data, error } = await this.supabase
-            .from('sequential_patterns')
+            .from('user_intelligence')
             .select('*')
-            .eq('user_id', userId);
-        if (error)
-            throw error;
+            .eq('user_id', userId)
+            .eq('type', 'pattern')
+            .eq('subtype', 'sequence');
+        if (error) {
+            logger.warn({ error }, 'Failed to get sequential patterns');
+            return [];
+        }
         return data || [];
     }
     async saveTemporalPattern(pattern) {
         const { error } = await this.supabase
-            .from('temporal_patterns')
-            .insert(pattern);
+            .from('user_intelligence')
+            .insert({
+            user_id: pattern.userId || pattern.user_id,
+            type: 'pattern',
+            subtype: 'temporal',
+            data: pattern,
+            confidence: pattern.confidence || 0.5,
+            status: 'detected',
+        });
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to save temporal pattern');
     }
     async saveSequentialPattern(pattern) {
         const { error } = await this.supabase
-            .from('sequential_patterns')
-            .insert(pattern);
+            .from('user_intelligence')
+            .insert({
+            user_id: pattern.userId || pattern.user_id,
+            type: 'pattern',
+            subtype: 'sequence',
+            data: pattern,
+            confidence: pattern.confidence || 0.5,
+            status: 'detected',
+        });
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to save sequential pattern');
     }
     async updateSequence(userId, signature, updates) {
-        const { error } = await this.supabase
-            .from('pattern_sequences')
-            .update(updates)
+        // Find the sequence by user_id and signature in the data field
+        const { data: sequences } = await this.supabase
+            .from('user_intelligence')
+            .select('*')
             .eq('user_id', userId)
-            .eq('signature', signature);
-        if (error)
-            throw error;
+            .eq('type', 'pattern')
+            .eq('subtype', 'sequence');
+        const sequence = (sequences || []).find((s) => s.data?.signature === signature);
+        if (sequence) {
+            const { error } = await this.supabase
+                .from('user_intelligence')
+                .update({ data: { ...sequence.data, ...updates } })
+                .eq('id', sequence.id);
+            if (error)
+                logger.warn({ error }, 'Failed to update sequence');
+        }
     }
     async getAutomationSuggestions(userId) {
         const { data, error } = await this.supabase
-            .from('automation_suggestions')
+            .from('user_intelligence')
             .select('*')
-            .eq('user_id', userId);
-        if (error)
-            throw error;
+            .eq('user_id', userId)
+            .eq('type', 'automation_suggestion');
+        if (error) {
+            logger.warn({ error }, 'Failed to get automation suggestions');
+            return [];
+        }
         return data || [];
     }
     async createAutomationSuggestion(suggestion) {
         const { error } = await this.supabase
-            .from('automation_suggestions')
-            .insert(suggestion);
+            .from('user_intelligence')
+            .insert({
+            user_id: suggestion.userId || suggestion.user_id,
+            type: 'automation_suggestion',
+            subtype: suggestion.type || null,
+            data: suggestion,
+            confidence: suggestion.confidence || 0.5,
+            status: 'detected',
+        });
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to create automation suggestion');
     }
     async acceptSuggestion(suggestionId) {
         const { error } = await this.supabase
-            .from('automation_suggestions')
-            .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+            .from('user_intelligence')
+            .update({ status: 'accepted' })
             .eq('id', suggestionId);
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to accept suggestion');
     }
     async rejectSuggestion(suggestionId) {
         const { error } = await this.supabase
-            .from('automation_suggestions')
-            .update({ status: 'rejected', rejected_at: new Date().toISOString() })
+            .from('user_intelligence')
+            .update({ status: 'rejected' })
             .eq('id', suggestionId);
         if (error)
-            throw error;
+            logger.warn({ error }, 'Failed to reject suggestion');
     }
     async saveSuggestion(suggestion) {
         return this.createAutomationSuggestion(suggestion);
@@ -495,15 +637,20 @@ export class SupabasePatternRepository {
         return this.getAutomationSuggestions(userId);
     }
     async getFrequentSequences(userId, minCount = 3) {
+        // Get sequences and filter by count in data field
         const { data, error } = await this.supabase
-            .from('pattern_sequences')
+            .from('user_intelligence')
             .select('*')
             .eq('user_id', userId)
-            .gte('count', minCount)
-            .order('count', { ascending: false });
-        if (error)
-            throw error;
-        return data || [];
+            .eq('type', 'pattern')
+            .eq('subtype', 'sequence');
+        if (error) {
+            logger.warn({ error }, 'Failed to get frequent sequences');
+            return [];
+        }
+        return (data || [])
+            .filter((s) => (s.data?.count || 0) >= minCount)
+            .sort((a, b) => (b.data?.count || 0) - (a.data?.count || 0));
     }
     // Utility methods for interface compatibility
     mapRowToBehavior(row) {

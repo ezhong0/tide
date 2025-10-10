@@ -20,8 +20,10 @@ __exportStar(require("./branded"), exports);
 __exportStar(require("./utils"), exports);
 // Event types
 __exportStar(require("./events"), exports);
-// Re-export contracts
-__exportStar(require("@tide/contracts"), exports);
+// Database types
+__exportStar(require("./database"), exports);
+// NOTE: Contracts are not re-exported to avoid naming conflicts
+// Import '@tide/contracts' directly if you need API contract types
 // Express type augmentation
 require("./express");
 //# sourceMappingURL=index.js.map

@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
-import type { UserId } from '@tide/types';
+import { createSupabase, getDefaultEventIntelligence } from '@tide/database';
+import type { UserId, UserSettings, EventIntelligence } from '@tide/types';
 
 export interface CalendarEvent {
   id: string;
@@ -549,51 +549,125 @@ export class CalendarOptimizer {
   }
 
   /**
-   * Get scheduling preferences
+   * Get scheduling preferences - now from users.settings
    */
   private async getSchedulingPreferences(userId: UserId): Promise<any> {
     const { data } = await this.db
-      .from('scheduling_preferences')
-      .select('*')
+      .from('users')
+      .select('settings')
+      .eq('id', userId)
+      .single();
+
+    if (!data || !data.settings) {
+      return {
+        minGapBetweenMeetingsMinutes: 15,
+        maxMeetingsPerDay: 6,
+        batchMeetings: true,
+        focusTimeBlocks: []
+      };
+    }
+
+    const settings = data.settings as UserSettings;
+    // Return scheduling-related settings
+    return {
+      minGapBetweenMeetingsMinutes: 15,
+      maxMeetingsPerDay: 6,
+      batchMeetings: true,
+      focusTimeBlocks: [],
+      ...settings // Merge with any scheduling-specific settings in UserSettings
+    };
+  }
+
+  /**
+   * Save conflict to database - stores in events.intelligence.conflicts
+   */
+  private async saveConflict(conflict: Conflict, userId: UserId): Promise<void> {
+    const conflictData = {
+      type: conflict.type,
+      description: conflict.suggestedResolution,
+      suggested_resolution: conflict.resolutionOptions[0]?.description || conflict.suggestedResolution
+    };
+
+    // Store conflict in first event's intelligence
+    const { data: event1 } = await this.db
+      .from('events')
+      .select('intelligence')
+      .eq('id', conflict.event1.id)
       .eq('user_id', userId)
       .single();
 
-    return data || {};
+    if (event1) {
+      const intelligence1 = event1.intelligence as EventIntelligence || getDefaultEventIntelligence();
+      const updatedIntelligence1 = {
+        ...intelligence1,
+        conflicts: [...intelligence1.conflicts, conflictData]
+      };
+
+      await this.db
+        .from('events')
+        .update({ intelligence: updatedIntelligence1 })
+        .eq('id', conflict.event1.id)
+        .eq('user_id', userId);
+    }
+
+    // If there's a second event, store conflict there too
+    if (conflict.event2) {
+      const { data: event2 } = await this.db
+        .from('events')
+        .select('intelligence')
+        .eq('id', conflict.event2.id)
+        .eq('user_id', userId)
+        .single();
+
+      if (event2) {
+        const intelligence2 = event2.intelligence as EventIntelligence || getDefaultEventIntelligence();
+        const updatedIntelligence2 = {
+          ...intelligence2,
+          conflicts: [...intelligence2.conflicts, conflictData]
+        };
+
+        await this.db
+          .from('events')
+          .update({ intelligence: updatedIntelligence2 })
+          .eq('id', conflict.event2.id)
+          .eq('user_id', userId);
+      }
+    }
   }
 
   /**
-   * Save conflict to database
-   */
-  private async saveConflict(conflict: Conflict, userId: UserId): Promise<void> {
-    await this.db.from('meeting_conflicts').insert({
-      user_id: userId,
-      conflict_type: conflict.type,
-      event_id_1: conflict.event1.id,
-      event_id_2: conflict.event2?.id,
-      event_1_details: conflict.event1,
-      event_2_details: conflict.event2,
-      priority_1: conflict.priority1,
-      priority_2: conflict.priority2,
-      suggested_resolution: conflict.suggestedResolution,
-      resolution_options: conflict.resolutionOptions,
-      auto_resolvable: conflict.autoResolvable
-    });
-  }
-
-  /**
-   * Save optimization to database
+   * Save optimization to database - stores in events.intelligence.optimization_suggestions
    */
   private async saveOptimization(optimization: Optimization, userId: UserId): Promise<void> {
-    await this.db.from('calendar_optimizations').insert({
-      user_id: userId,
-      optimization_type: optimization.type,
-      current_state: optimization.currentState,
-      suggested_state: optimization.suggestedState,
-      reasoning: optimization.reasoning,
-      impact_score: optimization.impactScore,
-      estimated_time_saved_minutes: optimization.estimatedTimeSavedMinutes,
-      affected_events: optimization.affectedEvents
-    });
+    const optimizationData = {
+      type: optimization.type,
+      description: optimization.reasoning,
+      impact_score: optimization.impactScore
+    };
+
+    // Store optimization in all affected events
+    for (const event of optimization.affectedEvents) {
+      const { data } = await this.db
+        .from('events')
+        .select('intelligence')
+        .eq('id', event.id)
+        .eq('user_id', userId)
+        .single();
+
+      if (data) {
+        const intelligence = data.intelligence as EventIntelligence || getDefaultEventIntelligence();
+        const updatedIntelligence = {
+          ...intelligence,
+          optimization_suggestions: [...intelligence.optimization_suggestions, optimizationData]
+        };
+
+        await this.db
+          .from('events')
+          .update({ intelligence: updatedIntelligence })
+          .eq('id', event.id)
+          .eq('user_id', userId);
+      }
+    }
   }
 
   private getDayName(date: Date): string {

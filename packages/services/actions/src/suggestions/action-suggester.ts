@@ -53,7 +53,7 @@ export class ActionSuggester {
 
     // Get unread emails
     const { data: emails } = await this.db
-      .from('email_messages')
+      .from('emails')
       .select('*')
       .eq('user_id', userId)
       .eq('is_read', false)
@@ -138,7 +138,7 @@ export class ActionSuggester {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const { data: events } = await this.db
-      .from('calendar_events')
+      .from('events')
       .select('*')
       .eq('user_id', userId)
       .gte('start_time', now.toISOString())

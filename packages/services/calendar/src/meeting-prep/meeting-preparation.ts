@@ -147,7 +147,7 @@ export class MeetingPreparation {
   ): Promise<void> {
     try {
       const { error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .update({
           meeting_brief: brief as any,
           updated_at: new Date().toISOString(),
@@ -335,7 +335,7 @@ export class MeetingPreparation {
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
       const { data: pastEvents, error } = await supabase
-        .from('calendar_events')
+        .from('events')
         .select('title, start_time, description, attendees, meeting_brief')
         .eq('user_id', this.userId)
         .lt('end_time', new Date().toISOString())
@@ -392,7 +392,7 @@ export class MeetingPreparation {
       const safeTitle = escapeSqlLike(meeting.title.substring(0, 20));
 
       const { data: emails, error } = await supabase
-        .from('email_messages')
+        .from('emails')
         .select('subject, received_at, ai_summary, from_address')
         .eq('user_id', this.userId)
         .or(

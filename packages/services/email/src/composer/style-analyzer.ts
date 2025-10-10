@@ -18,7 +18,7 @@ export class StyleAnalyzer {
     try {
       // Fetch user's sent emails (last 50 for analysis)
       const { data: sentEmails, error } = await this.supabase
-        .from('email_messages')
+        .from('emails')
         .select('subject, body, to_addresses, sent_at')
         .eq('user_id', userId)
         .eq('is_sent', true) // Only analyze sent emails

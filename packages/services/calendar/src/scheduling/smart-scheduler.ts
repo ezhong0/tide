@@ -119,7 +119,7 @@ export class SmartScheduler {
    */
   private async getPreferences(userId: UserId): Promise<SchedulingPreferences> {
     const { data } = await this.db
-      .from('scheduling_preferences')
+      .from('users')
       .select('*')
       .eq('user_id', userId)
       .single();

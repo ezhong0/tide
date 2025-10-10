@@ -70,10 +70,6 @@ export class ServiceUnavailableError extends APIError {
         super(503, message, 'SERVICE_UNAVAILABLE', details);
     }
 }
-/**
- * Error Handler Middleware
- * Must be registered LAST in the middleware chain
- */
 export const errorHandler = (err, req, res, next) => {
     // Default error response
     let statusCode = 500;
@@ -92,7 +88,8 @@ export const errorHandler = (err, req, res, next) => {
         statusCode = 422;
         errorCode = 'VALIDATION_ERROR';
         message = 'Validation failed';
-        details = err.errors || err.details;
+        details = err.errors ||
+            err.details;
     }
     // Handle JWT errors
     else if (err.name === 'JsonWebTokenError') {
@@ -146,11 +143,10 @@ export const errorHandler = (err, req, res, next) => {
         error: errorCode,
         message,
     };
-    if (details) {
+    if (details !== undefined) {
         errorResponse.details = details;
     }
-    // Include stack trace in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && err.stack) {
         errorResponse.stack = err.stack;
     }
     res.status(statusCode).json(errorResponse);
