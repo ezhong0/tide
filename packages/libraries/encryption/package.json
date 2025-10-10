@@ -1,6 +1,7 @@
 {
   "name": "@tide/encryption",
   "version": "1.0.0",
+  "type": "module",
   "description": "Encryption utilities for sensitive data",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
