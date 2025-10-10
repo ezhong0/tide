@@ -86,6 +86,7 @@ class APIClient {
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
+                decoder.dateDecodingStrategy = .iso8601
                 return try decoder.decode(Response.self, from: data)
             } catch {
                 print("❌ Decoding error: \(error)")
