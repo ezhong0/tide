@@ -65,6 +65,7 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3003';
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3001';
 const CALENDAR_SERVICE_URL = process.env.CALENDAR_SERVICE_URL || 'http://localhost:3002';
 const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3004';
+const MOBILE_BFF_URL = process.env.MOBILE_BFF_URL || 'http://localhost:3009';
 
 // Proxy routes to backend services
 app.use('/api/ai', createProxyMiddleware({
@@ -99,6 +100,14 @@ app.use('/api/workflow', createProxyMiddleware({
   proxyTimeout: 60000,
 }));
 
+app.use('/api/mobile', createProxyMiddleware({
+  target: MOBILE_BFF_URL,
+  changeOrigin: true,
+  pathRewrite: { '^/api/mobile': '' },
+  timeout: 60000, // 60 second timeout for aggregated requests
+  proxyTimeout: 60000,
+}));
+
 // Root endpoint - landing page
 app.get('/', (req, res) => {
   res.json({
@@ -113,6 +122,7 @@ app.get('/', (req, res) => {
       email: '/api/email/*',
       calendar: '/api/calendar/*',
       workflow: '/api/workflow/*',
+      mobile: '/api/mobile/*',
     },
     documentation: 'https://github.com/ezhong0/tide',
   });
@@ -126,6 +136,7 @@ app.get('/api/services', (req, res) => {
       email: { url: EMAIL_SERVICE_URL, path: '/api/email' },
       calendar: { url: CALENDAR_SERVICE_URL, path: '/api/calendar' },
       workflow: { url: WORKFLOW_SERVICE_URL, path: '/api/workflow' },
+      mobile: { url: MOBILE_BFF_URL, path: '/api/mobile' },
     },
   });
 });
@@ -158,6 +169,7 @@ app.listen(PORT, () => {
       email: EMAIL_SERVICE_URL,
       calendar: CALENDAR_SERVICE_URL,
       workflow: WORKFLOW_SERVICE_URL,
+      mobile: MOBILE_BFF_URL,
     },
   }, 'API Gateway started');
 });
