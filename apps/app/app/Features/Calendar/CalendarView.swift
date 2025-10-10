@@ -2,8 +2,10 @@ import SwiftUI
 
 struct CalendarView: View {
     @State private var selectedDate = Date()
-    @State private var events: [CalendarEvent] = CalendarEvent.mockEvents
+    @State private var events: [CalendarEvent] = []
     @State private var showingScheduler = false
+    @State private var isLoading = false
+    @State private var errorMessage: String?
 
     var todaysEvents: [CalendarEvent] {
         events.filter { event in
@@ -19,6 +21,17 @@ struct CalendarView: View {
                     WeekCalendarView(selectedDate: $selectedDate)
                         .padding(.horizontal)
 
+                    // Error message
+                    if let error = errorMessage {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .font(.caption)
+                            .padding()
+                            .background(TideTheme.error.opacity(0.1))
+                            .cornerRadius(8)
+                            .padding(.horizontal)
+                    }
+
                     // Today's schedule
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Today's Schedule")
@@ -26,7 +39,10 @@ struct CalendarView: View {
                             .bold()
                             .padding(.horizontal)
 
-                        if todaysEvents.isEmpty {
+                        if isLoading {
+                            ProgressView("Loading events...")
+                                .padding()
+                        } else if todaysEvents.isEmpty {
                             EmptyScheduleCard()
                         } else {
                             ForEach(todaysEvents) { event in
@@ -70,7 +86,38 @@ struct CalendarView: View {
             .sheet(isPresented: $showingScheduler) {
                 Text("Smart Scheduler - Coming Soon")
             }
+            .refreshable {
+                await refreshEvents()
+            }
+            .onAppear {
+                Task {
+                    await refreshEvents()
+                }
+            }
         }
+    }
+
+    // MARK: - Actions
+
+    private func refreshEvents() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Fetch events for current month
+            let calendar = Calendar.current
+            let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: selectedDate))!
+            let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth)!
+
+            events = try await CalendarService.shared.fetchEvents(from: startOfMonth, to: endOfMonth)
+            print("✅ Loaded \(events.count) calendar events")
+
+        } catch {
+            errorMessage = "Failed to load events: \(error.localizedDescription)"
+            print("❌ Error fetching events: \(error)")
+        }
+
+        isLoading = false
     }
 }
 
