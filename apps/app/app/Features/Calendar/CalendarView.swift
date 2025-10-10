@@ -3,7 +3,6 @@ import SwiftUI
 struct CalendarView: View {
     @State private var selectedDate = Date()
     @State private var events: [CalendarEvent] = []
-    @State private var showingScheduler = false
     @State private var isLoading = false
     @State private var errorMessage: String?
 
@@ -51,41 +50,11 @@ struct CalendarView: View {
                         }
                     }
 
-                    // Smart suggestions
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Tide Suggests")
-                            .font(TideTheme.Typography.headline)
-                            .padding(.horizontal)
-
-                        SmartSuggestionCard(
-                            title: "Clear afternoon for deep work",
-                            description: "You have 3 hours free from 2-5 PM",
-                            icon: "brain.head.profile",
-                            action: "Block Time"
-                        )
-
-                        SmartSuggestionCard(
-                            title: "Prep for Q4 Strategy Meeting",
-                            description: "Review Q3 report and budget proposal",
-                            icon: "doc.text.magnifyingglass",
-                            action: "Start Prep"
-                        )
-                    }
                 }
                 .padding(.vertical)
             }
             .background(TideTheme.background)
             .navigationTitle("Calendar")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingScheduler = true }) {
-                        Image(systemName: "plus.circle.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showingScheduler) {
-                Text("Smart Scheduler - Coming Soon")
-            }
             .refreshable {
                 await refreshEvents()
             }
@@ -186,113 +155,42 @@ struct WeekCalendarView: View {
 // MARK: - Event Card
 struct EventCard: View {
     let event: CalendarEvent
-    @State private var expanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Main event info
-            HStack(spacing: 12) {
-                // Color indicator
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(event.color.color)
-                    .frame(width: 4, height: 50)
+        HStack(spacing: 12) {
+            // Color indicator
+            RoundedRectangle(cornerRadius: 2)
+                .fill(event.color.color)
+                .frame(width: 4, height: 50)
 
-                // Event details
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.title)
-                        .font(TideTheme.Typography.headline)
+            // Event details
+            VStack(alignment: .leading, spacing: 4) {
+                Text(event.title)
+                    .font(TideTheme.Typography.headline)
 
-                    HStack(spacing: 12) {
-                        Label(event.timeRange, systemImage: "clock")
-                        if let location = event.location {
-                            Label(location, systemImage: "location.fill")
-                        }
-                    }
-                    .font(TideTheme.Typography.caption1)
-                    .foregroundColor(TideTheme.textSecondary)
-                }
-
-                Spacer()
-
-                // Expand button for prep
-                if event.hasPrep {
-                    Button(action: { withAnimation(.spring()) { expanded.toggle() } }) {
-                        Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                            .foregroundColor(TideTheme.primary)
+                HStack(spacing: 12) {
+                    Label(event.timeRange, systemImage: "clock")
+                    if let location = event.location {
+                        Label(location, systemImage: "location.fill")
                     }
                 }
+                .font(TideTheme.Typography.caption1)
+                .foregroundColor(TideTheme.textSecondary)
             }
-            .padding()
 
-            // Expanded meeting prep
-            if expanded, let prep = event.meetingPrep {
-                MeetingPrepCard(prep: prep)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
+            Spacer()
+
+            // Video call indicator
+            if event.meetingUrl != nil {
+                Image(systemName: "video.fill")
+                    .foregroundColor(TideTheme.primary)
             }
         }
+        .padding()
         .background(TideTheme.surface)
         .cornerRadius(TideTheme.CornerRadius.medium)
         .shadow(color: TideTheme.Shadow.small.color, radius: 2, y: 1)
         .padding(.horizontal)
-    }
-}
-
-// MARK: - Meeting Prep Card
-struct MeetingPrepCard: View {
-    let prep: MeetingPrep
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-
-            // Agenda
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Agenda", systemImage: "list.bullet")
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.semibold)
-
-                Text(prep.agenda)
-                    .font(TideTheme.Typography.footnote)
-                    .foregroundColor(TideTheme.textSecondary)
-            }
-
-            // Key points
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Key Points", systemImage: "star.fill")
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.semibold)
-
-                ForEach(prep.keyPoints, id: \.self) { point in
-                    HStack(alignment: .top, spacing: 6) {
-                        Text("•")
-                        Text(point)
-                    }
-                    .font(TideTheme.Typography.footnote)
-                    .foregroundColor(TideTheme.textSecondary)
-                }
-            }
-
-            // AI Insights
-            if let insights = prep.aiInsights {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("AI Insights", systemImage: "brain.head.profile")
-                        .font(TideTheme.Typography.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(TideTheme.primary)
-
-                    Text(insights)
-                        .font(TideTheme.Typography.footnote)
-                        .foregroundColor(TideTheme.textSecondary)
-                }
-                .padding()
-                .background(TideTheme.primary.opacity(0.1))
-                .cornerRadius(TideTheme.CornerRadius.small)
-            }
-        }
-        .padding()
     }
 }
 
@@ -316,49 +214,6 @@ struct EmptyScheduleCard: View {
         .padding(.vertical, 40)
         .background(TideTheme.surface)
         .cornerRadius(TideTheme.CornerRadius.medium)
-        .padding(.horizontal)
-    }
-}
-
-// MARK: - Smart Suggestion Card
-struct SmartSuggestionCard: View {
-    let title: String
-    let description: String
-    let icon: String
-    let action: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(TideTheme.primary)
-                .frame(width: 40, height: 40)
-                .background(TideTheme.primary.opacity(0.1))
-                .cornerRadius(TideTheme.CornerRadius.small)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.semibold)
-
-                Text(description)
-                    .font(TideTheme.Typography.footnote)
-                    .foregroundColor(TideTheme.textSecondary)
-            }
-
-            Spacer()
-
-            Button(action) {
-                // TODO: Handle action
-            }
-            .font(TideTheme.Typography.callout)
-            .fontWeight(.semibold)
-            .foregroundColor(TideTheme.primary)
-        }
-        .padding()
-        .background(TideTheme.surface)
-        .cornerRadius(TideTheme.CornerRadius.medium)
-        .shadow(color: TideTheme.Shadow.small.color, radius: 2, y: 1)
         .padding(.horizontal)
     }
 }
