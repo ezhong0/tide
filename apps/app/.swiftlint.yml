@@ -1,0 +1,30 @@
+# SwiftLint Configuration for Tide iOS App
+
+disabled_rules:
+  - line_length
+  - trailing_whitespace
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - redundant_optional_initialization
+  - unused_declaration
+
+identifier_name:
+  min_length: 1
+  max_length: 50
+
+included:
+  - app
+
+excluded:
+  - Pods
+  - build
+  - .build
+
+# Warnings
+force_cast: warning
+force_try: warning
+
+# Type checking
+large_tuple: 3

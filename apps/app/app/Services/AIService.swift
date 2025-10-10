@@ -44,11 +44,11 @@ class AIService {
     /// Send a chat message to the AI backend
     func chat(message: String, conversationId: String? = nil) async throws -> ChatResponse {
         // Get the current user ID from AuthManager
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw AIServiceError.notAuthenticated
         }
 
-        let userEmail = AuthManager.shared.currentUser?.email
+        let userEmail = await AuthManager.shared.currentUser?.email
 
         // Build request
         let request = ChatRequest(

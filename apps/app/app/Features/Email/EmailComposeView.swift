@@ -4,7 +4,7 @@ struct EmailComposeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var toRecipients: String = ""
     @State private var subject: String = ""
-    @State private var body: String = ""
+    @State private var messageBody: String = ""
     @State private var isSending = false
     @State private var errorMessage: String?
 
@@ -31,7 +31,7 @@ struct EmailComposeView: View {
             if let email = originalEmail {
                 _toRecipients = State(initialValue: email.from.email)
                 _subject = State(initialValue: "Re: \(email.subject)")
-                _body = State(initialValue: "\n\n---\nOn \(email.timestamp.formatted()), \(email.from.name) wrote:\n\(email.body)")
+                _messageBody = State(initialValue: "\n\n---\nOn \(email.timestamp.formatted()), \(email.from.name) wrote:\n\(email.body)")
             }
 
         case .replyAll:
@@ -41,13 +41,13 @@ struct EmailComposeView: View {
                     .joined(separator: ", ")
                 _toRecipients = State(initialValue: allRecipients)
                 _subject = State(initialValue: "Re: \(email.subject)")
-                _body = State(initialValue: "\n\n---\nOn \(email.timestamp.formatted()), \(email.from.name) wrote:\n\(email.body)")
+                _messageBody = State(initialValue: "\n\n---\nOn \(email.timestamp.formatted()), \(email.from.name) wrote:\n\(email.body)")
             }
 
         case .forward:
             if let email = originalEmail {
                 _subject = State(initialValue: "Fwd: \(email.subject)")
-                _body = State(initialValue: "\n\n---\nForwarded message from \(email.from.name) <\(email.from.email)>:\n\(email.body)")
+                _messageBody = State(initialValue: "\n\n---\nForwarded message from \(email.from.name) <\(email.from.email)>:\n\(email.body)")
             }
         }
     }
@@ -85,7 +85,7 @@ struct EmailComposeView: View {
                             .font(TideTheme.Typography.caption1)
                             .foregroundColor(TideTheme.textSecondary)
 
-                        TextEditor(text: $body)
+                        TextEditor(text: $messageBody)
                             .font(TideTheme.Typography.body)
                             .frame(minHeight: 200)
                             .padding(12)
@@ -154,7 +154,7 @@ struct EmailComposeView: View {
     private var canSend: Bool {
         !toRecipients.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
         !subject.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !messageBody.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     // MARK: - Actions
@@ -168,7 +168,7 @@ struct EmailComposeView: View {
                 try await EmailService.shared.sendEmail(
                     to: toRecipients.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespaces) },
                     subject: subject,
-                    body: body
+                    body: messageBody
                 )
 
                 // Success - dismiss the view

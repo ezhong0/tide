@@ -53,8 +53,8 @@ class TaskService {
     // MARK: - Public Methods
 
     /// Fetch tasks from the API gateway
-    func fetchTasks(status: TaskStatus? = nil) async throws -> [Task] {
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+    func fetchTasks(status: TaskStatus? = nil) async throws -> [app.Task] {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw TaskServiceError.notAuthenticated
         }
 
@@ -69,8 +69,8 @@ class TaskService {
     }
 
     /// Create a new task
-    func createTask(title: String, description: String? = nil, priority: TaskPriority = .medium, dueDate: Date? = nil) async throws -> Task {
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+    func createTask(title: String, description: String? = nil, priority: TaskPriority = .medium, dueDate: Date? = nil) async throws -> app.Task {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw TaskServiceError.notAuthenticated
         }
 
@@ -102,8 +102,8 @@ class TaskService {
     }
 
     /// Update a task
-    func updateTask(id: String, title: String? = nil, description: String? = nil, status: TaskStatus? = nil, priority: TaskPriority? = nil, dueDate: Date? = nil) async throws -> Task {
-        guard AuthManager.shared.currentUser != nil else {
+    func updateTask(id: String, title: String? = nil, description: String? = nil, status: TaskStatus? = nil, priority: TaskPriority? = nil, dueDate: Date? = nil) async throws -> app.Task {
+        guard await AuthManager.shared.currentUser != nil else {
             throw TaskServiceError.notAuthenticated
         }
 
@@ -136,7 +136,7 @@ class TaskService {
 
     /// Delete a task
     func deleteTask(id: String) async throws {
-        guard AuthManager.shared.currentUser != nil else {
+        guard await AuthManager.shared.currentUser != nil else {
             throw TaskServiceError.notAuthenticated
         }
 
@@ -152,18 +152,18 @@ class TaskService {
     }
 
     /// Mark a task as complete
-    func completeTask(id: String) async throws -> Task {
+    func completeTask(id: String) async throws -> app.Task {
         return try await updateTask(id: id, status: .completed)
     }
 
     /// Mark a task as incomplete
-    func uncompleteTask(id: String) async throws -> Task {
+    func uncompleteTask(id: String) async throws -> app.Task {
         return try await updateTask(id: id, status: .todo)
     }
 
     // MARK: - Private Helpers
 
-    private func convertToTask(_ response: TaskResponse) -> Task? {
+    private func convertToTask(_ response: TaskResponse) -> app.Task? {
         // Map status string to enum
         guard let status = TaskStatus(rawValue: response.status) else {
             print("⚠️ Invalid task status: \(response.status)")
@@ -176,7 +176,7 @@ class TaskService {
             return nil
         }
 
-        return Task(
+        return app.Task(
             id: response.id,
             title: response.title,
             description: response.description,
