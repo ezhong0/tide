@@ -170,9 +170,8 @@ class TideCore: ObservableObject {
         updateConversation(conversation)
 
         do {
-            // TODO: Implement actual API call
-            // For now, simulate AI response
-            let aiResponse = try await simulateAIResponse(to: userMessage.content)
+            // Call real AI backend
+            let aiResponse = try await callAIBackend(message: userMessage.content, conversationId: conversation.id)
 
             // Add AI response to conversation
             conversation.messages.append(aiResponse)
@@ -189,6 +188,53 @@ class TideCore: ObservableObject {
             conversation.messages.append(errorMsg)
             updateConversation(conversation)
             return errorMsg
+        }
+    }
+
+    /// Call real AI backend API
+    private func callAIBackend(message: String, conversationId: String) async throws -> Message {
+        // Call AIService
+        let response = try await AIService.shared.chat(message: message, conversationId: conversationId)
+
+        // Parse action preview from metadata if present
+        var actionPreview: ActionPreview? = nil
+        if let actions = response.metadata?.actions, let firstAction = actions.first {
+            actionPreview = ActionPreview(
+                title: firstAction.title,
+                description: firstAction.description,
+                actionType: mapActionType(firstAction.type),
+                requiresConfirmation: firstAction.requiresConfirmation,
+                isConfirmed: false
+            )
+        }
+
+        // Create message from response
+        return Message(
+            content: response.content,
+            role: .assistant,
+            status: .delivered,
+            actionPreview: actionPreview,
+            suggestions: nil // Can add suggestions from metadata if needed
+        )
+    }
+
+    /// Map action type from backend string to ActionType enum
+    private func mapActionType(_ type: String) -> ActionPreview.ActionType {
+        switch type.lowercased() {
+        case "schedule_event", "scheduleevent":
+            return .scheduleEvent
+        case "send_email", "sendemail":
+            return .sendEmail
+        case "create_task", "createtask":
+            return .createTask
+        case "update_calendar", "updatecalendar":
+            return .updateCalendar
+        case "delegate_task", "delegatetask":
+            return .delegateTask
+        case "analyze_document", "analyzedocument":
+            return .analyzeDocument
+        default:
+            return .createTask // Default fallback
         }
     }
 
@@ -240,62 +286,6 @@ class TideCore: ObservableObject {
             content: "Error: \(errorText)",
             role: .system,
             status: .failed
-        )
-    }
-
-    // MARK: - Simulated AI Response (Temporary)
-
-    private func simulateAIResponse(to input: String) async throws -> Message {
-        // Simulate network delay
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-
-        // Simple response logic
-        let response: String
-        let actionPreview: ActionPreview?
-        let suggestions: [String]?
-
-        if input.lowercased().contains("meeting") || input.lowercased().contains("schedule") {
-            response = "I can help you schedule that meeting. When would you like to meet?"
-            actionPreview = ActionPreview(
-                title: "Schedule Meeting",
-                description: "Create a new calendar event",
-                actionType: .scheduleEvent,
-                requiresConfirmation: true,
-                isConfirmed: false
-            )
-            suggestions = ["Tomorrow at 2pm", "Next Monday", "Cancel"]
-        } else if input.lowercased().contains("email") {
-            response = "I'll help you with your email. What would you like to do?"
-            actionPreview = ActionPreview(
-                title: "Send Email",
-                description: "Compose and send an email",
-                actionType: .sendEmail,
-                requiresConfirmation: true,
-                isConfirmed: false
-            )
-            suggestions = ["Draft email", "Check inbox", "Cancel"]
-        } else if input.lowercased().contains("task") || input.lowercased().contains("todo") {
-            response = "I can create a task for you. What should I add?"
-            actionPreview = ActionPreview(
-                title: "Create Task",
-                description: "Add a new task to your list",
-                actionType: .createTask,
-                requiresConfirmation: true,
-                isConfirmed: false
-            )
-            suggestions = ["Add task", "View tasks", "Cancel"]
-        } else {
-            response = "I'm Tide, your AI Chief of Staff. I can help you with:\n\n• Managing your calendar\n• Handling emails\n• Creating and tracking tasks\n• Scheduling meetings\n\nHow can I assist you today?"
-            actionPreview = nil
-            suggestions = ["Schedule a meeting", "Check my email", "Create a task"]
-        }
-
-        return Message(
-            content: response,
-            role: .assistant,
-            status: .delivered,
-            actionPreview: actionPreview,
-            suggestions: suggestions
         )
     }
 
