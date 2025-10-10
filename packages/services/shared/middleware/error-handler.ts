@@ -171,9 +171,15 @@ export const errorHandler = (
   const errorResponse: ErrorResponse = {
     error: errorCode,
     message,
-    ...(details && { details }),
-    ...(process.env.NODE_ENV === 'development' && err.stack && { stack: err.stack }),
   };
+
+  if (details !== undefined) {
+    errorResponse.details = details;
+  }
+
+  if (process.env.NODE_ENV === 'development' && err.stack) {
+    errorResponse.stack = err.stack;
+  }
 
   res.status(statusCode).json(errorResponse);
 };

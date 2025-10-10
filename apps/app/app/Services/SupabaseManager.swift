@@ -41,7 +41,7 @@ final class SupabaseManager: ObservableObject {
 
     private func checkAuthenticationState() async {
         do {
-            let session = try await client.auth.session
+            let session = try client.auth.session
             currentUser = session.user
             isAuthenticated = true
             print("✅ User authenticated: \(session.user.email ?? "unknown")")
@@ -54,21 +54,21 @@ final class SupabaseManager: ObservableObject {
     // MARK: - Authentication Methods
 
     func signIn(email: String, password: String) async throws -> Session {
-        let session = try await client.auth.signIn(email: email, password: password)
-        currentUser = session.user
+        let response = try await client.auth.signIn(email: email, password: password)
+        currentUser = response.user
         isAuthenticated = true
-        return session
+        return response.session
     }
 
     func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
-        let session = try await client.auth.signUp(
+        let response = try await client.auth.signUp(
             email: email,
             password: password,
             data: data
         )
-        currentUser = session.user
+        currentUser = response.user
         isAuthenticated = true
-        return session
+        return response.session
     }
 
     func signOut() async throws {
@@ -79,7 +79,7 @@ final class SupabaseManager: ObservableObject {
 
     func getCurrentSession() async throws -> Session? {
         do {
-            return try await client.auth.session
+            return try client.auth.session
         } catch {
             return nil
         }
