@@ -299,6 +299,63 @@ class TideCore: ObservableObject {
         )
     }
 
+    // MARK: - Action Confirmation
+
+    /// Confirm an action in a message
+    func confirmAction(messageId: String, action: ActionPreview) async {
+        guard var conversation = currentConversation else { return }
+
+        // Find the message
+        guard let messageIndex = conversation.messages.firstIndex(where: { $0.id == messageId }) else {
+            return
+        }
+
+        var message = conversation.messages[messageIndex]
+
+        // Update action to confirmed
+        if var actionPreview = message.actionPreview {
+            actionPreview.isConfirmed = true
+            message.actionPreview = actionPreview
+            conversation.messages[messageIndex] = message
+            updateConversation(conversation)
+
+            // Execute the action based on type
+            await executeAction(action)
+        }
+    }
+
+    /// Cancel an action
+    func cancelAction(messageId: String) {
+        guard var conversation = currentConversation else { return }
+
+        // Find the message and clear its action preview
+        guard let messageIndex = conversation.messages.firstIndex(where: { $0.id == messageId }) else {
+            return
+        }
+
+        var message = conversation.messages[messageIndex]
+        message.actionPreview = nil
+        conversation.messages[messageIndex] = message
+        updateConversation(conversation)
+    }
+
+    /// Execute a confirmed action
+    private func executeAction(_ action: ActionPreview) async {
+        // TODO: Implement actual action execution via API
+        print("✅ Executing action: \(action.title) (\(action.actionType.rawValue))")
+
+        // For now, just send a confirmation message
+        let confirmationMessage = Message(
+            content: "\(action.title) has been created successfully.",
+            role: .system,
+            status: .delivered
+        )
+
+        guard var conversation = currentConversation else { return }
+        conversation.messages.append(confirmationMessage)
+        updateConversation(conversation)
+    }
+
     // MARK: - Predictions & Caching (Future)
 
     /// Pre-cache likely user requests

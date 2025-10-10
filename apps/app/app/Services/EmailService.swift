@@ -39,12 +39,15 @@ class EmailService {
     // MARK: - Public Methods
 
     /// Fetch emails from the API gateway
-    /// For mechanical demo: using hardcoded test user ID
     func fetchEmails() async throws -> [Email] {
-        let testUserId = "00000000-0000-0000-0000-000000000001"
-        let provider = "gmail"
+        // Get the actual logged-in user's ID from AuthManager
+        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+            throw EmailServiceError.notAuthenticated
+        }
 
-        let endpoint = "/api/email/emails/\(testUserId)/\(provider)?limit=50"
+        let provider = "gmail" // TODO: Support multiple providers
+
+        let endpoint = "/api/email/emails/\(userId)/\(provider)?limit=50"
 
         let response: FetchEmailsResponse = try await APIClient.shared.get(endpoint: endpoint)
 
@@ -105,6 +108,21 @@ class EmailService {
             return EmailContact(email: email, name: name.isEmpty ? email : name)
         } else {
             return EmailContact(email: emailString, name: emailString)
+        }
+    }
+}
+
+// MARK: - Errors
+enum EmailServiceError: LocalizedError {
+    case notAuthenticated
+    case invalidProvider
+
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "User not authenticated. Please login first."
+        case .invalidProvider:
+            return "Invalid email provider"
         }
     }
 }

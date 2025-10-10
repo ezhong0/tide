@@ -50,6 +50,18 @@ final class AuthManager: ObservableObject {
 
     func login(email: String, password: String) async throws {
         let session = try await supabaseManager.signIn(email: email, password: password)
+
+        // Save access token to keychain for API requests
+        do {
+            try KeychainService.shared.saveTokens(
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken ?? ""
+            )
+            print("✅ Tokens saved to keychain")
+        } catch {
+            print("⚠️ Failed to save tokens to keychain: \(error)")
+        }
+
         currentUser = session.user
         isAuthenticated = true
     }
@@ -78,6 +90,17 @@ final class AuthManager: ObservableObject {
             throw AuthError.notImplemented("Apple OAuth not supported on macOS")
         }
 
+        // Save access token to keychain for API requests
+        do {
+            try KeychainService.shared.saveTokens(
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken ?? ""
+            )
+            print("✅ Tokens saved to keychain")
+        } catch {
+            print("⚠️ Failed to save tokens to keychain: \(error)")
+        }
+
         currentUser = session.user
         isAuthenticated = true
         print("✅ \(provider.rawValue.capitalized) OAuth successful: \(session.user.email ?? "unknown")")
@@ -104,6 +127,10 @@ final class AuthManager: ObservableObject {
         } catch {
             print("❌ Logout error: \(error.localizedDescription)")
         }
+
+        // Clear tokens from keychain
+        KeychainService.shared.deleteTokens()
+        print("✅ Tokens cleared from keychain")
 
         currentUser = nil
         isAuthenticated = false

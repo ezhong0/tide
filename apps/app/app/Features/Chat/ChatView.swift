@@ -98,7 +98,7 @@ struct MessageBubble: View {
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
                 // Action preview card
                 if let actionPreview = message.actionPreview {
-                    ActionCard(action: actionPreview)
+                    ActionCard(action: actionPreview, message: message)
                 } else {
                     // Regular message bubble
                     Text(message.content)
@@ -147,6 +147,8 @@ struct MessageBubble: View {
 // MARK: - Action Card
 struct ActionCard: View {
     let action: ActionPreview
+    let message: Message
+    @EnvironmentObject var tide: TideCore
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -168,19 +170,29 @@ struct ActionCard: View {
                     .foregroundColor(TideTheme.primary)
             }
 
-            if action.requiresConfirmation {
+            if action.requiresConfirmation && !action.isConfirmed {
                 HStack {
                     Button("Confirm") {
-                        // TODO: Handle confirmation
+                        Task {
+                            await tide.confirmAction(messageId: message.id, action: action)
+                        }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(TideTheme.primary)
 
                     Button("Cancel") {
-                        // TODO: Handle cancellation
+                        tide.cancelAction(messageId: message.id)
                     }
                     .buttonStyle(.bordered)
                     .tint(TideTheme.textSecondary)
+                }
+            } else if action.isConfirmed {
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                    Text("Confirmed")
+                        .font(TideTheme.Typography.callout)
+                        .foregroundColor(.green)
                 }
             }
         }
