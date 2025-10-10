@@ -6,7 +6,7 @@ import { ErrorCode, ERROR_STATUS_MAP } from './codes';
 export interface ErrorDetail {
   code: string;
   message: string;
-  details?: any;
+  details?: unknown;
   timestamp?: number;
   requestId?: string;
   stack?: string;
@@ -18,7 +18,7 @@ export interface ErrorDetail {
 export class TideError extends Error {
   public readonly code: ErrorCode;
   public readonly statusCode: number;
-  public readonly details?: any;
+  public readonly details?: unknown;
   public readonly timestamp: number;
   public readonly isOperational: boolean;
   public requestId?: string;
@@ -26,7 +26,7 @@ export class TideError extends Error {
   constructor(
     code: ErrorCode,
     message: string,
-    details?: any,
+    details?: unknown,
     statusCode?: number,
     isOperational: boolean = true
   ) {
@@ -46,7 +46,7 @@ export class TideError extends Error {
   /**
    * Alias for details (for compatibility)
    */
-  get metadata(): any {
+  get metadata(): unknown {
     return this.details;
   }
 
