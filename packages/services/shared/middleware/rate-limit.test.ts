@@ -24,7 +24,7 @@ describe('rateLimit', () => {
       headers: {},
       socket: { remoteAddress: uniqueIp } as any,
       user: undefined,
-    };
+    } as any;
 
     mockRes = {
       status: vi.fn().mockReturnThis(),
@@ -34,7 +34,7 @@ describe('rateLimit', () => {
       send: vi.fn(),
     };
 
-    mockNext = vi.fn();
+    mockNext = vi.fn() as any;
   });
 
   afterEach(() => {
@@ -105,14 +105,20 @@ describe('rateLimit', () => {
     const limiter = rateLimit({ maxRequests: 2, windowMs: 60000 });
 
     // First IP makes 2 requests
-    mockReq.ip = '192.168.1.1';
-    mockReq.socket = { remoteAddress: '192.168.1.1' } as any;
+    mockReq = {
+      ...mockReq,
+      ip: '192.168.1.1',
+      socket: { remoteAddress: '192.168.1.1' } as any,
+    } as any;
     limiter(mockReq as Request, mockRes as Response, mockNext);
     limiter(mockReq as Request, mockRes as Response, mockNext);
 
     // Second IP should still be allowed
-    mockReq.ip = '192.168.1.2';
-    mockReq.socket = { remoteAddress: '192.168.1.2' } as any;
+    mockReq = {
+      ...mockReq,
+      ip: '192.168.1.2',
+      socket: { remoteAddress: '192.168.1.2' } as any,
+    } as any;
     limiter(mockReq as Request, mockRes as Response, mockNext);
 
     expect(mockNext).toHaveBeenCalledTimes(3);
@@ -135,8 +141,11 @@ describe('rateLimit', () => {
   it('should handle missing IP gracefully', () => {
     const limiter = rateLimit({ maxRequests: 5, windowMs: 60000 });
 
-    mockReq.ip = undefined;
-    mockReq.socket = {} as any;
+    mockReq = {
+      ...mockReq,
+      ip: undefined,
+      socket: {} as any,
+    } as any;
 
     limiter(mockReq as Request, mockRes as Response, mockNext);
 
@@ -181,8 +190,11 @@ describe('rateLimit', () => {
     const limiter = rateLimit({ maxRequests: 5, windowMs: 60000 });
 
     // Create an error-prone request
-    mockReq.ip = undefined;
-    mockReq.socket = undefined as any;
+    mockReq = {
+      ...mockReq,
+      ip: undefined,
+      socket: undefined as any,
+    } as any;
     mockReq.user = undefined;
 
     // Should not throw, just call next

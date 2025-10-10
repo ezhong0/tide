@@ -25,7 +25,7 @@ export interface HealthStatus {
     uptime: number;
     checks?: Record<string, {
         status: string;
-        details?: any;
+        details?: unknown;
     }>;
 }
 /**

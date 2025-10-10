@@ -1,5 +1,6 @@
 import { logger } from '@tide/logger';
 import type { UserId } from '@tide/types';
+import { thresholds } from '@tide/config';
 import type {
   Email,
   TriageResult,
@@ -65,7 +66,7 @@ export class EmailTriageEngine {
         relationships,
         strategy,
         confidence,
-        canAutoHandle: strategy.auto && confidence > 0.85,
+        canAutoHandle: strategy.auto && confidence > thresholds.email.triageAutoHandleConfidence,
       };
 
       logger.info(

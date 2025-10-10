@@ -59,7 +59,7 @@ struct CalendarView: View {
                 await refreshEvents()
             }
             .onAppear {
-                Task {
+                _Concurrency.Task {
                     await refreshEvents()
                 }
             }

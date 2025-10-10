@@ -43,5 +43,22 @@ export {
   createCorrelationHeaders,
 } from './correlation.js';
 
+export {
+  performanceMonitor,
+  measureAsync,
+  Measure,
+  queryTracker,
+  QueryPerformanceTracker,
+} from './performance.js';
+
+export {
+  validateRequest,
+  sanitizeInput,
+  validatePagination,
+  requireHeaders,
+  requireContentType,
+  type ValidationSchemas,
+} from './request-validator.js';
+
 // Re-export auth initialization
 export { initializeAuth } from './auth.js';

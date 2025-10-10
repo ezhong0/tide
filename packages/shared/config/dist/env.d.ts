@@ -30,6 +30,7 @@ declare const EnvSchema: z.ZodObject<{
     INTELLIGENCE_SERVICE_URL: z.ZodDefault<z.ZodString>;
     ACTIONS_SERVICE_URL: z.ZodDefault<z.ZodString>;
     DECISIONS_SERVICE_URL: z.ZodDefault<z.ZodString>;
+    MOBILE_BFF_URL: z.ZodDefault<z.ZodString>;
     GOOGLE_CLIENT_ID: z.ZodOptional<z.ZodString>;
     GOOGLE_CLIENT_SECRET: z.ZodOptional<z.ZodString>;
     GOOGLE_REDIRECT_URI: z.ZodOptional<z.ZodString>;
@@ -64,6 +65,7 @@ declare const EnvSchema: z.ZodObject<{
     INTELLIGENCE_SERVICE_URL: string;
     ACTIONS_SERVICE_URL: string;
     DECISIONS_SERVICE_URL: string;
+    MOBILE_BFF_URL: string;
     ENABLE_AI_FEATURES: boolean;
     ENABLE_EMAIL_SYNC: boolean;
     ENABLE_CALENDAR_SYNC: boolean;
@@ -118,6 +120,7 @@ declare const EnvSchema: z.ZodObject<{
     INTELLIGENCE_SERVICE_URL?: string | undefined;
     ACTIONS_SERVICE_URL?: string | undefined;
     DECISIONS_SERVICE_URL?: string | undefined;
+    MOBILE_BFF_URL?: string | undefined;
     GOOGLE_CLIENT_ID?: string | undefined;
     GOOGLE_CLIENT_SECRET?: string | undefined;
     GOOGLE_REDIRECT_URI?: string | undefined;
@@ -157,6 +160,7 @@ export declare const env: {
     INTELLIGENCE_SERVICE_URL: string;
     ACTIONS_SERVICE_URL: string;
     DECISIONS_SERVICE_URL: string;
+    MOBILE_BFF_URL: string;
     ENABLE_AI_FEATURES: boolean;
     ENABLE_EMAIL_SYNC: boolean;
     ENABLE_CALENDAR_SYNC: boolean;

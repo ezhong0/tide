@@ -163,9 +163,6 @@ importers:
       '@google/generative-ai':
         specifier: ^0.19.0
         version: 0.19.0
-      '@pinecone-database/pinecone':
-        specifier: ^3.0.0
-        version: 3.0.3
       '@tide/config':
         specifier: workspace:*
         version: link:../../shared/config
@@ -187,9 +184,6 @@ importers:
       '@tide/validation':
         specifier: workspace:*
         version: link:../../shared/validation
-      kafkajs:
-        specifier: ^2.2.4
-        version: 2.2.4
       openai:
         specifier: ^4.20.0
         version: 4.104.0(zod@3.25.76)
@@ -199,6 +193,10 @@ importers:
       zod:
         specifier: ^3.22.0
         version: 3.25.76
+    optionalDependencies:
+      kafkajs:
+        specifier: ^2.2.4
+        version: 2.2.4
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -526,6 +524,9 @@ importers:
       '@tide/types':
         specifier: workspace:*
         version: link:../../shared/types
+      compression:
+        specifier: ^1.7.4
+        version: 1.8.1
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -536,6 +537,9 @@ importers:
         specifier: ^7.1.0
         version: 7.2.0
     devDependencies:
+      '@types/compression':
+        specifier: ^1.7.5
+        version: 1.8.1
       '@types/cors':
         specifier: ^2.8.17
         version: 2.8.19
@@ -757,6 +761,18 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^1.2.0
+        version: 1.6.1(@types/node@20.19.19)(@vitest/ui@1.6.1)
+
+  packages/shared/utils:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.19
+      typescript:
+        specifier: ^5.3.0
+        version: 5.9.3
+      vitest:
+        specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.19)(@vitest/ui@1.6.1)
 
   packages/shared/validation:
@@ -2647,13 +2663,6 @@ packages:
     engines: {node: '>=8.0.0'}
     dev: false
 
-  /@pinecone-database/pinecone@3.0.3:
-    resolution: {integrity: sha512-0cAG0d/6knVZgVyXM1II4qG3dyOepLuAQsCXTOJomdA7iQxf+/Om9mq9Cw4QObr56oZ+lqtptlw5qz0BQaBX2Q==}
-    engines: {node: '>=18.0.0'}
-    dependencies:
-      encoding: 0.1.13
-    dev: false
-
   /@pkgjs/parseargs@0.11.0:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
@@ -3464,6 +3473,13 @@ packages:
       '@types/connect': 3.4.38
       '@types/node': 20.19.19
 
+  /@types/compression@1.8.1:
+    resolution: {integrity: sha512-kCFuWS0ebDbmxs0AXYn6e2r2nrGAb5KwQhknjSPSPgJcGd8+HVSILlUyFhGqML2gk39HcG7D1ydW9/qpYkN00Q==}
+    dependencies:
+      '@types/express': 4.17.23
+      '@types/node': 20.19.19
+    dev: true
+
   /@types/connect@3.4.38:
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
     dependencies:
@@ -4179,6 +4195,28 @@ packages:
       delayed-stream: 1.0.0
     dev: false
 
+  /compressible@2.0.18:
+    resolution: {integrity: sha512-AF3r7P5dWxL8MxyITRMlORQNaOA2IkAFaTr4k7BUumjPtRpGDTZpl0Pb1XCO6JeDCBdp126Cgs9sMxqSjgYyRg==}
+    engines: {node: '>= 0.6'}
+    dependencies:
+      mime-db: 1.52.0
+    dev: false
+
+  /compression@1.8.1:
+    resolution: {integrity: sha512-9mAqGPHLakhCLeNyxPkK4xVo746zQ/czLH1Ky+vkitMnWfWZps8r0qXuwhwizagCRttsL4lfG4pIOvaWLpAP0w==}
+    engines: {node: '>= 0.8.0'}
+    dependencies:
+      bytes: 3.1.2
+      compressible: 2.0.18
+      debug: 2.6.9
+      negotiator: 0.6.4
+      on-headers: 1.1.0
+      safe-buffer: 5.2.1
+      vary: 1.1.2
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
   /concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
     dev: true
@@ -4446,6 +4484,7 @@ packages:
     dependencies:
       iconv-lite: 0.6.3
     dev: false
+    optional: true
 
   /end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
@@ -6525,6 +6564,11 @@ packages:
     engines: {node: '>= 0.8'}
     dependencies:
       ee-first: 1.1.1
+
+  /on-headers@1.1.0:
+    resolution: {integrity: sha512-737ZY3yNnXy37FHkQxPzt4UZ2UWPWiCZWLvFZ4fu5cueciegX0zGPnrlY6bwRg4FdQOe9YU8MkmJwGhoMybl8A==}
+    engines: {node: '>= 0.8'}
+    dev: false
 
   /once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}

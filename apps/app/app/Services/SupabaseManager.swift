@@ -6,7 +6,6 @@
 import Foundation
 import Supabase
 
-@MainActor
 final class SupabaseManager: ObservableObject {
     static let shared = SupabaseManager()
 
@@ -28,17 +27,19 @@ final class SupabaseManager: ObservableObject {
 
         self.client = SupabaseClient(
             supabaseURL: supabaseURL,
-            supabaseKey: anonKey
+            supabaseKey: anonKey,
+            options: SupabaseClientOptions()
         )
 
         // Check if user is already authenticated
-        Task {
-            await checkAuthenticationState()
+        _Concurrency.Task { @MainActor in
+            await self.checkAuthenticationState()
         }
     }
 
     // MARK: - Authentication State
 
+    @MainActor
     private func checkAuthenticationState() async {
         do {
             let session = try await client.auth.session
@@ -53,6 +54,7 @@ final class SupabaseManager: ObservableObject {
 
     // MARK: - Authentication Methods
 
+    @MainActor
     func signIn(email: String, password: String) async throws -> Session {
         let session = try await client.auth.signIn(email: email, password: password)
         currentUser = session.user
@@ -60,6 +62,7 @@ final class SupabaseManager: ObservableObject {
         return session
     }
 
+    @MainActor
     func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
         let response = try await client.auth.signUp(
             email: email,
@@ -74,6 +77,7 @@ final class SupabaseManager: ObservableObject {
         return session
     }
 
+    @MainActor
     func signOut() async throws {
         try await client.auth.signOut()
         currentUser = nil
@@ -111,6 +115,7 @@ final class SupabaseManager: ObservableObject {
     }
 
     /// Handle OAuth callback and create session
+    @MainActor
     func handleOAuthCallback(url: URL) async throws -> Session {
         let session = try await client.auth.session(from: url)
         currentUser = session.user

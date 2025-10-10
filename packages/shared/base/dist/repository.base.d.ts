@@ -60,14 +60,14 @@ export declare abstract class RepositoryBase<T extends {
      */
     protected executeQuery<R>(queryFn: () => Promise<{
         data: R | null;
-        error: any;
+        error: unknown;
     }>, operation: string): Promise<R>;
 }
 /**
  * Repository-specific error class
  */
 export declare class RepositoryError extends Error {
-    readonly cause?: any | undefined;
-    constructor(message: string, cause?: any | undefined);
+    readonly cause?: unknown | undefined;
+    constructor(message: string, cause?: unknown | undefined);
 }
 //# sourceMappingURL=repository.base.d.ts.map

@@ -231,11 +231,18 @@ export class TideAIServer {
         contentLength: request.content.length,
       });
 
+      // Extract JWT token from Authorization header for service-to-service auth
+      const authHeader = req.headers.authorization;
+      const jwtToken = authHeader?.startsWith('Bearer ') 
+        ? authHeader.substring(7) 
+        : undefined;
+
       // Build tool context
       const context: ToolContext = {
         userId: request.userId,
         requestId: `req-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         userEmail: request.context?.userEmail,
+        jwtToken,
         timestamp: Date.now(),
       };
 

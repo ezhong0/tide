@@ -43,6 +43,7 @@ const EnvSchema = zod_1.z.object({
     INTELLIGENCE_SERVICE_URL: zod_1.z.string().url().default('http://localhost:3002'),
     ACTIONS_SERVICE_URL: zod_1.z.string().url().default('http://localhost:3006'),
     DECISIONS_SERVICE_URL: zod_1.z.string().url().default('http://localhost:3007'),
+    MOBILE_BFF_URL: zod_1.z.string().url().default('http://localhost:3009'),
     // OAuth - Google (configured in Supabase Dashboard)
     GOOGLE_CLIENT_ID: zod_1.z.string().optional(),
     GOOGLE_CLIENT_SECRET: zod_1.z.string().optional(),

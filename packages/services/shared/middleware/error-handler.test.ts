@@ -35,7 +35,7 @@ describe('errorHandler', () => {
       headersSent: false,
     };
 
-    mockNext = vi.fn();
+    mockNext = vi.fn() as any;
 
     // Set test environment
     process.env.NODE_ENV = 'test';

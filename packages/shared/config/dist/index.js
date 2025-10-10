@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.eventTypes = exports.kafkaTopics = exports.cacheKeys = exports.cacheTTL = exports.serverConfig = exports.requireFeature = exports.isFeatureEnabled = exports.features = exports.serviceUrls = exports.monitoringConfig = exports.vectorConfig = exports.aiServiceConfig = exports.azureOAuthConfig = exports.googleOAuthConfig = exports.supabaseConfig = exports.kafkaConfig = exports.redisConfig = exports.databaseConfig = exports.getAllowedOrigins = exports.getKafkaBrokers = exports.isTest = exports.isDevelopment = exports.isProduction = exports.env = void 0;
+exports.eventTypes = exports.kafkaTopics = exports.cacheKeys = exports.cacheTTL = exports.serverConfig = exports.requireFeature = exports.isFeatureEnabled = exports.features = exports.thresholds = exports.retryConfig = exports.circuitBreakerConfig = exports.timeouts = exports.serviceUrls = exports.monitoringConfig = exports.vectorConfig = exports.aiServiceConfig = exports.azureOAuthConfig = exports.googleOAuthConfig = exports.supabaseConfig = exports.kafkaConfig = exports.redisConfig = exports.databaseConfig = exports.getAllowedOrigins = exports.getKafkaBrokers = exports.isTest = exports.isDevelopment = exports.isProduction = exports.env = void 0;
 // Export environment configuration
 var env_1 = require("./env");
 Object.defineProperty(exports, "env", { enumerable: true, get: function () { return env_1.env; } });
@@ -25,6 +25,12 @@ Object.defineProperty(exports, "aiServiceConfig", { enumerable: true, get: funct
 Object.defineProperty(exports, "vectorConfig", { enumerable: true, get: function () { return services_1.vectorConfig; } });
 Object.defineProperty(exports, "monitoringConfig", { enumerable: true, get: function () { return services_1.monitoringConfig; } });
 Object.defineProperty(exports, "serviceUrls", { enumerable: true, get: function () { return services_1.serviceUrls; } });
+Object.defineProperty(exports, "timeouts", { enumerable: true, get: function () { return services_1.timeouts; } });
+Object.defineProperty(exports, "circuitBreakerConfig", { enumerable: true, get: function () { return services_1.circuitBreakerConfig; } });
+Object.defineProperty(exports, "retryConfig", { enumerable: true, get: function () { return services_1.retryConfig; } });
+// Export thresholds configuration
+var thresholds_1 = require("./thresholds");
+Object.defineProperty(exports, "thresholds", { enumerable: true, get: function () { return thresholds_1.thresholds; } });
 // Export feature flags
 var features_1 = require("./features");
 Object.defineProperty(exports, "features", { enumerable: true, get: function () { return features_1.features; } });

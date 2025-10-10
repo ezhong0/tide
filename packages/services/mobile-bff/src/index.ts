@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { env, serviceUrls } from '@tide/config';
 import { logger } from '@tide/logger';
 import { createSupabase } from '@tide/database';
@@ -33,7 +34,19 @@ class MobileBFF {
   private setupMiddleware(): void {
     this.app.use(helmet());
     this.app.use(cors());
-    this.app.use(express.json());
+    this.app.use(express.json({ limit: '1mb' })); // Limit request body size
+
+    // Response compression - reduces payload size by ~70%
+    this.app.use(compression({
+      filter: (req, res) => {
+        if (req.headers['x-no-compression']) {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+      threshold: 1024, // Only compress responses larger than 1KB
+      level: 6, // Balance between speed and compression ratio
+    }));
 
     // Rate limiting (100 req/min)
     this.app.use(moderateRateLimit);

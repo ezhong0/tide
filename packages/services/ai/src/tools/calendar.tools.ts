@@ -51,7 +51,7 @@ export const getCalendarEventsTool: TideTool = {
       }),
       {
         headers: {
-          'Authorization': `Bearer ${context.userId}`,
+          'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
         },
       }
     );
@@ -130,7 +130,7 @@ export const createCalendarEventTool: TideTool = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+        'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
       },
       body: JSON.stringify({
         userId: context.userId,
@@ -233,7 +233,7 @@ export const findMeetingTimesTool: TideTool = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+        'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
       },
       body: JSON.stringify({
         userId: context.userId,
@@ -290,7 +290,7 @@ export const analyzeCalendarLoadTool: TideTool = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.userId}`,
+        'Authorization': context.jwtToken ? `Bearer ${context.jwtToken}` : `Bearer ${context.userId}`,
       },
       body: JSON.stringify({
         userId: context.userId,

@@ -50,7 +50,7 @@ struct EmailView: View {
                 if emails.isEmpty && !isLoading {
                     Section {
                         Button(action: {
-                            Task {
+                            _Concurrency.Task {
                                 await connectGmail()
                             }
                         }) {
@@ -91,43 +91,30 @@ struct EmailView: View {
                 if !emails.isEmpty && (filter == .all || filter == .unread) {
                     Section("Needs Your Attention") {
                         ForEach(filteredEmails.filter { $0.priority == .high }) { email in
-                            EmailRow(email: email)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button("Archive") {
-                                        archive(email)
-                                    }
-                                    .tint(.gray)
-
-                                    Button("Reply") {
-                                        quickReply(to: email)
-                                    }
-                                    .tint(.blue)
-                                }
-                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                    Button("Delegate") {
-                                        delegate(email)
-                                    }
-                                    .tint(.purple)
-                                }
-                                .onTapGesture {
-                                    selectedEmail = email
-                                }
-                        }
-                    }
-                }
-
-                Section("Inbox") {
-                    ForEach(filteredEmails.filter { $0.priority != .high }) { email in
-                        EmailRow(email: email)
+                            NavigationLink(destination: EmailDetailView(email: email)) {
+                                EmailRow(email: email)
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button("Archive") {
                                     archive(email)
                                 }
                                 .tint(.gray)
                             }
-                            .onTapGesture {
-                                selectedEmail = email
+                        }
+                    }
+                }
+
+                Section("Inbox") {
+                    ForEach(filteredEmails.filter { $0.priority != .high }) { email in
+                        NavigationLink(destination: EmailDetailView(email: email)) {
+                            EmailRow(email: email)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button("Archive") {
+                                archive(email)
                             }
+                            .tint(.gray)
+                        }
                     }
                 }
             }
@@ -157,14 +144,11 @@ struct EmailView: View {
                 }
             }
             .sheet(isPresented: $isComposing) {
-                Text("Compose Email - Coming Soon")
-            }
-            .sheet(item: $selectedEmail) { email in
-                EmailDetailView(email: email)
+                EmailComposeView(mode: .new, originalEmail: nil)
             }
             .onAppear {
                 // Load emails on first appear
-                Task {
+                _Concurrency.Task {
                     await refreshEmails()
                 }
             }
@@ -177,14 +161,6 @@ struct EmailView: View {
         withAnimation {
             emails.removeAll { $0.id == email.id }
         }
-    }
-
-    private func quickReply(to email: Email) {
-        // TODO: Implement quick reply
-    }
-
-    private func delegate(_ email: Email) {
-        // TODO: Implement delegation
     }
 
     private func connectGmail() async {

@@ -23,7 +23,7 @@ final class AuthManager: ObservableObject {
         self.oauthService = OAuthService(supabaseManager: SupabaseManager.shared)
 
         // Check if user is already authenticated on init
-        Task {
+        _Concurrency.Task {
             await checkAuthenticationState()
         }
     }
@@ -34,7 +34,7 @@ final class AuthManager: ObservableObject {
         self.oauthService = OAuthService(supabaseManager: supabaseManager)
 
         // Check if user is already authenticated on init
-        Task {
+        _Concurrency.Task {
             await checkAuthenticationState()
         }
     }

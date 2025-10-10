@@ -38,7 +38,7 @@ struct TideApp: App {
 
         // Handle Supabase OAuth callbacks
         if url.scheme == "com.tide.app" {
-            Task {
+            _Concurrency.Task {
                 do {
                     try await authManager.handleOAuthCallback(url: url)
                     print("✅ OAuth callback handled successfully")

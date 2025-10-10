@@ -33,7 +33,7 @@ final class OAuthService: NSObject, ObservableObject {
 
         // Start OAuth flow with Supabase
         let session = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Session, Error>) in
-            Task { @MainActor in
+            _Concurrency.Task { @MainActor in
                 do {
                     // Get the OAuth URL from Supabase
                     guard let redirectURL = URL(string: "com.tide.app://oauth-callback") else {
@@ -62,7 +62,7 @@ final class OAuthService: NSObject, ObservableObject {
                         url: authURL,
                         callbackURLScheme: "com.tide.app"
                     ) { [weak self] callbackURL, error in
-                        Task { @MainActor in
+                        _Concurrency.Task { @MainActor in
                             if let error = error {
                                 if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
                                     continuation.resume(throwing: OAuthError.cancelled)
@@ -132,7 +132,7 @@ final class OAuthService: NSObject, ObservableObject {
         defer { isAuthenticating = false }
 
         let session = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Session, Error>) in
-            Task { @MainActor in
+            _Concurrency.Task { @MainActor in
                 do {
                     guard let redirectURL = URL(string: "com.tide.app://oauth-callback") else {
                         continuation.resume(throwing: OAuthError.invalidRedirectURL)
@@ -155,7 +155,7 @@ final class OAuthService: NSObject, ObservableObject {
                         url: authURL,
                         callbackURLScheme: "com.tide.app"
                     ) { [weak self] callbackURL, error in
-                        Task { @MainActor in
+                        _Concurrency.Task { @MainActor in
                             if let error = error {
                                 if (error as NSError).code == ASWebAuthenticationSessionError.canceledLogin.rawValue {
                                     continuation.resume(throwing: OAuthError.cancelled)

@@ -46,7 +46,7 @@ struct AuthenticationView: View {
                 VStack(spacing: TideTheme.Spacing.md) {
                     // Sign in with Google
                     Button {
-                        Task {
+                        _Concurrency.Task {
                             await signInWithGoogle()
                         }
                     } label: {
@@ -67,7 +67,7 @@ struct AuthenticationView: View {
 
                     // Sign in with Microsoft
                     Button {
-                        Task {
+                        _Concurrency.Task {
                             await signInWithMicrosoft()
                         }
                     } label: {
@@ -140,8 +140,8 @@ struct AuthenticationView: View {
             print("❌ Google login error: \(errorDesc)")
 
             // Hide error after 5 seconds
-            Task {
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
+            _Concurrency.Task {
+                try? await _Concurrency.Task.sleep(nanoseconds: 5_000_000_000)
                 showError = false
             }
         }
@@ -164,8 +164,8 @@ struct AuthenticationView: View {
             print("❌ Microsoft login error: \(errorDesc)")
 
             // Hide error after 5 seconds
-            Task {
-                try? await Task.sleep(nanoseconds: 5_000_000_000)
+            _Concurrency.Task {
+                try? await _Concurrency.Task.sleep(nanoseconds: 5_000_000_000)
                 showError = false
             }
         }
@@ -204,7 +204,7 @@ struct LoginView: View {
 
             // Login button
             Button {
-                Task {
+                _Concurrency.Task {
                     await viewModel.login()
                     if viewModel.isAuthenticated {
                         appState.isAuthenticated = true
@@ -277,7 +277,7 @@ struct RegisterView: View {
 
             // Register button
             Button {
-                Task {
+                _Concurrency.Task {
                     await viewModel.register()
                     if viewModel.isAuthenticated {
                         appState.isAuthenticated = true

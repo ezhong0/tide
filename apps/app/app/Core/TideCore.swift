@@ -1,5 +1,4 @@
 import Foundation
-import Combine
 
 /// Core business logic for Tide app
 @MainActor
@@ -11,101 +10,10 @@ class TideCore: ObservableObject {
     @Published var currentConversation: Conversation?
     @Published var isProcessing: Bool = false
     @Published var errorMessage: String?
-    @Published var isConnected: Bool = false
-    @Published var connectionStatus: String = "Disconnected"
-
-    // MARK: - Services
-    private let apiClient = APIClient.shared
-    // private let dataManager = DataManager.shared  // Excluded from build
-    private let webSocketManager = WebSocketManager.shared
-    private var cancellables = Set<AnyCancellable>()
-    private var accessToken: String?
 
     // MARK: - Initialization
     init() {
         loadConversations()
-        setupWebSocketHandlers()
-    }
-
-    // MARK: - WebSocket Setup
-
-    private func setupWebSocketHandlers() {
-        // Listen for connection status
-        webSocketManager.$isConnected
-            .sink { [weak self] connected in
-                self?.isConnected = connected
-                self?.connectionStatus = connected ? "Connected" : "Disconnected"
-            }
-            .store(in: &cancellables)
-
-        // Handle incoming messages
-        webSocketManager.onMessageReceived = { [weak self] wsMessage in
-            Task { @MainActor in
-                self?.handleWebSocketMessage(wsMessage)
-            }
-        }
-
-        // Handle connection events
-        webSocketManager.onConnected = { [weak self] in
-            Task { @MainActor in
-                self?.connectionStatus = "Connected"
-                self?.errorMessage = nil
-            }
-        }
-
-        webSocketManager.onDisconnected = { [weak self] in
-            Task { @MainActor in
-                self?.connectionStatus = "Disconnected"
-            }
-        }
-    }
-
-    /// Connect to WebSocket with access token
-    func connectWebSocket(token: String) {
-        self.accessToken = token
-        webSocketManager.connect(token: token)
-        connectionStatus = "Connecting..."
-    }
-
-    /// Disconnect WebSocket
-    func disconnectWebSocket() {
-        webSocketManager.disconnect()
-    }
-
-    /// Handle incoming WebSocket messages
-    private func handleWebSocketMessage(_ wsMessage: WebSocketMessage) {
-        guard wsMessage.type == "message",
-              let payload = wsMessage.payload?.value as? [String: Any],
-              let content = payload["content"] as? String,
-              let roleString = payload["role"] as? String,
-              let conversationId = payload["conversationId"] as? String else {
-            return
-        }
-
-        // Find or create conversation
-        var conversation: Conversation
-        if let existing = conversations.first(where: { $0.id == conversationId }) {
-            conversation = existing
-        } else {
-            // Message for unknown conversation, use current or create new
-            conversation = currentConversation ?? createConversation(title: "Chat with Tide")
-        }
-
-        // Create message from WebSocket data
-        let role: MessageRole = roleString == "user" ? .user : .assistant
-        let message = Message(
-            content: content,
-            role: role,
-            status: .delivered,
-            suggestions: payload["suggestions"] as? [String]
-        )
-
-        // Add message to conversation
-        conversation.messages.append(message)
-        conversation.updatedAt = Date()
-        updateConversation(conversation)
-
-        isProcessing = false
     }
 
     // MARK: - Conversation Management
@@ -246,27 +154,8 @@ class TideCore: ObservableObject {
             status: .sent
         )
 
-        guard var conversation = currentConversation else {
-            return createErrorMessage("No active conversation")
-        }
-
-        // Add user message to conversation immediately
-        conversation.messages.append(userMessage)
-        updateConversation(conversation)
-
-        // If WebSocket is connected, send via WebSocket
-        if isConnected {
-            isProcessing = true
-            webSocketManager.sendChatMessage(
-                conversationId: conversation.id,
-                content: content
-            )
-            // AI response will come via WebSocket callback
-            return userMessage
-        } else {
-            // Fallback to simulated response if not connected
-            return await process(userMessage)
-        }
+        // Process the message and get AI response
+        return await process(userMessage)
     }
 
     // MARK: - Private Helpers
@@ -288,92 +177,4 @@ class TideCore: ObservableObject {
             status: .failed
         )
     }
-
-    // MARK: - Action Confirmation
-
-    /// Confirm an action in a message
-    func confirmAction(messageId: String, action: ActionPreview) async {
-        guard var conversation = currentConversation else { return }
-
-        // Find the message
-        guard let messageIndex = conversation.messages.firstIndex(where: { $0.id == messageId }) else {
-            return
-        }
-
-        var message = conversation.messages[messageIndex]
-
-        // Update action to confirmed
-        if var actionPreview = message.actionPreview {
-            actionPreview.isConfirmed = true
-            message.actionPreview = actionPreview
-            conversation.messages[messageIndex] = message
-            updateConversation(conversation)
-
-            // Execute the action based on type
-            await executeAction(action)
-        }
-    }
-
-    /// Cancel an action
-    func cancelAction(messageId: String) {
-        guard var conversation = currentConversation else { return }
-
-        // Find the message and clear its action preview
-        guard let messageIndex = conversation.messages.firstIndex(where: { $0.id == messageId }) else {
-            return
-        }
-
-        var message = conversation.messages[messageIndex]
-        message.actionPreview = nil
-        conversation.messages[messageIndex] = message
-        updateConversation(conversation)
-    }
-
-    /// Execute a confirmed action
-    private func executeAction(_ action: ActionPreview) async {
-        // TODO: Implement actual action execution via API
-        print("✅ Executing action: \(action.title) (\(action.actionType.rawValue))")
-
-        // For now, just send a confirmation message
-        let confirmationMessage = Message(
-            content: "\(action.title) has been created successfully.",
-            role: .system,
-            status: .delivered
-        )
-
-        guard var conversation = currentConversation else { return }
-        conversation.messages.append(confirmationMessage)
-        updateConversation(conversation)
-    }
-
-    // MARK: - Predictions & Caching (Future)
-
-    /// Pre-cache likely user requests
-    func preCache(_ pattern: String) async {
-        // TODO: Implement predictive caching
-    }
-
-    /// Predict morning routine actions
-    func predictMorningRoutine() async {
-        // TODO: Implement morning predictions
-    }
-
-    /// Predict meeting prep needs
-    func predictMeetingPrep() async {
-        // TODO: Implement meeting predictions
-    }
-
-    // MARK: - Calendar Suggestions (Future)
-    var calendarSuggestions: [CalendarSuggestion]? {
-        // TODO: Implement calendar suggestions
-        nil
-    }
-}
-
-// MARK: - Calendar Suggestion (Placeholder)
-struct CalendarSuggestion: Identifiable {
-    let id = UUID()
-    let title: String
-    let description: String
-    let actionType: String
 }
