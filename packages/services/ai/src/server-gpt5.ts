@@ -30,10 +30,11 @@ export class TideAIServer {
   private config: ServerConfig;
 
   constructor(config: Partial<ServerConfig> = {}) {
-    console.log('=== TideAIServer Constructor Starting ===');
-    console.log('Config received:', JSON.stringify(config, null, 2));
-    console.log('PORT env:', process.env.PORT);
-    console.log('OPENAI_API_KEY exists:', !!process.env.OPENAI_API_KEY);
+    logger.debug('TideAIServer constructor starting', {
+      configReceived: config,
+      portEnv: process.env.PORT,
+      hasApiKey: !!process.env.OPENAI_API_KEY,
+    });
 
     this.config = {
       port: config.port || parseInt(process.env.PORT || '3001', 10),
@@ -46,7 +47,7 @@ export class TideAIServer {
       includeCustomTools: config.includeCustomTools ?? false,
     };
 
-    console.log('Final config:', JSON.stringify(this.config, null, 2));
+    logger.debug('Final configuration resolved', { config: this.config });
 
     // Validate API key
     if (!this.config.openaiApiKey) {
@@ -56,20 +57,20 @@ export class TideAIServer {
     }
 
     // Initialize tools
-    console.log('=== Initializing tools ===');
+    logger.debug('Initializing tools');
     try {
       initializeTools({
         includeIntelligenceTools: this.config.includeIntelligenceTools,
         includeCustomTools: this.config.includeCustomTools,
       });
-      console.log('=== Tools initialized successfully ===');
+      logger.info('Tools initialized successfully');
     } catch (error) {
-      console.error('=== FATAL: Tool initialization failed ===', error);
+      logger.fatal({ error }, 'FATAL: Tool initialization failed');
       throw error;
     }
 
     // Initialize GPT-5 orchestrator (use dummy key if not configured)
-    console.log('=== Initializing GPT-5 orchestrator ===');
+    logger.debug('Initializing GPT-5 orchestrator');
     try {
       this.orchestrator = new GPT5Orchestrator({
         apiKey: this.config.openaiApiKey || 'sk-dummy-key-for-startup',
@@ -77,9 +78,9 @@ export class TideAIServer {
         reasoningEffort: this.config.reasoningEffort,
         verbosity: this.config.verbosity,
       });
-      console.log('=== Orchestrator initialized successfully ===');
+      logger.info('Orchestrator initialized successfully');
     } catch (error) {
-      console.error('=== FATAL: Orchestrator initialization failed ===', error);
+      logger.fatal({ error }, 'FATAL: Orchestrator initialization failed');
       throw error;
     }
 
@@ -109,12 +110,7 @@ export class TideAIServer {
           buildTimestamp: new Date().toISOString(),
           version: '2.0.2-redeploy',
         };
-        logger.info('🚀🚀🚀 AI SERVICE NOW LISTENING - PORT=' + this.config.port, logData);
-        console.log('=== RAILWAY DEBUG ===');
-        console.log('Port:', this.config.port);
-        console.log('Host: 0.0.0.0');
-        console.log('Endpoint:', `http://0.0.0.0:${this.config.port}`);
-        console.log('====================');
+        logger.info('🚀 AI SERVICE NOW LISTENING', logData);
         resolve();
       });
     });
@@ -146,7 +142,7 @@ export class TideAIServer {
   ): Promise<void> {
     const { method, url } = req;
 
-    console.log(`=== REQUEST RECEIVED === ${method} ${url}`, new Date().toISOString());
+    logger.debug('Request received', { method, url, timestamp: new Date().toISOString() });
 
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -154,7 +150,7 @@ export class TideAIServer {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
     if (method === 'OPTIONS') {
-      console.log('OPTIONS request, sending 204');
+      logger.debug('OPTIONS request, sending 204');
       res.writeHead(204);
       res.end();
       return;
@@ -162,7 +158,7 @@ export class TideAIServer {
 
     // Routes
     if (url === '/health' && method === 'GET') {
-      console.log('Routing to health check handler');
+      logger.debug('Routing to health check handler');
       await this.handleHealth(res);
       return;
     }
@@ -187,7 +183,6 @@ export class TideAIServer {
    * Health check endpoint
    */
   private async handleHealth(res: http.ServerResponse): Promise<void> {
-    console.log('=== HEALTH CHECK CALLED ===', new Date().toISOString());
     logger.info('Health check endpoint called');
 
     const health = {
@@ -204,10 +199,9 @@ export class TideAIServer {
       },
     };
 
-    console.log('=== HEALTH RESPONSE ===', JSON.stringify(health));
+    logger.debug('Health check response', health);
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(health, null, 2));
-    console.log('=== HEALTH CHECK COMPLETE ===');
   }
 
   /**
