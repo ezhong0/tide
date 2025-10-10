@@ -85,8 +85,8 @@ export class EmailSearch {
     try {
       // Build search query with PostgreSQL full-text search
       let query = this.db
-        .from('email_messages')
-        .select('id, subject, from_address, to_addresses, body, received_at, is_read, is_flagged, has_attachment, labels, priority, metadata', { count: 'exact' })
+        .from('emails')
+        .select('id, subject, from_email, to_emails, body_text, sent_at, is_unread, is_starred, attachments, labels, intelligence, snippet', { count: 'exact' })
         .eq('user_id', options.userId);
 
       // Full-text search on subject and body
@@ -104,27 +104,33 @@ export class EmailSearch {
       // Apply filters
       if (options.filters) {
         if (options.filters.from && options.filters.from.length > 0) {
-          query = query.in('from_address', options.filters.from);
+          query = query.in('from_email', options.filters.from);
         }
 
         if (options.filters.hasAttachment !== undefined) {
-          query = query.eq('has_attachment', options.filters.hasAttachment);
+          // Check if attachments array has items
+          if (options.filters.hasAttachment) {
+            query = query.not('attachments', 'eq', '[]');
+          } else {
+            query = query.eq('attachments', '[]');
+          }
         }
 
         if (options.filters.isRead !== undefined) {
-          query = query.eq('is_read', options.filters.isRead);
+          // Note: inverted logic - database stores is_unread
+          query = query.eq('is_unread', !options.filters.isRead);
         }
 
         if (options.filters.isFlagged !== undefined) {
-          query = query.eq('is_flagged', options.filters.isFlagged);
+          query = query.eq('is_starred', options.filters.isFlagged);
         }
 
         if (options.filters.dateFrom) {
-          query = query.gte('received_at', options.filters.dateFrom.toISOString());
+          query = query.gte('sent_at', options.filters.dateFrom.toISOString());
         }
 
         if (options.filters.dateTo) {
-          query = query.lte('received_at', options.filters.dateTo.toISOString());
+          query = query.lte('sent_at', options.filters.dateTo.toISOString());
         }
 
         if (options.filters.labels && options.filters.labels.length > 0) {
@@ -132,16 +138,17 @@ export class EmailSearch {
         }
 
         if (options.filters.priority !== undefined) {
-          query = query.gte('priority', options.filters.priority);
+          // Priority is now in intelligence JSONB
+          query = query.gte('intelligence->>priority', options.filters.priority.toString());
         }
       }
 
       // Sorting
       const sortBy = options.sort || 'relevance';
       if (sortBy === 'date') {
-        query = query.order('received_at', { ascending: options.order === 'asc' });
+        query = query.order('sent_at', { ascending: options.order === 'asc' });
       } else if (sortBy === 'sender') {
-        query = query.order('from_address', { ascending: options.order === 'asc' });
+        query = query.order('from_email', { ascending: options.order === 'asc' });
       }
       // For relevance, PostgreSQL automatically sorts by ts_rank
 
@@ -156,21 +163,24 @@ export class EmailSearch {
       }
 
       // Format results
-      const results: SearchResult[] = (data || []).map((email, index) => ({
-        id: email.id,
-        subject: email.subject || '(No subject)',
-        from: email.from_address,
-        to: email.to_addresses || [],
-        snippet: this.generateSnippet(email.body, options.query),
-        receivedAt: new Date(email.received_at),
-        isRead: email.is_read,
-        isFlagged: email.is_flagged,
-        hasAttachment: email.has_attachment,
-        labels: email.labels || [],
-        priority: email.priority || 0,
-        relevanceScore: this.calculateRelevance(email, options.query, index),
-        matchedFields: this.detectMatchedFields(email, options.query),
-      }));
+      const results: SearchResult[] = (data || []).map((email: any, index) => {
+        const intelligence = email.intelligence || {};
+        return {
+          id: email.id,
+          subject: email.subject || '(No subject)',
+          from: email.from_email,
+          to: email.to_emails || [],
+          snippet: email.snippet || this.generateSnippet(email.body_text, options.query),
+          receivedAt: new Date(email.sent_at),
+          isRead: !email.is_unread, // Inverted logic
+          isFlagged: email.is_starred,
+          hasAttachment: email.attachments && email.attachments.length > 0,
+          labels: email.labels || [],
+          priority: intelligence.priority || 5,
+          relevanceScore: this.calculateRelevance(email, options.query, index),
+          matchedFields: this.detectMatchedFields(email, options.query),
+        };
+      });
 
       const took = Date.now() - startTime;
 
@@ -261,7 +271,7 @@ export class EmailSearch {
 
     const queryTerms = query.toLowerCase().split(/\s+/);
     const subject = (email.subject || '').toLowerCase();
-    const body = (email.body || '').toLowerCase();
+    const body = (email.body_text || '').toLowerCase();
 
     // Boost if query appears in subject
     for (const term of queryTerms) {
@@ -271,13 +281,14 @@ export class EmailSearch {
     }
 
     // Boost recent emails
-    const daysSinceReceived = (Date.now() - new Date(email.received_at).getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceReceived = (Date.now() - new Date(email.sent_at).getTime()) / (1000 * 60 * 60 * 24);
     const recencyBoost = Math.max(0, 1 - daysSinceReceived / 90); // 90-day decay
     score += recencyBoost * 0.2;
 
     // Boost flagged/important emails
-    if (email.is_flagged) score += 0.1;
-    if (email.priority && email.priority > 7) score += 0.1;
+    if (email.is_starred) score += 0.1;
+    const intelligence = email.intelligence || {};
+    if (intelligence.priority && intelligence.priority > 7) score += 0.1;
 
     return Math.min(Math.max(score, 0), 1);
   }
@@ -292,8 +303,8 @@ export class EmailSearch {
     const queryTerms = query.toLowerCase().split(/\s+/);
 
     const subject = (email.subject || '').toLowerCase();
-    const body = (email.body || '').toLowerCase();
-    const from = (email.from_address || '').toLowerCase();
+    const body = (email.body_text || '').toLowerCase();
+    const from = (email.from_email || '').toLowerCase();
 
     for (const term of queryTerms) {
       if (subject.includes(term) && !matches.includes('subject')) {
@@ -344,11 +355,11 @@ export class EmailSearch {
   async getSuggestions(userId: UserId, partialQuery: string, limit: number = 5): Promise<string[]> {
     // Search recent emails for common subjects/senders
     const { data } = await this.db
-      .from('email_messages')
-      .select('subject, from_address')
+      .from('emails')
+      .select('subject, from_email')
       .eq('user_id', userId)
       .ilike('subject', `%${partialQuery}%`)
-      .order('received_at', { ascending: false })
+      .order('sent_at', { ascending: false })
       .limit(limit * 2); // Get more to deduplicate
 
     if (!data) return [];
@@ -360,8 +371,8 @@ export class EmailSearch {
         suggestions.add(email.subject);
       }
 
-      if (email.from_address && email.from_address.toLowerCase().includes(partialQuery.toLowerCase())) {
-        suggestions.add(email.from_address);
+      if (email.from_email && email.from_email.toLowerCase().includes(partialQuery.toLowerCase())) {
+        suggestions.add(email.from_email);
       }
 
       if (suggestions.size >= limit) break;

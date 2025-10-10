@@ -1,6 +1,6 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
-import type { UserId } from '@tide/types';
+import { createSupabase, getDefaultContactIntelligence, updateContactIntelligence } from '@tide/database';
+import type { UserId, ContactIntelligence } from '@tide/types';
 import { vipDetector, type VIPScore } from './vip-detector.js';
 
 export interface RelationshipData {
@@ -121,28 +121,30 @@ export class RelationshipTracker {
     contactEmail: string
   ): Promise<RelationshipData | null> {
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .eq('contact_email', contactEmail)
+      .eq('email', contactEmail)
       .single();
 
     if (!data) return null;
 
+    const intelligence = data.intelligence as ContactIntelligence;
+
     return {
       id: data.id,
       userId: data.user_id,
-      contactEmail: data.contact_email,
-      contactName: data.contact_name,
-      relationshipStrength: data.relationship_strength,
-      interactionFrequency: data.interaction_frequency,
-      lastInteractionAt: data.last_interaction_at ? new Date(data.last_interaction_at) : undefined,
-      totalEmailsSent: data.total_emails_sent,
-      totalEmailsReceived: data.total_emails_received,
-      averageResponseTimeMinutes: data.average_response_time_minutes,
-      topics: data.topics || [],
-      sentiment: data.sentiment,
-      vipStatus: data.vip_status,
+      contactEmail: data.email,
+      contactName: data.name,
+      relationshipStrength: intelligence.strength,
+      interactionFrequency: intelligence.frequency,
+      lastInteractionAt: intelligence.last_interaction_at ? new Date(intelligence.last_interaction_at) : undefined,
+      totalEmailsSent: intelligence.stats.emails_sent,
+      totalEmailsReceived: intelligence.stats.emails_received,
+      averageResponseTimeMinutes: intelligence.stats.avg_response_time_minutes || undefined,
+      topics: intelligence.topics || [],
+      sentiment: intelligence.sentiment,
+      vipStatus: intelligence.vip,
       notes: data.notes,
       metadata: data.metadata || {}
     };
@@ -228,9 +230,9 @@ export class RelationshipTracker {
     try {
       // Query previous email in thread
       const { data: previousEmails } = await this.db
-        .from('email_messages')
-        .select('sent_at, from_address')
-        .eq('thread_id', threadId)
+        .from('emails')
+        .select('sent_at, from_email')
+        .eq('provider_thread_id', threadId)
         .lt('sent_at', currentEmailTime.toISOString())
         .order('sent_at', { ascending: false })
         .limit(1);
@@ -428,23 +430,32 @@ export class RelationshipTracker {
    * Save relationship to database
    */
   private async saveRelationship(relationship: RelationshipData): Promise<void> {
+    // Build intelligence JSONB from relationship data
+    const intelligence: ContactIntelligence = {
+      strength: relationship.relationshipStrength,
+      frequency: relationship.interactionFrequency,
+      vip: relationship.vipStatus,
+      sentiment: relationship.sentiment,
+      topics: relationship.topics,
+      stats: {
+        emails_sent: relationship.totalEmailsSent,
+        emails_received: relationship.totalEmailsReceived,
+        avg_response_time_minutes: relationship.averageResponseTimeMinutes || null,
+      },
+      last_interaction_at: relationship.lastInteractionAt?.toISOString() || null,
+    };
+
     await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .upsert({
         user_id: relationship.userId,
-        contact_email: relationship.contactEmail,
-        contact_name: relationship.contactName,
-        relationship_strength: relationship.relationshipStrength,
-        interaction_frequency: relationship.interactionFrequency,
-        last_interaction_at: relationship.lastInteractionAt?.toISOString(),
-        total_emails_sent: relationship.totalEmailsSent,
-        total_emails_received: relationship.totalEmailsReceived,
-        average_response_time_minutes: relationship.averageResponseTimeMinutes,
-        topics: relationship.topics,
-        sentiment: relationship.sentiment,
-        vip_status: relationship.vipStatus,
+        email: relationship.contactEmail,
+        name: relationship.contactName,
+        intelligence,
         notes: relationship.notes,
-        metadata: relationship.metadata
+        metadata: relationship.metadata,
+      }, {
+        onConflict: 'user_id,email',
       });
   }
 
@@ -452,13 +463,26 @@ export class RelationshipTracker {
    * Mark contact as VIP
    */
   async markAsVIP(userId: UserId, contactEmail: string): Promise<void> {
-    await this.db
-      .from('relationship_intelligence')
-      .update({ vip_status: true })
+    // Get current contact to preserve intelligence data
+    const { data: contact } = await this.db
+      .from('contacts')
+      .select('intelligence')
       .eq('user_id', userId)
-      .eq('contact_email', contactEmail);
+      .eq('email', contactEmail)
+      .single();
 
-    logger.info({ userId, contactEmail }, 'Contact marked as VIP');
+    if (contact) {
+      const intelligence = contact.intelligence as ContactIntelligence;
+      intelligence.vip = true;
+
+      await this.db
+        .from('contacts')
+        .update({ intelligence })
+        .eq('user_id', userId)
+        .eq('email', contactEmail);
+
+      logger.info({ userId, contactEmail }, 'Contact marked as VIP');
+    }
   }
 
   /**
@@ -466,11 +490,10 @@ export class RelationshipTracker {
    */
   async getVIPContacts(userId: UserId): Promise<RelationshipData[]> {
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .eq('vip_status', true)
-      .order('relationship_strength', { ascending: false });
+      .eq('intelligence->>vip', 'true');
 
     return data?.map(d => this.mapDBToRelationship(d)) || [];
   }
@@ -480,10 +503,10 @@ export class RelationshipTracker {
    */
   async getTopRelationships(userId: UserId, limit: number = 10): Promise<RelationshipData[]> {
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .order('relationship_strength', { ascending: false })
+      .order('(intelligence->>strength)::float', { ascending: false })
       .limit(limit);
 
     return data?.map(d => this.mapDBToRelationship(d)) || [];
@@ -505,11 +528,11 @@ export class RelationshipTracker {
   async getVIPRecommendations(userId: UserId, limit: number = 10): Promise<Array<RelationshipData & { vipScore: VIPScore }>> {
     // Get all non-VIP contacts
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .eq('vip_status', false)
-      .order('relationship_strength', { ascending: false })
+      .eq('intelligence->>vip', 'false')
+      .order('(intelligence->>strength)::float', { ascending: false })
       .limit(50); // Check top 50 non-VIPs
 
     if (!data) return [];
@@ -550,10 +573,10 @@ export class RelationshipTracker {
 
     // Get all non-VIP contacts
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .eq('vip_status', false);
+      .eq('intelligence->>vip', 'false');
 
     if (!data || data.length === 0) {
       return { scanned: 0, newVIPs: 0, updated: [] };
@@ -571,21 +594,34 @@ export class RelationshipTracker {
       const score = vipScores.get(relationship.contactEmail);
 
       if (score && score.isVIP) {
-        await this.db
-          .from('relationship_intelligence')
-          .update({
-            vip_status: true,
-            metadata: {
-              ...relationship.metadata,
-              vipDetectedAt: new Date().toISOString(),
-              vipScore: score.score,
-              vipReasons: score.reasons,
-            }
-          })
+        // Get current contact intelligence to preserve other fields
+        const { data: contact } = await this.db
+          .from('contacts')
+          .select('intelligence, metadata')
           .eq('user_id', userId)
-          .eq('contact_email', relationship.contactEmail);
+          .eq('email', relationship.contactEmail)
+          .single();
 
-        newVIPs.push(relationship.contactEmail);
+        if (contact) {
+          const intelligence = contact.intelligence as ContactIntelligence;
+          intelligence.vip = true;
+
+          await this.db
+            .from('contacts')
+            .update({
+              intelligence,
+              metadata: {
+                ...contact.metadata,
+                vipDetectedAt: new Date().toISOString(),
+                vipScore: score.score,
+                vipReasons: score.reasons,
+              }
+            })
+            .eq('user_id', userId)
+            .eq('email', relationship.contactEmail);
+
+          newVIPs.push(relationship.contactEmail);
+        }
       }
     }
 
@@ -630,20 +666,22 @@ export class RelationshipTracker {
    * Map database record to RelationshipData
    */
   private mapDBToRelationship(data: any): RelationshipData {
+    const intelligence = data.intelligence as ContactIntelligence;
+
     return {
       id: data.id,
       userId: data.user_id,
-      contactEmail: data.contact_email,
-      contactName: data.contact_name,
-      relationshipStrength: data.relationship_strength,
-      interactionFrequency: data.interaction_frequency,
-      lastInteractionAt: data.last_interaction_at ? new Date(data.last_interaction_at) : undefined,
-      totalEmailsSent: data.total_emails_sent,
-      totalEmailsReceived: data.total_emails_received,
-      averageResponseTimeMinutes: data.average_response_time_minutes,
-      topics: data.topics || [],
-      sentiment: data.sentiment,
-      vipStatus: data.vip_status,
+      contactEmail: data.email,
+      contactName: data.name,
+      relationshipStrength: intelligence.strength,
+      interactionFrequency: intelligence.frequency,
+      lastInteractionAt: intelligence.last_interaction_at ? new Date(intelligence.last_interaction_at) : undefined,
+      totalEmailsSent: intelligence.stats.emails_sent,
+      totalEmailsReceived: intelligence.stats.emails_received,
+      averageResponseTimeMinutes: intelligence.stats.avg_response_time_minutes || undefined,
+      topics: intelligence.topics || [],
+      sentiment: intelligence.sentiment,
+      vipStatus: intelligence.vip,
       notes: data.notes,
       metadata: data.metadata || {}
     };

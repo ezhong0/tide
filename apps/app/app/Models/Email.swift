@@ -59,9 +59,26 @@ enum EmailPriority: String, Codable {
 
 // MARK: - Email Action
 struct EmailAction: Identifiable, Codable {
-    let id = UUID()
+    let id: UUID
     let type: ActionType
     let label: String
+
+    init(id: UUID = UUID(), type: ActionType, label: String) {
+        self.id = id
+        self.type = type
+        self.label = label
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case type, label
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = UUID()
+        self.type = try container.decode(ActionType.self, forKey: .type)
+        self.label = try container.decode(String.self, forKey: .label)
+    }
 
     enum ActionType: String, Codable {
         case reply

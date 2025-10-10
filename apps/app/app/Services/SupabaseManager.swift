@@ -41,7 +41,7 @@ final class SupabaseManager: ObservableObject {
 
     private func checkAuthenticationState() async {
         do {
-            let session = try client.auth.session
+            let session = try await client.auth.session
             currentUser = session.user
             isAuthenticated = true
             print("✅ User authenticated: \(session.user.email ?? "unknown")")
@@ -54,10 +54,10 @@ final class SupabaseManager: ObservableObject {
     // MARK: - Authentication Methods
 
     func signIn(email: String, password: String) async throws -> Session {
-        let response = try await client.auth.signIn(email: email, password: password)
-        currentUser = response.user
+        let session = try await client.auth.signIn(email: email, password: password)
+        currentUser = session.user
         isAuthenticated = true
-        return response.session
+        return session
     }
 
     func signUp(email: String, password: String, data: [String: AnyJSON]? = nil) async throws -> Session {
@@ -66,9 +66,12 @@ final class SupabaseManager: ObservableObject {
             password: password,
             data: data
         )
+        guard let session = response.session else {
+            throw NSError(domain: "SupabaseManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "No session returned from signUp"])
+        }
         currentUser = response.user
         isAuthenticated = true
-        return response.session
+        return session
     }
 
     func signOut() async throws {
@@ -79,7 +82,7 @@ final class SupabaseManager: ObservableObject {
 
     func getCurrentSession() async throws -> Session? {
         do {
-            return try client.auth.session
+            return try await client.auth.session
         } catch {
             return nil
         }
@@ -100,7 +103,7 @@ final class SupabaseManager: ObservableObject {
         // Convert dictionary to array of tuples for Supabase API
         let queryParamsArray = allQueryParams.map { (name: $0.key, value: $0.value) }
 
-        return try await client.auth.getOAuthSignInURL(
+        return try client.auth.getOAuthSignInURL(
             provider: provider,
             redirectTo: redirectTo,
             queryParams: queryParamsArray

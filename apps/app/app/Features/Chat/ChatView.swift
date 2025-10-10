@@ -23,7 +23,7 @@ struct ChatView: View {
                         }
                         .padding()
                     }
-                    .onChange(of: tide.currentConversation?.messages.count) { _ in
+                    .onChange(of: tide.currentConversation?.messages.count) { oldValue, newValue in
                         if let lastMessage = tide.currentConversation?.messages.last {
                             withAnimation {
                                 proxy.scrollTo(lastMessage.id, anchor: .bottom)

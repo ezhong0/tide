@@ -5,7 +5,7 @@ import { ErrorCode } from './codes';
 export interface ErrorDetail {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
     timestamp?: number;
     requestId?: string;
     stack?: string;
@@ -16,15 +16,15 @@ export interface ErrorDetail {
 export declare class TideError extends Error {
     readonly code: ErrorCode;
     readonly statusCode: number;
-    readonly details?: any;
+    readonly details?: unknown;
     readonly timestamp: number;
     readonly isOperational: boolean;
     requestId?: string;
-    constructor(code: ErrorCode, message: string, details?: any, statusCode?: number, isOperational?: boolean);
+    constructor(code: ErrorCode, message: string, details?: unknown, statusCode?: number, isOperational?: boolean);
     /**
      * Alias for details (for compatibility)
      */
-    get metadata(): any;
+    get metadata(): unknown;
     /**
      * Convert error to API response format
      */

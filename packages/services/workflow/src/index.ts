@@ -82,7 +82,7 @@ const eventBus = kafkaConfig && kafkaEnabled
 // Health check endpoint
 app.get('/health', async (req, res) => {
   try {
-    const { error } = await supabase.from('user_profiles').select('count', { count: 'exact', head: true });
+    const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
 
     res.status(200).json({
       status: 'healthy',
@@ -334,7 +334,7 @@ async function start() {
   try {
     // Test Supabase connection
     try {
-      const { error } = await supabase.from('user_profiles').select('count', { count: 'exact', head: true });
+      const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
       if (error) throw error;
       logger.info('Supabase connected');
     } catch (error) {

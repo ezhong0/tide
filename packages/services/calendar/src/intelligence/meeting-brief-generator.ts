@@ -1,7 +1,7 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { createSupabase, getDefaultEventIntelligence } from '@tide/database';
 import { serviceUrls } from '@tide/config';
-import type { UserId } from '@tide/types';
+import type { UserId, Event as DBEvent, EventIntelligence, ContactIntelligence } from '@tide/types';
 
 export interface CalendarEvent {
   id: string;
@@ -196,22 +196,23 @@ export class MeetingBriefGenerator {
       if (email === userId) continue; // Skip self
 
       const { data } = await this.db
-        .from('relationship_intelligence')
+        .from('contacts')
         .select('*')
         .eq('user_id', userId)
-        .eq('contact_email', email)
+        .eq('email', email)
         .single();
 
       if (data) {
+        const intelligence = data.intelligence as ContactIntelligence;
         insights.push({
-          email: data.contact_email,
-          name: data.contact_name,
-          relationshipStrength: data.relationship_strength,
-          lastInteraction: data.last_interaction_at ? new Date(data.last_interaction_at) : undefined,
-          vipStatus: data.vip_status,
-          topics: data.topics || [],
-          sentiment: data.sentiment,
-          recentInteractions: data.total_emails_sent + data.total_emails_received
+          email: data.email,
+          name: data.name,
+          relationshipStrength: intelligence.strength,
+          lastInteraction: intelligence.last_interaction_at ? new Date(intelligence.last_interaction_at) : undefined,
+          vipStatus: intelligence.vip,
+          topics: intelligence.topics || [],
+          sentiment: intelligence.sentiment,
+          recentInteractions: intelligence.stats.emails_sent + intelligence.stats.emails_received
         });
       } else {
         // No relationship data - new contact
@@ -267,31 +268,41 @@ export class MeetingBriefGenerator {
     attendees: string[],
     userId: UserId
   ): Promise<PreviousMeeting[]> {
+    // Query past events with notes or previous meeting data in intelligence
     const { data } = await this.db
-      .from('previous_meeting_notes')
+      .from('events')
       .select('*')
       .eq('user_id', userId)
-      .order('meeting_date', { ascending: false })
-      .limit(5);
+      .lt('start_time', new Date().toISOString())
+      .order('start_time', { ascending: false })
+      .limit(20); // Get more to filter
 
     if (!data) return [];
 
-    // Filter meetings with overlapping attendees
-    const relevantMeetings = data.filter(meeting => {
-      const meetingAttendees = meeting.attendees as string[];
-      const overlap = attendees.filter(a => meetingAttendees.includes(a));
-      return overlap.length >= Math.min(2, attendees.length / 2);
-    });
+    // Filter meetings with overlapping attendees and valid intelligence data
+    const relevantMeetings = data
+      .filter(event => {
+        const eventAttendees = (event.attendees as any[]).map(a => a.email);
+        const overlap = attendees.filter(a => eventAttendees.includes(a));
+        return overlap.length >= Math.min(2, attendees.length / 2);
+      })
+      .slice(0, 5) // Take top 5
+      .map(event => {
+        const intelligence = event.intelligence as EventIntelligence;
+        const eventAttendees = (event.attendees as any[]).map((a: any) => a.email);
 
-    return relevantMeetings.map(m => ({
-      id: m.id,
-      title: m.meeting_title,
-      date: new Date(m.meeting_date),
-      attendees: m.attendees as string[],
-      keyPoints: m.key_points as string[] || [],
-      actionItems: m.action_items as ActionItem[] || [],
-      decisionsMAde: m.decisions_made as string[] || []
-    }));
+        return {
+          id: event.id,
+          title: event.title,
+          date: new Date(event.start_time),
+          attendees: eventAttendees,
+          keyPoints: intelligence.notes ? [intelligence.notes] : [],
+          actionItems: [], // Would need to be tracked separately or in notes
+          decisionsMAde: []
+        };
+      });
+
+    return relevantMeetings;
   }
 
   /**
@@ -514,60 +525,112 @@ Provide a brief 2-3 sentence background context for this meeting.`;
   }
 
   /**
-   * Save brief to database
+   * Save brief to database - stores in events.intelligence.brief
    */
   private async saveBrief(brief: MeetingBrief): Promise<void> {
-    await this.db.from('meeting_briefs').upsert({
-      user_id: brief.userId,
-      event_id: brief.eventId,
-      title: brief.title,
-      start_time: brief.startTime.toISOString(),
-      end_time: brief.endTime.toISOString(),
-      attendees: brief.attendees,
-      attendee_insights: brief.attendeeInsights,
-      relevant_emails: brief.relevantEmails,
-      previous_meetings: brief.previousMeetings,
-      related_tasks: brief.relatedTasks,
+    // Get the current event to preserve other intelligence data
+    const { data: event } = await this.db
+      .from('events')
+      .select('intelligence')
+      .eq('id', brief.eventId)
+      .eq('user_id', brief.userId)
+      .single();
+
+    // Build the brief data for intelligence field
+    const briefData = {
+      summary: brief.backgroundContext,
       key_discussion_points: brief.keyDiscussionPoints,
-      background_context: brief.backgroundContext,
       preparation_checklist: brief.preparationChecklist,
-      suggested_time_allocation: brief.suggestedTimeAllocation,
-      confidence: brief.confidence,
-      generated_at: brief.generatedAt.toISOString()
-    });
+      attendee_insights: brief.attendeeInsights.map(a => ({
+        email: a.email,
+        relationship_strength: a.relationshipStrength,
+        recent_interactions: [a.sentiment] // Simplified
+      }))
+    };
+
+    // Merge with existing intelligence or create new
+    const existingIntelligence = event?.intelligence as EventIntelligence || getDefaultEventIntelligence();
+    const updatedIntelligence: EventIntelligence = {
+      ...existingIntelligence,
+      brief: briefData,
+      related_emails: brief.relevantEmails.map(e => e.id),
+      previous_meetings: brief.previousMeetings.map(m => ({
+        date: m.date.toISOString(),
+        notes: m.keyPoints.join(', '),
+        action_items: m.actionItems.map(a => a.description)
+      }))
+    };
+
+    // Update the event with the new intelligence
+    await this.db
+      .from('events')
+      .update({ intelligence: updatedIntelligence })
+      .eq('id', brief.eventId)
+      .eq('user_id', brief.userId);
   }
 
   /**
-   * Get existing brief
+   * Get existing brief - retrieves from events.intelligence.brief
    */
   async getBrief(eventId: string, userId: UserId): Promise<MeetingBrief | null> {
     const { data } = await this.db
-      .from('meeting_briefs')
+      .from('events')
       .select('*')
+      .eq('id', eventId)
       .eq('user_id', userId)
-      .eq('event_id', eventId)
       .single();
 
-    if (!data) return null;
+    if (!data || !data.intelligence) return null;
 
+    const intelligence = data.intelligence as EventIntelligence;
+    const brief = intelligence.brief;
+
+    if (!brief) return null;
+
+    // Reconstruct the MeetingBrief from the intelligence data
     return {
-      id: data.id,
-      eventId: data.event_id,
+      eventId: data.id,
       userId: data.user_id,
       title: data.title,
       startTime: new Date(data.start_time),
       endTime: new Date(data.end_time),
-      attendees: data.attendees,
-      attendeeInsights: data.attendee_insights,
-      relevantEmails: data.relevant_emails,
-      previousMeetings: data.previous_meetings,
-      relatedTasks: data.related_tasks,
-      keyDiscussionPoints: data.key_discussion_points,
-      backgroundContext: data.background_context,
-      preparationChecklist: data.preparation_checklist,
-      suggestedTimeAllocation: data.suggested_time_allocation,
-      confidence: data.confidence,
-      generatedAt: new Date(data.generated_at)
+      attendees: (data.attendees as any[]).map(a => a.email),
+      attendeeInsights: brief.attendee_insights.map((a: any) => ({
+        email: a.email,
+        relationshipStrength: a.relationship_strength,
+        vipStatus: false,
+        topics: [],
+        sentiment: a.recent_interactions[0] || 'neutral',
+        recentInteractions: 0
+      })),
+      relevantEmails: intelligence.related_emails.map(id => ({
+        id,
+        from: '',
+        subject: '',
+        snippet: '',
+        receivedAt: new Date(),
+        relevanceScore: 0
+      })),
+      previousMeetings: intelligence.previous_meetings.map((m: any) => ({
+        id: '',
+        title: '',
+        date: new Date(m.date),
+        attendees: [],
+        keyPoints: [m.notes],
+        actionItems: m.action_items.map((a: string) => ({
+          id: '',
+          description: a,
+          status: 'pending' as const
+        })),
+        decisionsMAde: []
+      })),
+      relatedTasks: [],
+      keyDiscussionPoints: brief.key_discussion_points,
+      backgroundContext: brief.summary,
+      preparationChecklist: brief.preparation_checklist,
+      suggestedTimeAllocation: [],
+      confidence: 0.8,
+      generatedAt: new Date(data.updated_at)
     };
   }
 

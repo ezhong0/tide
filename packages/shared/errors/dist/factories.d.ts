@@ -89,14 +89,14 @@ export declare class DatabaseErrors {
  * System error factories
  */
 export declare class SystemErrors {
-    static internalError(message: string, details?: any): TideError;
+    static internalError(message: string, details?: unknown): TideError;
     static serviceUnavailable(service: string): TideError;
     static timeout(operation: string, timeout: number): TideError;
-    static validationFailed(errors: any): TideError;
+    static validationFailed(errors: unknown): TideError;
     static notFound(resource: string, identifier?: string): TideError;
-    static badRequest(message: string, details?: any): TideError;
+    static badRequest(message: string, details?: unknown): TideError;
     static forbidden(message?: string): TideError;
-    static conflict(resource: string, details?: any): TideError;
+    static conflict(resource: string, details?: unknown): TideError;
     static tooManyRequests(retryAfter?: number): TideError;
     static notImplemented(feature: string): TideError;
     static maintenanceMode(estimatedEnd?: Date): TideError;

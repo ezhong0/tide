@@ -194,7 +194,7 @@ export class AutonomousEmailHandler {
       .single();
 
     const { data: vipContacts } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('contact_email')
       .eq('user_id', userId)
       .eq('vip_status', true);
@@ -215,7 +215,7 @@ export class AutonomousEmailHandler {
     contactEmail: string
   ): Promise<RelationshipInfo | undefined> {
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
       .eq('contact_email', contactEmail)
@@ -272,7 +272,7 @@ export class AutonomousEmailHandler {
       });
 
       // Update email triage
-      await this.db.from('email_triage').upsert({
+      await this.db.from('emails').upsert({
         user_id: userId,
         email_id: email.id,
         category: analysis.category,

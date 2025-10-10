@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from '@tide/config';
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { createSupabase, getDefaultEmailIntelligence } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   authenticateJWT,
@@ -189,36 +189,36 @@ class EmailService {
 
         // Try to fetch from database first
         const { data: dbEmails, error: dbError } = await this.db
-          .from('email_messages')
+          .from('emails')
           .select('*')
           .eq('user_id', userId)
           .eq('provider', provider === 'gmail' ? 'google' : 'microsoft')
-          .order('received_at', { ascending: false })
+          .order('sent_at', { ascending: false })
           .limit(limit ? parseInt(limit as string) : 50);
 
         // If we have emails in database, return them
         if (!dbError && dbEmails && dbEmails.length > 0) {
           // Convert database emails to API format
           const emails = dbEmails.map(dbEmail => ({
-            id: dbEmail.external_message_id,
+            id: dbEmail.provider_message_id,
             userId: dbEmail.user_id,
             provider: dbEmail.provider,
-            messageId: dbEmail.external_message_id,
-            threadId: dbEmail.thread_id,
-            from: dbEmail.from_address,
-            to: dbEmail.to_addresses,
-            cc: dbEmail.cc_addresses,
+            messageId: dbEmail.provider_message_id,
+            threadId: dbEmail.provider_thread_id,
+            from: dbEmail.from_email,
+            to: dbEmail.to_emails,
+            cc: dbEmail.cc_emails,
             subject: dbEmail.subject,
             body: dbEmail.body_text,
             htmlBody: dbEmail.body_html,
-            timestamp: new Date(dbEmail.received_at),
-            isRead: dbEmail.is_read,
-            isStarred: false,
-            hasAttachments: false,
-            // Include AI triage fields from database
-            aiCategory: dbEmail.ai_category,
-            aiPriority: dbEmail.ai_priority,
-            aiSummary: dbEmail.ai_summary,
+            timestamp: new Date(dbEmail.sent_at),
+            isRead: !dbEmail.is_unread, // Note: inverted logic - database stores is_unread
+            isStarred: dbEmail.is_starred,
+            hasAttachments: dbEmail.attachments && dbEmail.attachments.length > 0,
+            // Include AI triage fields from intelligence JSONB
+            aiCategory: dbEmail.intelligence?.category || null,
+            aiPriority: dbEmail.intelligence?.priority || 5,
+            aiSummary: dbEmail.intelligence?.ai_summary || null,
           }));
 
           logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
@@ -274,67 +274,72 @@ class EmailService {
             // Run AI triage analysis
             const triageResult = await this.triageEngine.analyze(email);
 
-            // Map urgency to category for database
-            let aiCategory = 'normal';
+            // Map urgency to category for intelligence JSONB
+            let category: 'urgent' | 'important' | 'newsletter' | 'promotional' | 'social' | 'spam' | 'other' | null = 'other';
             if (triageResult.urgency === 'immediate' || triageResult.importance > 0.8) {
-              aiCategory = 'urgent';
+              category = 'urgent';
             } else if (triageResult.importance > 0.6) {
-              aiCategory = 'important';
-            } else if (triageResult.importance < 0.3) {
-              aiCategory = 'low';
+              category = 'important';
             }
 
             // Calculate priority score (1-10)
-            const aiPriority = Math.round(triageResult.importance * 10);
+            const priority = Math.round(triageResult.importance * 10);
+
+            // Map urgency level
+            let urgency: 'critical' | 'high' | 'medium' | 'low' = 'medium';
+            if (triageResult.urgency === 'immediate') {
+              urgency = 'critical';
+            } else if (triageResult.importance > 0.7) {
+              urgency = 'high';
+            } else if (triageResult.importance < 0.3) {
+              urgency = 'low';
+            }
 
             // Generate AI summary
             const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
 
-            // Parallel database writes for thread and message
-            await Promise.all([
-              // Create or update thread
-              this.db
-                .from('email_threads')
-                .upsert({
-                  user_id: userId,
-                  provider: provider === 'gmail' ? 'google' : 'microsoft',
-                  external_thread_id: email.threadId || email.id,
-                  subject: email.subject,
-                  participants: email.from ? [email.from] : [],
-                  last_message_at: email.timestamp,
-                }, {
-                  onConflict: 'user_id,external_thread_id',
-                }),
+            // Build email intelligence
+            const intelligence = {
+              ...getDefaultEmailIntelligence(),
+              category,
+              priority,
+              urgency,
+              requires_response: triageResult.urgency === 'immediate',
+              ai_summary: aiSummary,
+            };
 
-              // Store individual email message with AI analysis
-              this.db
-                .from('email_messages')
-                .upsert({
-                  user_id: userId,
-                  provider: provider === 'gmail' ? 'google' : 'microsoft',
-                  external_message_id: email.id,
-                  thread_id: email.threadId || email.id,
-                  from_address: email.from,
-                  to_addresses: email.to || [],
-                  cc_addresses: email.cc || [],
-                  subject: email.subject,
-                  body_text: email.body,
-                  body_html: email.htmlBody || null,
-                  received_at: email.timestamp,
-                  is_read: email.isRead || false,
-                  ai_category: aiCategory,
-                  ai_priority: aiPriority,
-                  ai_summary: aiSummary,
-                }, {
-                  onConflict: 'user_id,external_message_id',
-                }),
-            ]);
+            // Store email with intelligence JSONB
+            await this.db
+              .from('emails')
+              .upsert({
+                user_id: userId,
+                provider: provider === 'gmail' ? 'google' : 'microsoft',
+                provider_message_id: email.id,
+                provider_thread_id: email.threadId || email.id,
+                from_email: email.from,
+                from_name: null, // TODO: Extract from email if available
+                to_emails: email.to || [],
+                cc_emails: email.cc || [],
+                bcc_emails: [],
+                subject: email.subject,
+                body_text: email.body,
+                body_html: email.htmlBody || null,
+                snippet: email.body?.substring(0, 200) || null,
+                sent_at: email.timestamp,
+                is_unread: !email.isRead, // Note: inverted logic
+                is_starred: email.isStarred || false,
+                labels: [],
+                attachments: [],
+                intelligence,
+              }, {
+                onConflict: 'user_id,provider,provider_message_id',
+              });
 
             logger.info({
               emailId: email.id,
-              aiCategory,
-              aiPriority,
-              urgency: triageResult.urgency,
+              category,
+              priority,
+              urgency,
               importance: triageResult.importance
             }, 'Email triaged and stored');
           })

@@ -89,28 +89,31 @@ export class DailySnapshotAggregator {
     // Gather urgent emails
     if (options.includeEmails) {
       const { data: emails } = await this.db
-        .from('email_messages')
+        .from('emails')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_read', false)
-        .in('ai_category', ['urgent', 'important'])
-        .order('received_at', { ascending: false })
+        .eq('is_unread', true) // inverted logic
+        .in('intelligence->>category', ['urgent', 'important'])
+        .order('sent_at', { ascending: false })
         .limit(10);
 
       if (emails) {
-        items.push(...emails.map(email => ({
-          id: email.id,
-          type: 'email' as const,
-          title: email.subject || '(No Subject)',
-          description: email.ai_summary || email.body_text?.substring(0, 200) || '',
-          urgency: email.ai_category === 'urgent' ? 'critical' as const : 'high' as const,
-          importance: email.ai_priority / 10,
-          source: 'email',
-          metadata: {
-            from: email.from_address,
-            receivedAt: email.received_at
-          }
-        })));
+        items.push(...emails.map(email => {
+          const intelligence = email.intelligence || {};
+          return {
+            id: email.id,
+            type: 'email' as const,
+            title: email.subject || '(No Subject)',
+            description: intelligence.ai_summary || email.body_text?.substring(0, 200) || '',
+            urgency: intelligence.category === 'urgent' ? 'critical' as const : 'high' as const,
+            importance: (intelligence.priority || 5) / 10,
+            source: 'email',
+            metadata: {
+              from: email.from_email,
+              receivedAt: email.sent_at
+            }
+          };
+        }));
       }
     }
 
@@ -122,7 +125,7 @@ export class DailySnapshotAggregator {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const { data: events } = await this.db
-        .from('calendar_events')
+        .from('events')
         .select('*')
         .eq('user_id', userId)
         .gte('start_time', today.toISOString())
@@ -207,7 +210,7 @@ export class DailySnapshotAggregator {
     endDate.setDate(endDate.getDate() + lookAheadDays);
 
     const { data: events } = await this.db
-      .from('calendar_events')
+      .from('events')
       .select('*')
       .eq('user_id', userId)
       .gte('start_time', today.toISOString())
@@ -224,9 +227,9 @@ export class DailySnapshotAggregator {
       startTime: new Date(event.start_time),
       endTime: new Date(event.end_time),
       attendees: event.attendees || [],
-      briefGenerated: false,
-      briefSummary: undefined,
-      preparation: undefined
+      briefGenerated: !!event.intelligence?.brief,
+      briefSummary: event.intelligence?.brief?.summary,
+      preparation: event.intelligence?.preparation
     }));
   }
 
@@ -234,51 +237,63 @@ export class DailySnapshotAggregator {
    * Gather predictions based on user patterns
    */
   private async gatherPredictions(userId: UserId): Promise<Prediction[]> {
-    // Fetch detected patterns
+    // Fetch detected patterns from user_intelligence table
     const { data: patterns } = await this.db
-      .from('patterns')
+      .from('user_intelligence')
       .select('*')
       .eq('user_id', userId)
+      .eq('type', 'pattern')
       .eq('status', 'detected')
-      .gte('confidence_score', 0.7)
-      .order('confidence_score', { ascending: false })
+      .gte('confidence', 0.7)
+      .order('confidence', { ascending: false })
       .limit(5);
 
     if (!patterns) return [];
 
-    return patterns.map(pattern => ({
-      id: pattern.id,
-      action: pattern.suggestion || pattern.description,
-      description: pattern.description,
-      reasoning: `Based on your ${pattern.pattern_type} pattern, you typically ${pattern.description}`,
-      confidence: pattern.confidence_score,
-      estimatedTimeSaved: Math.round(pattern.value / 60) || 10, // Convert to minutes
-      canExecuteAutonomously: pattern.confidence_score > 0.85,
-      basedOnPattern: {
-        type: pattern.pattern_type,
-        frequency: pattern.frequency,
-        observationPeriod: 30
-      }
-    }));
+    return patterns.map(pattern => {
+      const patternData = pattern.data || {};
+      return {
+        id: pattern.id,
+        action: patternData.suggestion || patternData.description || pattern.subtype,
+        description: patternData.description || pattern.subtype || 'Pattern detected',
+        reasoning: `Based on your ${pattern.subtype} pattern, you typically ${patternData.description || 'perform this action'}`,
+        confidence: pattern.confidence,
+        estimatedTimeSaved: Math.round((patternData.value_estimate || 600) / 60) || 10, // Convert to minutes
+        canExecuteAutonomously: pattern.confidence > 0.85,
+        basedOnPattern: {
+          type: pattern.subtype || 'unknown',
+          frequency: patternData.frequency || 'occasional',
+          observationPeriod: 30
+        }
+      };
+    });
   }
 
   /**
    * Save snapshot to database
+   * Stored in user_intelligence table with type 'daily_snapshot'
    */
   private async saveSnapshot(snapshot: DailySnapshot): Promise<void> {
+    const snapshotDate = snapshot.snapshotDate.toISOString().split('T')[0];
+
     const { error } = await this.db
-      .from('daily_snapshots')
+      .from('user_intelligence')
       .upsert({
         id: snapshot.id,
         user_id: snapshot.userId,
-        snapshot_date: snapshot.snapshotDate.toISOString().split('T')[0],
-        priority_items: snapshot.priorityItems,
-        pending_decisions: snapshot.pendingDecisions,
-        meeting_previews: snapshot.meetingPreviews,
-        predictions: snapshot.predictions,
-        generated_at: snapshot.generatedAt.toISOString()
+        type: 'daily_snapshot',
+        subtype: snapshotDate,
+        data: {
+          priority_items: snapshot.priorityItems,
+          pending_decisions: snapshot.pendingDecisions,
+          meeting_previews: snapshot.meetingPreviews,
+          predictions: snapshot.predictions,
+          generated_at: snapshot.generatedAt.toISOString()
+        },
+        confidence: 1.0,
+        status: 'active'
       }, {
-        onConflict: 'user_id,snapshot_date'
+        onConflict: 'user_id,type,subtype'
       });
 
     if (error) {
@@ -292,10 +307,11 @@ export class DailySnapshotAggregator {
    */
   async getLatestSnapshot(userId: UserId): Promise<DailySnapshot | null> {
     const { data, error } = await this.db
-      .from('daily_snapshots')
+      .from('user_intelligence')
       .select('*')
       .eq('user_id', userId)
-      .order('snapshot_date', { ascending: false })
+      .eq('type', 'daily_snapshot')
+      .order('subtype', { ascending: false }) // subtype is the snapshot_date
       .limit(1)
       .single();
 
@@ -303,15 +319,17 @@ export class DailySnapshotAggregator {
       return null;
     }
 
+    const snapshotData = data.data || {};
+
     return {
       id: data.id,
       userId: data.user_id,
-      snapshotDate: new Date(data.snapshot_date),
-      priorityItems: data.priority_items,
-      pendingDecisions: data.pending_decisions,
-      meetingPreviews: data.meeting_previews,
-      predictions: data.predictions,
-      generatedAt: new Date(data.generated_at)
+      snapshotDate: new Date(data.subtype), // subtype is the snapshot_date
+      priorityItems: snapshotData.priority_items || [],
+      pendingDecisions: snapshotData.pending_decisions || [],
+      meetingPreviews: snapshotData.meeting_previews || [],
+      predictions: snapshotData.predictions || [],
+      generatedAt: new Date(snapshotData.generated_at || data.created_at)
     };
   }
 }

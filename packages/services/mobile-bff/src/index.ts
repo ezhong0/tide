@@ -124,25 +124,25 @@ class MobileBFF {
 
         // Build query based on filter
         let query = this.db
-          .from('email_messages')
-          .select('id, subject, from_address, received_at, is_read, is_flagged, priority, ai_category, ai_summary, has_attachment', { count: 'exact' })
+          .from('emails')
+          .select('id, subject, from_email, sent_at, is_unread, is_starred, intelligence, attachments', { count: 'exact' })
           .eq('user_id', userId as UserId);
 
         // Apply filters
         if (filter === 'unread') {
-          query = query.eq('is_read', false);
+          query = query.eq('is_unread', true); // inverted logic
         } else if (filter === 'flagged') {
-          query = query.eq('is_flagged', true);
+          query = query.eq('is_starred', true);
         } else if (filter === 'priority') {
-          query = query.gte('priority', 7);
+          query = query.gte('intelligence->>priority', '7');
         } else if (filter === 'today') {
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          query = query.gte('received_at', today.toISOString());
+          query = query.gte('sent_at', today.toISOString());
         }
 
         query = query
-          .order('received_at', { ascending: false })
+          .order('sent_at', { ascending: false })
           .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
 
         const { data: emails, error, count } = await query;
@@ -150,29 +150,32 @@ class MobileBFF {
         if (error) throw error;
 
         // Get VIP status for senders
-        const senderEmails = [...new Set((emails || []).map(e => e.from_address))];
+        const senderEmails = [...new Set((emails || []).map((e: any) => e.from_email))];
         const { data: vips } = await this.db
-          .from('relationship_intelligence')
-          .select('contact_email, vip_status')
+          .from('contacts')
+          .select('email, intelligence')
           .eq('user_id', userId as UserId)
-          .in('contact_email', senderEmails);
+          .in('email', senderEmails);
 
-        const vipMap = new Map((vips || []).map(v => [v.contact_email, v.vip_status]));
+        const vipMap = new Map((vips || []).map((v: any) => [v.email, v.intelligence?.vip || false]));
 
         // Format emails with additional metadata
-        const formattedEmails = (emails || []).map(email => ({
-          id: email.id,
-          subject: email.subject || '(No subject)',
-          from: email.from_address,
-          snippet: email.ai_summary || '',
-          receivedAt: email.received_at,
-          isRead: email.is_read,
-          isFlagged: email.is_flagged,
-          isVIP: vipMap.get(email.from_address) || false,
-          priority: email.priority || 0,
-          category: email.ai_category,
-          hasAttachment: email.has_attachment,
-        }));
+        const formattedEmails = (emails || []).map((email: any) => {
+          const intelligence = email.intelligence || {};
+          return {
+            id: email.id,
+            subject: email.subject || '(No subject)',
+            from: email.from_email,
+            snippet: intelligence.ai_summary || '',
+            receivedAt: email.sent_at,
+            isRead: !email.is_unread, // inverted logic
+            isFlagged: email.is_starred,
+            isVIP: vipMap.get(email.from_email) || false,
+            priority: intelligence.priority || 5,
+            category: intelligence.category,
+            hasAttachment: email.attachments && email.attachments.length > 0,
+          };
+        });
 
         const took = Date.now() - startTime;
 
@@ -210,7 +213,7 @@ class MobileBFF {
 
         // Fetch email details
         const { data: email, error } = await this.db
-          .from('email_messages')
+          .from('emails')
           .select('*')
           .eq('id', emailId)
           .eq('user_id', userId as UserId)
@@ -222,28 +225,29 @@ class MobileBFF {
 
         // Fetch related data in parallel
         const [threadEmails, relationship, suggestedDrafts] = await Promise.all([
-          this.getThreadEmails(email.thread_id, userId as UserId),
-          this.getRelationship(userId as UserId, email.from_address),
+          this.getThreadEmails(email.provider_thread_id, userId as UserId),
+          this.getRelationship(userId as UserId, email.from_email),
           this.getSuggestedDrafts(emailId, userId as UserId),
         ]);
 
+        const intelligence = email.intelligence || {};
         const took = Date.now() - startTime;
 
         res.json({
           email: {
             id: email.id,
             subject: email.subject,
-            from: email.from_address,
-            to: email.to_addresses,
-            cc: email.cc_addresses,
-            body: email.body,
-            receivedAt: email.received_at,
-            isRead: email.is_read,
-            isFlagged: email.is_flagged,
-            hasAttachment: email.has_attachment,
-            priority: email.priority,
-            category: email.ai_category,
-            summary: email.ai_summary,
+            from: email.from_email,
+            to: email.to_emails,
+            cc: email.cc_emails,
+            body: email.body_text,
+            receivedAt: email.sent_at,
+            isRead: !email.is_unread, // inverted logic
+            isFlagged: email.is_starred,
+            hasAttachment: email.attachments && email.attachments.length > 0,
+            priority: intelligence.priority || 5,
+            category: intelligence.category,
+            summary: intelligence.ai_summary,
           },
           thread: threadEmails,
           sender: relationship,
@@ -275,7 +279,7 @@ class MobileBFF {
 
         // Fetch events
         const { data: events } = await this.db
-          .from('calendar_events')
+          .from('events')
           .select('*')
           .eq('user_id', userId as UserId)
           .gte('start_time', start.toISOString())
@@ -287,33 +291,33 @@ class MobileBFF {
 
         // Get meeting briefs for upcoming meetings
         const upcomingMeetings = (events || [])
-          .filter(e => new Date(e.start_time) > new Date())
+          .filter((e: any) => new Date(e.start_time) > new Date())
           .slice(0, 3);
 
         const briefs = await Promise.all(
-          upcomingMeetings.map(e => this.getMeetingBrief(e.id))
+          upcomingMeetings.map((e: any) => this.getMeetingBrief(e.id))
         );
 
         const took = Date.now() - startTime;
 
         res.json({
-          events: (events || []).map(e => ({
+          events: (events || []).map((e: any) => ({
             id: e.id,
             title: e.title,
             start: e.start_time,
             end: e.end_time,
-            allDay: e.all_day,
+            allDay: e.is_all_day,
             location: e.location,
             attendees: e.attendees,
             status: e.status,
-            hasConflict: conflicts.some(c => c.eventIds.includes(e.id)),
+            hasConflict: conflicts.some((c: any) => c.eventIds.includes(e.id)),
           })),
           conflicts,
-          upcomingBriefs: briefs.filter(b => b !== null),
+          upcomingBriefs: briefs.filter((b: any) => b !== null),
           stats: {
             totalEvents: events?.length || 0,
             conflicts: conflicts.length,
-            meetingsToday: (events || []).filter(e => {
+            meetingsToday: (events || []).filter((e: any) => {
               const eventDate = new Date(e.start_time);
               const today = new Date();
               return eventDate.toDateString() === today.toDateString();
@@ -344,7 +348,7 @@ class MobileBFF {
 
         // Fetch event
         const { data: event, error } = await this.db
-          .from('calendar_events')
+          .from('events')
           .select('*')
           .eq('id', eventId)
           .eq('user_id', userId as UserId)
@@ -370,7 +374,7 @@ class MobileBFF {
             description: event.description,
             start: event.start_time,
             end: event.end_time,
-            allDay: event.all_day,
+            allDay: event.is_all_day,
             location: event.location,
             attendees: event.attendees,
             status: event.status,
@@ -402,8 +406,8 @@ class MobileBFF {
 
         // Fetch recent conversations
         const { data: conversations } = await this.db
-          .from('ai_conversations')
-          .select('id, title, created_at, updated_at, context')
+          .from('conversations')
+          .select('id, title, created_at, updated_at, metadata')
           .eq('user_id', userId as UserId)
           .order('updated_at', { ascending: false })
           .limit(parseInt(limit as string));
@@ -524,7 +528,7 @@ class MobileBFF {
 
   private async getUserProfile(userId: UserId) {
     const { data } = await this.db
-      .from('user_profiles')
+      .from('users')
       .select('*')
       .eq('id', userId)
       .single();
@@ -534,24 +538,24 @@ class MobileBFF {
 
   private async getUnreadEmailCount(userId: UserId): Promise<number> {
     const { count } = await this.db
-      .from('email_messages')
+      .from('emails')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
-      .eq('is_read', false);
+      .eq('is_unread', true); // inverted logic
 
     return count || 0;
   }
 
   private async getUpcomingEvents(userId: UserId, limit: number) {
     const { data } = await this.db
-      .from('calendar_events')
+      .from('events')
       .select('id, title, start_time, end_time, location, attendees')
       .eq('user_id', userId)
       .gte('start_time', new Date().toISOString())
       .order('start_time', { ascending: true })
       .limit(limit);
 
-    return (data || []).map(e => ({
+    return (data || []).map((e: any) => ({
       id: e.id,
       title: e.title,
       start: e.start_time,
@@ -563,23 +567,25 @@ class MobileBFF {
 
   private async getPriorityEmails(userId: UserId, limit: number) {
     const { data } = await this.db
-      .from('email_messages')
-      .select('id, subject, from_address, received_at, priority, ai_summary')
+      .from('emails')
+      .select('id, subject, from_email, sent_at, intelligence')
       .eq('user_id', userId)
-      .eq('is_read', false)
-      .gte('priority', 7)
-      .order('priority', { ascending: false })
-      .order('received_at', { ascending: false })
+      .eq('is_unread', true) // inverted logic
+      .gte('intelligence->>priority', '7')
+      .order('sent_at', { ascending: false })
       .limit(limit);
 
-    return (data || []).map(e => ({
-      id: e.id,
-      subject: e.subject || '(No subject)',
-      from: e.from_address,
-      receivedAt: e.received_at,
-      priority: e.priority,
-      summary: e.ai_summary,
-    }));
+    return (data || []).map((e: any) => {
+      const intelligence = e.intelligence || {};
+      return {
+        id: e.id,
+        subject: e.subject || '(No subject)',
+        from: e.from_email,
+        receivedAt: e.sent_at,
+        priority: intelligence.priority || 5,
+        summary: intelligence.ai_summary,
+      };
+    });
   }
 
   private async getTodayTasks(userId: UserId, limit: number) {
@@ -590,11 +596,11 @@ class MobileBFF {
 
     const { data } = await this.db
       .from('tasks')
-      .select('id, title, due_date, priority, status')
+      .select('id, title, due_at, priority, status')
       .eq('user_id', userId)
-      .gte('due_date', today.toISOString())
-      .lt('due_date', tomorrow.toISOString())
-      .order('priority', { ascending: false })
+      .gte('due_at', today.toISOString())
+      .lt('due_at', tomorrow.toISOString())
+      .order('priority_score', { ascending: false })
       .limit(limit);
 
     return data || [];
@@ -629,22 +635,28 @@ class MobileBFF {
     if (!threadId) return [];
 
     const { data } = await this.db
-      .from('email_messages')
-      .select('id, subject, from_address, received_at, body')
+      .from('emails')
+      .select('id, subject, from_email, sent_at, body_text')
       .eq('user_id', userId)
-      .eq('thread_id', threadId)
-      .order('received_at', { ascending: true })
+      .eq('provider_thread_id', threadId)
+      .order('sent_at', { ascending: true })
       .limit(10);
 
-    return data || [];
+    return (data || []).map((e: any) => ({
+      id: e.id,
+      subject: e.subject,
+      from_address: e.from_email,
+      received_at: e.sent_at,
+      body: e.body_text,
+    }));
   }
 
   private async getRelationship(userId: UserId, contactEmail: string) {
     const { data } = await this.db
-      .from('relationship_intelligence')
+      .from('contacts')
       .select('*')
       .eq('user_id', userId)
-      .eq('contact_email', contactEmail)
+      .eq('email', contactEmail)
       .single();
 
     return data;
@@ -685,17 +697,23 @@ class MobileBFF {
 
   private async getMeetingBrief(eventId: string) {
     const { data } = await this.db
-      .from('calendar_events')
-      .select('meeting_brief')
+      .from('events')
+      .select('intelligence')
       .eq('id', eventId)
       .single();
 
-    return data?.meeting_brief || null;
+    return data?.intelligence?.brief || null;
   }
 
   private async getEventConflicts(eventId: string, userId: UserId) {
-    // Would call calendar service
-    return [];
+    const { data } = await this.db
+      .from('events')
+      .select('intelligence')
+      .eq('id', eventId)
+      .eq('user_id', userId)
+      .single();
+
+    return data?.intelligence?.conflicts || [];
   }
 
   private async getAlternativeSlots(userId: UserId, event: any) {
@@ -714,8 +732,8 @@ class MobileBFF {
 
   private async getUserStats(userId: UserId) {
     const [emailCount, eventCount, taskCount] = await Promise.all([
-      this.db.from('email_messages').select('id', { count: 'exact', head: true }).eq('user_id', userId),
-      this.db.from('calendar_events').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      this.db.from('emails').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+      this.db.from('events').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       this.db.from('tasks').select('id', { count: 'exact', head: true }).eq('user_id', userId),
     ]);
 

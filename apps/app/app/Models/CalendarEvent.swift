@@ -62,10 +62,29 @@ struct CalendarEvent: Identifiable, Codable {
 
 // MARK: - Attendee
 struct Attendee: Identifiable, Codable {
-    let id = UUID()
+    let id: UUID
     let name: String
     let email: String
     var status: AttendeeStatus
+
+    init(id: UUID = UUID(), name: String, email: String, status: AttendeeStatus) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.status = status
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case name, email, status
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = UUID()
+        self.name = try container.decode(String.self, forKey: .name)
+        self.email = try container.decode(String.self, forKey: .email)
+        self.status = try container.decode(AttendeeStatus.self, forKey: .status)
+    }
 
     enum AttendeeStatus: String, Codable {
         case accepted
