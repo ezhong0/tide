@@ -70,11 +70,11 @@ class AppState: ObservableObject {
 
 // MARK: - Root View
 struct RootView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authManager: AuthManager
 
     var body: some View {
         Group {
-            if appState.isAuthenticated {
+            if authManager.isAuthenticated {
                 MainTabView()
             } else {
                 AuthenticationView()
@@ -123,14 +123,16 @@ struct MainTabView: View {
 // - Features/Calendar/CalendarView.swift
 
 struct SettingsView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var authManager: AuthManager
 
     var body: some View {
         NavigationView {
             List {
                 Section {
                     Button("Sign Out", role: .destructive) {
-                        signOut()
+                        _Concurrency.Task {
+                            await signOut()
+                        }
                     }
                 }
             }
@@ -138,9 +140,7 @@ struct SettingsView: View {
         }
     }
 
-    private func signOut() {
-        KeychainService.shared.deleteTokens()
-        appState.isAuthenticated = false
-        appState.currentUser = nil
+    private func signOut() async {
+        await authManager.logout()
     }
 }

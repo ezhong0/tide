@@ -55,7 +55,7 @@ final class AuthManager: ObservableObject {
         do {
             try KeychainService.shared.saveTokens(
                 accessToken: session.accessToken,
-                refreshToken: session.refreshToken ?? ""
+                refreshToken: session.refreshToken
             )
             print("✅ Tokens saved to keychain")
         } catch {
@@ -94,7 +94,7 @@ final class AuthManager: ObservableObject {
         do {
             try KeychainService.shared.saveTokens(
                 accessToken: session.accessToken,
-                refreshToken: session.refreshToken ?? ""
+                refreshToken: session.refreshToken
             )
             print("✅ Tokens saved to keychain")
         } catch {
