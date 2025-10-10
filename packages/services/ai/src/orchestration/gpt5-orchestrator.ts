@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import { createLogger } from '@tide/logger';
 import { thresholds, timeouts } from '@tide/config';
-import { withTimeout } from '@tide/utils';
+import { withTimeout } from '../utils/helpers.js';
 import { toolRegistry, type ToolContext, type ToolExecutionLog } from '../tools/index.js';
 import type { AIRequest, AIResponse } from '@tide/contracts';
 

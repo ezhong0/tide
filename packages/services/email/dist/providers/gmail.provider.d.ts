@@ -7,6 +7,11 @@ export declare class GmailProvider implements IEmailProvider {
     private auth;
     private gmail;
     private userId;
+    private onTokenRefresh?;
+    /**
+     * Set callback for token refresh events
+     */
+    setTokenRefreshCallback(callback: (userId: UserId, tokens: OAuthTokens) => Promise<void>): void;
     /**
      * Initialize Gmail client with OAuth credentials
      */
