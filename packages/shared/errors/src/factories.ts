@@ -405,7 +405,7 @@ export class DatabaseErrors {
  * System error factories
  */
 export class SystemErrors {
-  static internalError(message: string, details?: any): TideError {
+  static internalError(message: string, details?: unknown): TideError {
     return new TideError(
       ErrorCode.INTERNAL_ERROR,
       message,
@@ -431,7 +431,7 @@ export class SystemErrors {
     );
   }
 
-  static validationFailed(errors: any): TideError {
+  static validationFailed(errors: unknown): TideError {
     return new TideError(
       ErrorCode.VALIDATION_FAILED,
       'Request validation failed',
@@ -447,7 +447,7 @@ export class SystemErrors {
     );
   }
 
-  static badRequest(message: string, details?: any): TideError {
+  static badRequest(message: string, details?: unknown): TideError {
     return new TideError(
       ErrorCode.BAD_REQUEST,
       message,
@@ -462,7 +462,7 @@ export class SystemErrors {
     );
   }
 
-  static conflict(resource: string, details?: any): TideError {
+  static conflict(resource: string, details?: unknown): TideError {
     return new TideError(
       ErrorCode.CONFLICT,
       `Conflict with existing ${resource}`,
