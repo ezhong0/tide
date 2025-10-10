@@ -112,7 +112,7 @@ app.use('/api/mobile', createProxyMiddleware({
 app.get('/', (req, res) => {
   res.json({
     name: 'Tide API Gateway',
-    version: '0.1.0',
+    version: '0.1.1',
     mode: 'rest-proxy',
     status: 'healthy',
     endpoints: {
