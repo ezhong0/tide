@@ -56,6 +56,7 @@ export class GmailProvider implements IEmailProvider {
               accessToken: newTokens.access_token,
               refreshToken: newTokens.refresh_token || tokens.refreshToken,
               expiresAt: new Date(newTokens.expiry_date),
+              scope: tokens.scope || [], // Preserve original scope
             });
           } catch (error) {
             logger.error({ userId, error }, 'Failed to save refreshed tokens');

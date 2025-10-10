@@ -5,7 +5,7 @@
 import type { TideTool } from './types.js';
 import { createLogger } from '@tide/logger';
 import { serviceUrls, timeouts, retryConfig } from '@tide/config';
-import { withTimeout, retryWithBackoff, retryPatterns } from '@tide/utils';
+import { withTimeout, retryWithBackoff, retryPatterns } from '../utils/helpers.js';
 
 const logger = createLogger({ component: 'EmailTools' });
 

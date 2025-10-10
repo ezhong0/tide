@@ -1,4 +1,5 @@
 import { logger } from '@tide/logger';
+import { thresholds } from '@tide/config';
 /**
  * Email triage engine that analyzes emails and determines handling strategy
  */
@@ -42,7 +43,7 @@ export class EmailTriageEngine {
                 relationships,
                 strategy,
                 confidence,
-                canAutoHandle: strategy.auto && confidence > 0.85,
+                canAutoHandle: strategy.auto && confidence > thresholds.email.triageAutoHandleConfidence,
             };
             logger.info({
                 emailId: email.id,

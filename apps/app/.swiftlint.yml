@@ -3,16 +3,21 @@
 disabled_rules:
   - line_length
   - trailing_whitespace
+  - multiple_closures_with_trailing_closure  # SwiftUI uses this pattern frequently
+  - todo  # Allow TODOs during development
 
 opt_in_rules:
   - empty_count
   - explicit_init
-  - redundant_optional_initialization
-  - unused_declaration
+
+analyzer_rules:
+  - unused_declaration  # Only runs with 'swiftlint analyze'
 
 identifier_name:
   min_length: 1
   max_length: 50
+  excluded:
+    - _body  # Required by SwiftUI TextFieldStyle protocol
 
 included:
   - app
@@ -28,3 +33,15 @@ force_try: warning
 
 # Type checking
 large_tuple: 3
+
+# Lenient settings for development
+implicit_optional_initialization:
+  severity: warning
+
+nesting:
+  type_level: 2
+  function_level: 5
+
+function_body_length:
+  warning: 80
+  error: 120

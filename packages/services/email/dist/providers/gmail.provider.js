@@ -9,21 +9,44 @@ export class GmailProvider {
         this.userId = null;
     }
     /**
+     * Set callback for token refresh events
+     */
+    setTokenRefreshCallback(callback) {
+        this.onTokenRefresh = callback;
+    }
+    /**
      * Initialize Gmail client with OAuth credentials
      */
     async initialize(userId, tokens) {
         try {
             this.userId = userId;
-            // Create OAuth2 client
-            this.auth = new google.auth.OAuth2();
+            // Create OAuth2 client with proper credentials
+            this.auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, process.env.GOOGLE_REDIRECT_URI);
             this.auth.setCredentials({
                 access_token: tokens.accessToken,
                 refresh_token: tokens.refreshToken,
                 expiry_date: tokens.expiresAt.getTime(),
             });
+            // Set up token refresh handler
+            this.auth.on('tokens', async (newTokens) => {
+                logger.info({ userId }, 'OAuth tokens refreshed');
+                if (this.onTokenRefresh && this.userId) {
+                    try {
+                        await this.onTokenRefresh(this.userId, {
+                            accessToken: newTokens.access_token,
+                            refreshToken: newTokens.refresh_token || tokens.refreshToken,
+                            expiresAt: new Date(newTokens.expiry_date),
+                            scope: tokens.scope || [], // Preserve original scope
+                        });
+                    }
+                    catch (error) {
+                        logger.error({ userId, error }, 'Failed to save refreshed tokens');
+                    }
+                }
+            });
             // Initialize Gmail API client
             this.gmail = google.gmail({ version: 'v1', auth: this.auth });
-            logger.info({ userId }, 'Gmail provider initialized');
+            logger.info({ userId }, 'Gmail provider initialized with token refresh handler');
         }
         catch (error) {
             logger.error({ userId, error }, 'Failed to initialize Gmail provider');
