@@ -30,9 +30,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-
 // Rate limiting (100 req/min per user)
 app.use(moderateRateLimit);
 
@@ -47,18 +44,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'api-gateway',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: '0.1.0',
-    mode: 'rest-proxy',
-  });
-});
-
 // Service URLs from environment
 // Use the configured service URLs (already include http/https protocol)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3003';
@@ -67,7 +52,7 @@ const CALENDAR_SERVICE_URL = process.env.CALENDAR_SERVICE_URL || 'http://localho
 const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3004';
 const MOBILE_BFF_URL = process.env.MOBILE_BFF_URL || 'http://localhost:3009';
 
-// Proxy routes to backend services
+// Proxy routes to backend services (must be before body parsing)
 app.use('/api/ai', createProxyMiddleware({
   target: AI_SERVICE_URL,
   changeOrigin: true,
@@ -108,11 +93,26 @@ app.use('/api/mobile', createProxyMiddleware({
   proxyTimeout: 60000,
 }));
 
+// Body parsing (must be after proxy routes to avoid consuming request body)
+app.use(express.json({ limit: '10mb' }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'api-gateway',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '0.1.0',
+    mode: 'rest-proxy',
+  });
+});
+
 // Root endpoint - landing page
 app.get('/', (req, res) => {
   res.json({
     name: 'Tide API Gateway',
-    version: '0.1.1',
+    version: '0.1.2',
     mode: 'rest-proxy',
     status: 'healthy',
     endpoints: {

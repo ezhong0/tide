@@ -20,8 +20,6 @@ app.use(cors({
     origin: process.env.CORS_ORIGIN?.split(',') || '*',
     credentials: true,
 }));
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
 // Rate limiting (100 req/min per user)
 app.use(moderateRateLimit);
 // Request logging
@@ -34,24 +32,14 @@ app.use((req, res, next) => {
     }, 'Incoming request');
     next();
 });
-// Health check endpoint
-app.get('/health', (req, res) => {
-    res.json({
-        status: 'healthy',
-        service: 'api-gateway',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        version: '0.1.0',
-        mode: 'rest-proxy',
-    });
-});
 // Service URLs from environment
 // Use the configured service URLs (already include http/https protocol)
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3003';
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3001';
 const CALENDAR_SERVICE_URL = process.env.CALENDAR_SERVICE_URL || 'http://localhost:3002';
 const WORKFLOW_SERVICE_URL = process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3004';
-// Proxy routes to backend services
+const MOBILE_BFF_URL = process.env.MOBILE_BFF_URL || 'http://localhost:3009';
+// Proxy routes to backend services (must be before body parsing)
 app.use('/api/ai', createProxyMiddleware({
     target: AI_SERVICE_URL,
     changeOrigin: true,
@@ -80,11 +68,31 @@ app.use('/api/workflow', createProxyMiddleware({
     timeout: 60000, // 60 second timeout
     proxyTimeout: 60000,
 }));
+app.use('/api/mobile', createProxyMiddleware({
+    target: MOBILE_BFF_URL,
+    changeOrigin: true,
+    pathRewrite: { '^/api/mobile': '' },
+    timeout: 60000, // 60 second timeout for aggregated requests
+    proxyTimeout: 60000,
+}));
+// Body parsing (must be after proxy routes to avoid consuming request body)
+app.use(express.json({ limit: '10mb' }));
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'healthy',
+        service: 'api-gateway',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: '0.1.0',
+        mode: 'rest-proxy',
+    });
+});
 // Root endpoint - landing page
 app.get('/', (req, res) => {
     res.json({
         name: 'Tide API Gateway',
-        version: '0.1.0',
+        version: '0.1.2',
         mode: 'rest-proxy',
         status: 'healthy',
         endpoints: {
@@ -94,6 +102,7 @@ app.get('/', (req, res) => {
             email: '/api/email/*',
             calendar: '/api/calendar/*',
             workflow: '/api/workflow/*',
+            mobile: '/api/mobile/*',
         },
         documentation: 'https://github.com/ezhong0/tide',
     });
@@ -106,6 +115,7 @@ app.get('/api/services', (req, res) => {
             email: { url: EMAIL_SERVICE_URL, path: '/api/email' },
             calendar: { url: CALENDAR_SERVICE_URL, path: '/api/calendar' },
             workflow: { url: WORKFLOW_SERVICE_URL, path: '/api/workflow' },
+            mobile: { url: MOBILE_BFF_URL, path: '/api/mobile' },
         },
     });
 });
@@ -133,6 +143,7 @@ app.listen(PORT, () => {
             email: EMAIL_SERVICE_URL,
             calendar: CALENDAR_SERVICE_URL,
             workflow: WORKFLOW_SERVICE_URL,
+            mobile: MOBILE_BFF_URL,
         },
     }, 'API Gateway started');
 });
