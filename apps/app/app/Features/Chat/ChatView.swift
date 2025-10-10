@@ -11,7 +11,13 @@ struct ChatView: View {
                 // Messages list
                 ScrollViewReader { proxy in
                     ScrollView {
-                        LazyVStack(spacing: 12) {
+                        LazyVStack(spacing: 16) {
+                            // Empty state
+                            if tide.currentConversation?.messages.isEmpty == true {
+                                EmptyChatState()
+                                    .padding(.top, 60)
+                            }
+
                             ForEach(tide.currentConversation?.messages ?? []) { message in
                                 MessageBubble(message: message)
                                     .id(message.id)
@@ -32,9 +38,19 @@ struct ChatView: View {
                     }
                 }
 
+                // Error message
+                if let error = tide.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .background(TideTheme.error.opacity(0.1))
+                }
+
                 // Input area
                 HStack(spacing: 12) {
-                    TextField("Ask Tide anything...", text: $messageText, axis: .vertical)
+                    TextField("Ask about your emails, calendar, tasks...", text: $messageText, axis: .vertical)
                         .textFieldStyle(TideInputFieldStyle())
                         .focused($inputFocused)
                         .lineLimit(1...5)
@@ -54,20 +70,14 @@ struct ChatView: View {
                 .background(TideTheme.surface)
                 .shadow(color: TideTheme.Shadow.small.color, radius: TideTheme.Shadow.small.radius, y: -2)
             }
-            .navigationTitle("Tide AI")
+            .navigationTitle("Chat")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Menu {
-                        Button("New Conversation") {
-                            _ = tide.createConversation()
-                        }
-                        Button("Clear Chat", role: .destructive) {
-                            tide.clearCurrentConversation()
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
+                    Button("Clear", role: .destructive) {
+                        tide.clearCurrentConversation()
                     }
+                    .font(.callout)
                 }
             }
         }
@@ -85,162 +95,88 @@ struct ChatView: View {
     }
 }
 
+// MARK: - Empty Chat State
+struct EmptyChatState: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "bubble.left.and.bubble.right")
+                .font(.system(size: 48))
+                .foregroundColor(TideTheme.textTertiary)
+
+            Text("Ask Tide Anything")
+                .font(TideTheme.Typography.title3)
+                .fontWeight(.semibold)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ExamplePrompt(text: ""Show me urgent emails"")
+                ExamplePrompt(text: ""What's on my calendar today?"")
+                ExamplePrompt(text: ""Summarize my inbox"")
+            }
+            .padding(.top, 8)
+        }
+    }
+}
+
+struct ExamplePrompt: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkle")
+                .font(.caption)
+                .foregroundColor(TideTheme.primary)
+            Text(text)
+                .font(TideTheme.Typography.callout)
+                .foregroundColor(TideTheme.textSecondary)
+        }
+    }
+}
+
 // MARK: - Message Bubble
 struct MessageBubble: View {
     let message: Message
 
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom, spacing: 8) {
             if message.role == .user {
-                Spacer(minLength: 60)
+                Spacer(minLength: 50)
             }
 
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
-                // Action preview card
-                if let actionPreview = message.actionPreview {
-                    ActionCard(action: actionPreview, message: message)
-                } else {
-                    // Regular message bubble
-                    Text(message.content)
-                        .font(TideTheme.Typography.body)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(
-                            message.role == .user
-                                ? TideTheme.primary
-                                : TideTheme.surface
-                        )
-                        .foregroundColor(
-                            message.role == .user
-                                ? .white
-                                : TideTheme.textPrimary
-                        )
-                        .cornerRadius(18)
-                        .shadow(
-                            color: message.role == .user
-                                ? Color.clear
-                                : TideTheme.Shadow.small.color,
-                            radius: 2,
-                            y: 1
-                        )
-                }
-
-                // Suggestion chips
-                if let suggestions = message.suggestions {
-                    SuggestionChips(suggestions: suggestions)
-                }
+                // Message content
+                Text(message.content)
+                    .font(TideTheme.Typography.body)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        message.role == .user
+                            ? TideTheme.primary
+                            : TideTheme.surface
+                    )
+                    .foregroundColor(
+                        message.role == .user
+                            ? .white
+                            : TideTheme.textPrimary
+                    )
+                    .cornerRadius(16)
+                    .shadow(
+                        color: message.role == .user
+                            ? Color.clear
+                            : TideTheme.Shadow.small.color,
+                        radius: 2,
+                        y: 1
+                    )
 
                 // Timestamp
                 Text(message.timeString)
                     .font(TideTheme.Typography.caption2)
                     .foregroundColor(TideTheme.textSecondary)
+                    .padding(.horizontal, 4)
             }
-            .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
+            .frame(maxWidth: .infinity, alignment: message.role == .user ? .trailing : .leading)
 
             if message.role == .assistant || message.role == .system {
-                Spacer(minLength: 60)
-            }
-        }
-    }
-}
-
-// MARK: - Action Card
-struct ActionCard: View {
-    let action: ActionPreview
-    let message: Message
-    @EnvironmentObject var tide: TideCore
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(action.title)
-                        .font(TideTheme.Typography.headline)
-                        .foregroundColor(TideTheme.textPrimary)
-
-                    Text(action.description)
-                        .font(TideTheme.Typography.footnote)
-                        .foregroundColor(TideTheme.textSecondary)
-                }
-
-                Spacer()
-
-                Image(systemName: actionIcon(for: action.actionType))
-                    .font(.title2)
-                    .foregroundColor(TideTheme.primary)
-            }
-
-            if action.requiresConfirmation && !action.isConfirmed {
-                HStack {
-                    Button("Confirm") {
-                        Task {
-                            await tide.confirmAction(messageId: message.id, action: action)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(TideTheme.primary)
-
-                    Button("Cancel") {
-                        tide.cancelAction(messageId: message.id)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(TideTheme.textSecondary)
-                }
-            } else if action.isConfirmed {
-                HStack {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
-                    Text("Confirmed")
-                        .font(TideTheme.Typography.callout)
-                        .foregroundColor(.green)
-                }
-            }
-        }
-        .padding()
-        .background(TideTheme.surface)
-        .cornerRadius(TideTheme.CornerRadius.medium)
-        .shadow(color: TideTheme.Shadow.medium.color, radius: TideTheme.Shadow.medium.radius, y: 2)
-    }
-
-    private func actionIcon(for type: ActionPreview.ActionType) -> String {
-        switch type {
-        case .scheduleEvent:
-            return "calendar.badge.plus"
-        case .sendEmail:
-            return "envelope.fill"
-        case .createTask:
-            return "checklist"
-        case .updateCalendar:
-            return "calendar"
-        case .delegateTask:
-            return "person.2.fill"
-        case .analyzeDocument:
-            return "doc.text.magnifyingglass"
-        }
-    }
-}
-
-// MARK: - Suggestion Chips
-struct SuggestionChips: View {
-    let suggestions: [String]
-    @EnvironmentObject var tide: TideCore
-
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(suggestions, id: \.self) { suggestion in
-                    Button(suggestion) {
-                        Task {
-                            await tide.sendMessage(suggestion)
-                        }
-                    }
-                    .font(TideTheme.Typography.callout)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(TideTheme.primary.opacity(0.1))
-                    .foregroundColor(TideTheme.primary)
-                    .cornerRadius(16)
-                }
+                Spacer(minLength: 50)
             }
         }
     }
