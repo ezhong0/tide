@@ -88,6 +88,11 @@ struct RootView: View {
 struct MainTabView: View {
     var body: some View {
         TabView {
+            DashboardView()
+                .tabItem {
+                    Label("Dashboard", systemImage: "house.fill")
+                }
+
             ChatView()
                 .tabItem {
                     Label("Chat", systemImage: "message.fill")
