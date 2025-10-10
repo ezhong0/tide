@@ -98,7 +98,7 @@ struct MainTabView: View {
                     Label("Chat", systemImage: "message.fill")
                 }
 
-            EmailView()
+            EnhancedEmailView()
                 .tabItem {
                     Label("Email", systemImage: "envelope.fill")
                 }

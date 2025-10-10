@@ -86,7 +86,28 @@ class APIClient {
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
-                decoder.dateDecodingStrategy = .iso8601
+
+                // Custom ISO8601 formatter that handles milliseconds
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                decoder.dateDecodingStrategy = .custom { decoder in
+                    let container = try decoder.singleValueContainer()
+                    let dateString = try container.decode(String.self)
+
+                    // Try with fractional seconds first
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+
+                    // Fallback to standard ISO8601
+                    formatter.formatOptions = [.withInternetDateTime]
+                    if let date = formatter.date(from: dateString) {
+                        return date
+                    }
+
+                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format: \(dateString)")
+                }
+
                 return try decoder.decode(Response.self, from: data)
             } catch {
                 print("❌ Decoding error: \(error)")
