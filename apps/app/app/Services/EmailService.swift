@@ -55,7 +55,7 @@ class EmailService {
     /// Fetch emails from the API gateway
     func fetchEmails() async throws -> [Email] {
         // Get the actual logged-in user's ID from AuthManager
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw EmailServiceError.notAuthenticated
         }
 
@@ -74,7 +74,7 @@ class EmailService {
     /// Send an email via the API gateway
     func sendEmail(to recipients: [String], subject: String, body: String) async throws {
         // Get the actual logged-in user's ID from AuthManager
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw EmailServiceError.notAuthenticated
         }
 

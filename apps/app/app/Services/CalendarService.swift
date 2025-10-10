@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Calendar Service - Connects to Tide Calendar backend
 class CalendarService {
@@ -55,7 +56,7 @@ class CalendarService {
     /// Fetch calendar events from the API
     func fetchEvents(from startDate: Date? = nil, to endDate: Date? = nil) async throws -> [CalendarEvent] {
         // Get the current user ID from AuthManager
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw CalendarServiceError.notAuthenticated
         }
 
@@ -81,7 +82,7 @@ class CalendarService {
 
     /// Create a new calendar event
     func createEvent(_ event: CalendarEvent) async throws {
-        guard let userId = AuthManager.shared.currentUser?.id.uuidString else {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
             throw CalendarServiceError.notAuthenticated
         }
 
@@ -92,8 +93,8 @@ class CalendarService {
             location: event.location,
             startTime: event.startTime,
             endTime: event.endTime,
-            isAllDay: event.isAllDay,
-            attendees: event.attendees
+            isAllDay: false,  // Default to false, not supported in model yet
+            attendees: event.attendees.map { $0.email }
         )
 
         let endpoint = "/api/calendar/events"
@@ -120,32 +121,39 @@ class CalendarService {
             meetingPrep = MeetingPrep(
                 agenda: brief.summary ?? "",
                 keyPoints: brief.keyDiscussionPoints ?? [],
+                participants: response.attendees ?? [],
+                requiredDocuments: response.intelligence?.preparation,
                 aiInsights: brief.preparationChecklist?.joined(separator: "\n")
             )
         }
 
         // Determine color based on event properties
-        let color: CalendarEventColor
+        let colorValue: Color
         if response.meetingUrl != nil {
-            color = .blue  // Video calls
+            colorValue = .blue  // Video calls
         } else if response.attendees?.isEmpty == false {
-            color = .purple  // Meetings with attendees
+            colorValue = .purple  // Meetings with attendees
         } else {
-            color = .green  // Personal events
+            colorValue = .green  // Personal events
+        }
+
+        // Convert attendee emails to Attendee objects
+        let attendeeObjects = (response.attendees ?? []).map { email in
+            Attendee(name: email, email: email, status: .accepted)
         }
 
         return CalendarEvent(
             id: response.id,
             title: response.title,
             description: response.description,
-            location: response.location,
             startTime: response.startTime,
             endTime: response.endTime,
-            isAllDay: response.isAllDay,
-            attendees: response.attendees,
-            meetingUrl: response.meetingUrl,
-            color: color,
-            meetingPrep: meetingPrep
+            location: response.location,
+            attendees: attendeeObjects,
+            color: CodableColor(color: colorValue),
+            hasPrep: meetingPrep != nil,
+            meetingPrep: meetingPrep,
+            status: .confirmed
         )
     }
 }

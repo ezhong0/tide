@@ -181,7 +181,7 @@ struct EventCard: View {
             Spacer()
 
             // Video call indicator
-            if event.meetingUrl != nil {
+            if let location = event.location, isVideoCall(location) {
                 Image(systemName: "video.fill")
                     .foregroundColor(TideTheme.primary)
             }
@@ -191,6 +191,11 @@ struct EventCard: View {
         .cornerRadius(TideTheme.CornerRadius.medium)
         .shadow(color: TideTheme.Shadow.small.color, radius: 2, y: 1)
         .padding(.horizontal)
+    }
+
+    private func isVideoCall(_ location: String) -> Bool {
+        let videoKeywords = ["zoom", "meet", "teams", "webex", "skype", "google meet", "microsoft teams"]
+        return videoKeywords.contains { location.lowercased().contains($0) }
     }
 }
 
