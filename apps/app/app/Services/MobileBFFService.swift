@@ -129,6 +129,53 @@ class MobileBFFService {
         let totalTasks: Int
     }
 
+    struct CalendarResponse: Codable {
+        let events: [CalendarEvent]
+        let conflicts: [CalendarConflict]
+        let upcomingBriefs: [MeetingBrief]
+        let stats: CalendarStats
+        let metadata: Metadata
+    }
+
+    struct CalendarEvent: Codable {
+        let id: String
+        let title: String
+        let start: Date
+        let end: Date
+        let allDay: Bool
+        let location: String?
+        let attendees: [String]?
+        let status: String
+        let hasConflict: Bool
+    }
+
+    struct CalendarConflict: Codable {
+        let eventIds: [String]
+        let type: String
+        let severity: String
+    }
+
+    struct MeetingBrief: Codable {
+        let eventId: String?
+        let summary: String?
+        let keyPoints: [String]?
+        let participants: [String]?
+    }
+
+    struct CalendarStats: Codable {
+        let totalEvents: Int
+        let conflicts: Int
+        let meetingsToday: Int
+    }
+
+    struct MeetingDetailResponse: Codable {
+        let event: CalendarEvent
+        let brief: MeetingBrief?
+        let conflicts: [CalendarConflict]
+        let alternativeSlots: [String]
+        let metadata: Metadata
+    }
+
     // MARK: - Public Methods
 
     /// Fetch dashboard data (aggregated)
@@ -179,6 +226,38 @@ class MobileBFFService {
         let endpoint = "/api/mobile/v1/screen/profile?userId=\(userId)"
 
         let response: ProfileResponse = try await APIClient.shared.get(endpoint: endpoint)
+
+        return response
+    }
+
+    /// Fetch calendar screen data
+    func fetchCalendar(startDate: Date? = nil, endDate: Date? = nil) async throws -> CalendarResponse {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
+            throw MobileBFFError.notAuthenticated
+        }
+
+        var endpoint = "/api/mobile/v1/screen/calendar?userId=\(userId)"
+
+        // Add date range if provided
+        if let start = startDate, let end = endDate {
+            let formatter = ISO8601DateFormatter()
+            endpoint += "&startDate=\(formatter.string(from: start))&endDate=\(formatter.string(from: end))"
+        }
+
+        let response: CalendarResponse = try await APIClient.shared.get(endpoint: endpoint)
+
+        return response
+    }
+
+    /// Fetch meeting detail
+    func fetchMeetingDetail(eventId: String) async throws -> MeetingDetailResponse {
+        guard let userId = await AuthManager.shared.currentUser?.id.uuidString else {
+            throw MobileBFFError.notAuthenticated
+        }
+
+        let endpoint = "/api/mobile/v1/screen/meeting/\(eventId)?userId=\(userId)"
+
+        let response: MeetingDetailResponse = try await APIClient.shared.get(endpoint: endpoint)
 
         return response
     }

@@ -2,7 +2,6 @@ import SwiftUI
 
 @main
 struct TideApp: App {
-    @StateObject private var appState = AppState()
     @StateObject private var authManager = AuthManager.shared
     @StateObject private var tideCore = TideCore.shared
 
@@ -14,7 +13,6 @@ struct TideApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(appState)
                 .environmentObject(authManager)
                 .environmentObject(tideCore)
                 .onOpenURL { url in
@@ -46,24 +44,6 @@ struct TideApp: App {
                     print("❌ OAuth callback error: \(error.localizedDescription)")
                 }
             }
-        }
-    }
-}
-
-// MARK: - App State
-class AppState: ObservableObject {
-    @Published var isAuthenticated: Bool = false
-    @Published var currentUser: TideUser?
-
-    init() {
-        checkAuthStatus()
-    }
-
-    private func checkAuthStatus() {
-        // Check if we have valid tokens in Keychain
-        if let token = KeychainService.shared.getAccessToken(),
-           !token.isEmpty {
-            isAuthenticated = true
         }
     }
 }
@@ -103,7 +83,7 @@ struct MainTabView: View {
                     Label("Email", systemImage: "envelope.fill")
                 }
 
-            CalendarView()
+            EnhancedCalendarView()
                 .tabItem {
                     Label("Calendar", systemImage: "calendar")
                 }
@@ -117,11 +97,7 @@ struct MainTabView: View {
     }
 }
 
-// Feature views are now in their respective feature folders:
-// - Features/Chat/ChatView.swift
-// - Features/Email/EmailView.swift
-// - Features/Calendar/CalendarView.swift
-
+// MARK: - Settings View
 struct SettingsView: View {
     @EnvironmentObject var authManager: AuthManager
 

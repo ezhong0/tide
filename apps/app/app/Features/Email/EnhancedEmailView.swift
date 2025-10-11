@@ -51,9 +51,34 @@ struct EnhancedEmailView: View {
                         }
 
                         // Regular inbox
-                        Section("Inbox") {
-                            ForEach(filteredEmails.filter { $0.priority < 7 && !$0.isVIP }, id: \.id) { email in
-                                EnhancedEmailRow(email: email)
+                        let regularEmails = filteredEmails.filter { $0.priority < 7 && !$0.isVIP }
+                        if !regularEmails.isEmpty {
+                            Section("Inbox") {
+                                ForEach(regularEmails, id: \.id) { email in
+                                    EnhancedEmailRow(email: email)
+                                }
+                            }
+                        }
+
+                        // Empty state when no emails at all
+                        if filteredEmails.isEmpty {
+                            Section {
+                                VStack(spacing: 16) {
+                                    Image(systemName: "envelope.badge.shield.half.filled")
+                                        .font(.system(size: 48))
+                                        .foregroundColor(TideTheme.primary)
+
+                                    Text("No Emails Yet")
+                                        .font(TideTheme.Typography.headline)
+                                        .fontWeight(.semibold)
+
+                                    Text("When you signed in, we requested Gmail access. It may take a moment to sync, or you may need to grant permissions during sign in.")
+                                        .font(TideTheme.Typography.caption1)
+                                        .foregroundColor(TideTheme.textSecondary)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 40)
                             }
                         }
 

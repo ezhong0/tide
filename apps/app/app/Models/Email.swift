@@ -99,3 +99,38 @@ enum EmailFilter: String, CaseIterable {
     case normal = "Normal"
     case low = "Low Priority"
 }
+
+// MARK: - Mock Data
+extension Email {
+    static let mockEmails: [Email] = [
+        Email(
+            from: EmailContact(email: "sarah@company.com", name: "Sarah Chen"),
+            to: [EmailContact(email: "you@tide.ai", name: "You")],
+            subject: "Q4 Strategy Meeting - Need Your Input",
+            preview: "Hi, I wanted to get your thoughts on the Q4 roadmap before our meeting tomorrow...",
+            body: "Hi, I wanted to get your thoughts on the Q4 roadmap before our meeting tomorrow. We need to finalize the priorities and I value your input on the engineering timeline.",
+            timestamp: Date().addingTimeInterval(-3600),
+            priority: .high,
+            aiSummary: "Sarah needs your feedback on Q4 roadmap before tomorrow's meeting"
+        ),
+        Email(
+            from: EmailContact(email: "mike@startup.io", name: "Mike Johnson"),
+            to: [EmailContact(email: "you@tide.ai", name: "You")],
+            subject: "Partnership Opportunity",
+            preview: "We're interested in exploring a potential partnership with Tide...",
+            body: "We're interested in exploring a potential partnership with Tide. Would you be available for a call next week?",
+            timestamp: Date().addingTimeInterval(-7200),
+            priority: .normal
+        ),
+        Email(
+            from: EmailContact(email: "team@slack.com", name: "Slack"),
+            to: [EmailContact(email: "you@tide.ai", name: "You")],
+            subject: "Your weekly Slack digest",
+            preview: "Here's what happened in your workspace this week...",
+            body: "Here's what happened in your workspace this week...",
+            timestamp: Date().addingTimeInterval(-86400),
+            isRead: true,
+            priority: .low
+        )
+    ]
+}

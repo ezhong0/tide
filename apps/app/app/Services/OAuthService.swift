@@ -239,19 +239,23 @@ final class OAuthService: NSObject, ObservableObject {
             struct OAuthTokens: Codable {
                 let accessToken: String
                 let refreshToken: String
-                let expiresAt: Date
+                let expiresAt: String  // ISO8601 string
                 let scope: [String]?
             }
         }
 
+        // Format expiresAt as ISO8601 string
         let expiresAt = Date(timeIntervalSinceNow: 3600) // 1 hour default
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let expiresAtString = formatter.string(from: expiresAt)
 
         let request = TokenRequest(
             userId: userId,
             tokens: TokenRequest.OAuthTokens(
                 accessToken: accessToken,
                 refreshToken: refreshToken,
-                expiresAt: expiresAt,
+                expiresAt: expiresAtString,
                 scope: nil
             )
         )
@@ -260,14 +264,16 @@ final class OAuthService: NSObject, ObservableObject {
         guard let session = try await supabaseManager.getCurrentSession() else {
             throw OAuthError.tokenExchangeFailed
         }
-        let accessToken = session.accessToken
+        let authAccessToken = session.accessToken
 
         // Call backend to store tokens
         var urlRequest = URLRequest(url: URL(string: "\(Config.apiBaseURL)/api/email/connect/\(provider)")!)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-        urlRequest.httpBody = try JSONEncoder().encode(request)
+        urlRequest.setValue("Bearer \(authAccessToken)", forHTTPHeaderField: "Authorization")
+
+        let encoder = JSONEncoder()
+        urlRequest.httpBody = try encoder.encode(request)
 
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
 

@@ -87,21 +87,22 @@ class APIClient {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
 
-                // Custom ISO8601 formatter that handles milliseconds
-                let formatter = ISO8601DateFormatter()
-                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                // Custom ISO8601 date decoding strategy that handles milliseconds
                 decoder.dateDecodingStrategy = .custom { decoder in
                     let container = try decoder.singleValueContainer()
                     let dateString = try container.decode(String.self)
 
                     // Try with fractional seconds first
-                    if let date = formatter.date(from: dateString) {
+                    let formatterWithFractional = ISO8601DateFormatter()
+                    formatterWithFractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                    if let date = formatterWithFractional.date(from: dateString) {
                         return date
                     }
 
                     // Fallback to standard ISO8601
-                    formatter.formatOptions = [.withInternetDateTime]
-                    if let date = formatter.date(from: dateString) {
+                    let formatterStandard = ISO8601DateFormatter()
+                    formatterStandard.formatOptions = [.withInternetDateTime]
+                    if let date = formatterStandard.date(from: dateString) {
                         return date
                     }
 

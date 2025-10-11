@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct AuthenticationView: View {
-    @EnvironmentObject var appState: AppState
-    @StateObject private var authManager = AuthManager.shared
+    @EnvironmentObject var authManager: AuthManager
     @State private var showError = false
     @State private var errorMessage = ""
 
@@ -107,19 +106,33 @@ struct AuthenticationView: View {
 
                 Spacer()
 
-                // Info text
-                Text("Connect your email to get started")
-                    .font(TideTheme.Typography.caption1)
-                    .foregroundColor(TideTheme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.bottom, TideTheme.Spacing.xl)
+                // Info text with permissions
+                VStack(spacing: 12) {
+                    VStack(spacing: 4) {
+                        Text("When you sign in, Tide will request access to:")
+                            .font(TideTheme.Typography.caption1)
+                            .foregroundColor(TideTheme.textSecondary)
+                            .multilineTextAlignment(.center)
+
+                        Text("📧 Gmail • 📅 Calendar • ✓ Basic profile info")
+                            .font(TideTheme.Typography.caption1)
+                            .fontWeight(.medium)
+                            .foregroundColor(TideTheme.primary)
+                    }
+
+                    Text("You'll see Google's permission screen during sign in")
+                        .font(TideTheme.Typography.caption2)
+                        .foregroundColor(TideTheme.textTertiary)
+                        .multilineTextAlignment(.center)
+
+                    Text("We take your privacy seriously. Your data stays secure.")
+                        .font(TideTheme.Typography.caption2)
+                        .foregroundColor(TideTheme.textTertiary)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, TideTheme.Spacing.xl)
+                }
             }
             .padding(.horizontal, TideTheme.Spacing.lg)
-        }
-        .onChange(of: authManager.isAuthenticated) { _, newValue in
-            if newValue {
-                appState.isAuthenticated = true
-            }
         }
     }
 
@@ -168,132 +181,6 @@ struct AuthenticationView: View {
                 try? await _Concurrency.Task.sleep(nanoseconds: 5_000_000_000)
                 showError = false
             }
-        }
-    }
-}
-
-// MARK: - Login View
-struct LoginView: View {
-    @EnvironmentObject var appState: AppState
-    @StateObject private var viewModel = LoginViewModel()
-
-    var body: some View {
-        VStack(spacing: TideTheme.Spacing.md) {
-            // Email field
-            TideTextField(
-                text: $viewModel.email,
-                placeholder: "Email",
-                icon: "envelope"
-            )
-            .textInputAutocapitalization(.never)
-            .keyboardType(.emailAddress)
-
-            // Password field
-            TideSecureField(
-                text: $viewModel.password,
-                placeholder: "Password"
-            )
-
-            // Error message
-            if let error = viewModel.errorMessage {
-                Text(error)
-                    .font(TideTheme.Typography.footnote)
-                    .foregroundColor(TideTheme.error)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            // Login button
-            Button {
-                _Concurrency.Task {
-                    await viewModel.login()
-                    if viewModel.isAuthenticated {
-                        appState.isAuthenticated = true
-                    }
-                }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Text("Sign In")
-                }
-            }
-            .tidePrimaryButton()
-            .disabled(viewModel.isLoading || !viewModel.isValid)
-            .opacity(viewModel.isValid ? 1.0 : 0.6)
-
-            // Forgot password
-            Button("Forgot Password?") {
-                // TODO: Implement forgot password
-            }
-            .font(TideTheme.Typography.callout)
-            .foregroundColor(TideTheme.textSecondary)
-        }
-    }
-}
-
-// MARK: - Register View
-struct RegisterView: View {
-    @EnvironmentObject var appState: AppState
-    @StateObject private var viewModel = RegisterViewModel()
-
-    var body: some View {
-        VStack(spacing: TideTheme.Spacing.md) {
-            // Name field
-            TideTextField(
-                text: $viewModel.name,
-                placeholder: "Full Name",
-                icon: "person"
-            )
-
-            // Email field
-            TideTextField(
-                text: $viewModel.email,
-                placeholder: "Email",
-                icon: "envelope"
-            )
-            .textInputAutocapitalization(.never)
-            .keyboardType(.emailAddress)
-
-            // Password field
-            TideSecureField(
-                text: $viewModel.password,
-                placeholder: "Password"
-            )
-
-            // Confirm password field
-            TideSecureField(
-                text: $viewModel.confirmPassword,
-                placeholder: "Confirm Password"
-            )
-
-            // Error message
-            if let error = viewModel.errorMessage {
-                Text(error)
-                    .font(TideTheme.Typography.footnote)
-                    .foregroundColor(TideTheme.error)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            // Register button
-            Button {
-                _Concurrency.Task {
-                    await viewModel.register()
-                    if viewModel.isAuthenticated {
-                        appState.isAuthenticated = true
-                    }
-                }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Text("Create Account")
-                }
-            }
-            .tidePrimaryButton()
-            .disabled(viewModel.isLoading || !viewModel.isValid)
-            .opacity(viewModel.isValid ? 1.0 : 0.6)
         }
     }
 }
@@ -363,5 +250,5 @@ struct TideSecureField: View {
 // MARK: - Preview
 #Preview {
     AuthenticationView()
-        .environmentObject(AppState())
+        .environmentObject(AuthManager.shared)
 }

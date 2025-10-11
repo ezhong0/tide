@@ -99,13 +99,15 @@ final class SupabaseManager: ObservableObject {
         // Build query parameters including scopes and any additional params
         var allQueryParams = queryParams ?? [:]
 
-        // Add scopes to query params
+        // Add scopes to query params - Google OAuth uses "scope" (singular)
         if !scopes.isEmpty {
-            allQueryParams["scopes"] = scopes
+            allQueryParams["scope"] = scopes
         }
 
         // Convert dictionary to array of tuples for Supabase API
         let queryParamsArray = allQueryParams.map { (name: $0.key, value: $0.value) }
+
+        print("🔐 OAuth URL params: \(allQueryParams)")
 
         return try client.auth.getOAuthSignInURL(
             provider: provider,

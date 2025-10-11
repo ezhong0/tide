@@ -105,19 +105,17 @@ struct DashboardView: View {
                         }
                     }
                     .padding(.vertical)
-                } else {
+                } else if let error = errorMessage {
                     // Error state
                     VStack(spacing: 16) {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 48))
                             .foregroundColor(.orange)
 
-                        if let error = errorMessage {
-                            Text(error)
-                                .font(TideTheme.Typography.body)
-                                .foregroundColor(TideTheme.textSecondary)
-                                .multilineTextAlignment(.center)
-                        }
+                        Text(error)
+                            .font(TideTheme.Typography.body)
+                            .foregroundColor(TideTheme.textSecondary)
+                            .multilineTextAlignment(.center)
 
                         Button("Retry") {
                             _Concurrency.Task {
