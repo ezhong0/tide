@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 
 /**
@@ -65,7 +65,7 @@ export interface SearchResponse {
  * Uses PostgreSQL full-text search with ts_vector
  */
 export class EmailSearch {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
 
   /**
    * Search emails with full-text search

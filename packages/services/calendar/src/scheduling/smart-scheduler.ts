@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 
 export interface SchedulingRequest {
@@ -60,7 +60,7 @@ export interface OptimizationFactor {
  * Find optimal meeting times considering preferences, availability, and productivity
  */
 export class SmartScheduler {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
 
   /**
    * Find optimal time slots for a meeting

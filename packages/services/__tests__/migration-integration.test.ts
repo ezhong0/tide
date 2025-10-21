@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   getDefaultEmailIntelligence,
@@ -15,7 +15,7 @@ import {
   getDefaultContactIntelligence,
 } from '@tide/database';
 
-const db = createSupabase(true); // Service role for tests
+const db = SupabaseConnectionManager.getInstance(true); // Service role for tests
 const testUserId = 'test-user-migration-' + Date.now() as UserId;
 
 describe('Migration Integration Tests', () => {

@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase, getDefaultEventIntelligence } from '@tide/database';
+import { SupabaseConnectionManager, getDefaultEventIntelligence } from '@tide/database';
 import type { UserId, UserSettings, EventIntelligence } from '@tide/types';
 
 export interface CalendarEvent {
@@ -48,7 +48,7 @@ export interface Optimization {
  * Detects conflicts and suggests optimizations for better calendar management
  */
 export class CalendarOptimizer {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
 
   /**
    * Analyze calendar and suggest optimizations

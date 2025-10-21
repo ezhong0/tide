@@ -1,9 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { logger } from '@tide/logger';
-import { kafkaConfig } from '@tide/config';
-import { createSupabase } from '@tide/database';
+import { kafkaConfig, env } from '@tide/config';
+import { SupabaseConnectionManager } from '@tide/database';
+import { ServiceBase, type HealthStatus } from '@tide/base';
 import {
   authenticateJWT,
   moderateRateLimit,
@@ -11,40 +11,19 @@ import {
   notFoundHandler,
 } from '@tide/middleware';
 import { KafkaEventBus } from './events/kafka-event-bus.js';
+import { WorkflowStateMachine } from './core/state-machine.js';
+import { DAGExecutor } from './core/dag-executor.js';
+import { SupabaseStatePersistence } from './persistence/supabase-state-persistence.js';
 
 /**
  * Workflow Service
  *
- * Status: Not started (planned for Weeks 9-12)
- * This service is scaffolded but not yet operational.
- *
+ * Intelligent workflow automation and task management service
  * Uses Supabase-first architecture (ADR-001)
+ * Extends ServiceBase for graceful shutdown and resource management
  */
 
-const app: express.Application = express();
-
-// Middleware
-app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-
-// Rate limiting (100 req/min)
-app.use(moderateRateLimit);
-
-// Request logging
-app.use((req, res, next) => {
-  logger.info({
-    method: req.method,
-    path: req.path,
-    userId: req.user?.userId,
-  }, 'Incoming request');
-  next();
-});
-
-// Database connection - Supabase client
-const supabase = createSupabase(true);
-
-// Initialize Supabase repositories
+// Initialize Supabase repositories and engine components (needed for imports)
 import {
   SupabaseTaskRepository,
   SupabaseWorkflowRepository,
@@ -53,330 +32,485 @@ import {
 import { TaskEngine, TaskPrioritizer, TaskDecomposer } from './tasks/task-engine.js';
 import { PatternDetector, BehaviorAnalyzer } from './patterns/pattern-detector.js';
 
-const taskRepository = new SupabaseTaskRepository(supabase);
-const workflowRepository = new SupabaseWorkflowRepository(supabase);
-const patternRepository = new SupabasePatternRepository(supabase);
+class WorkflowService extends ServiceBase {
+  private taskRepository!: SupabaseTaskRepository;
+  private workflowRepository!: SupabaseWorkflowRepository;
+  private patternRepository!: SupabasePatternRepository;
+  private taskEngine!: TaskEngine;
+  private patternDetector!: PatternDetector;
+  private statePersistence!: SupabaseStatePersistence;
+  private dagExecutor!: DAGExecutor;
+  private eventBus: KafkaEventBus | null = null;
 
-// Initialize workflow engine components
-const prioritizer = new TaskPrioritizer();
-const decomposer = new TaskDecomposer();
-const taskEngine = new TaskEngine(taskRepository as any, prioritizer, decomposer);
+  constructor() {
+    super({
+      name: 'workflow',
+      version: '0.1.0',
+      port: env.PORT || 3005,
+      shutdownTimeout: 10000, // 10 seconds for graceful shutdown
+    });
+  }
 
-const behaviorAnalyzer = new BehaviorAnalyzer();
-const patternDetector = new PatternDetector(patternRepository as any, behaviorAnalyzer);
+  /**
+   * Initialize service resources
+   */
+  protected async initialize(): Promise<void> {
+    // Database connection - Use SupabaseConnectionManager singleton
+    const supabase = SupabaseConnectionManager.getInstance(true);
 
-logger.info('Workflow engine initialized with Supabase')
+    // Initialize Supabase repositories
+    this.taskRepository = new SupabaseTaskRepository(supabase);
+    this.workflowRepository = new SupabaseWorkflowRepository(supabase);
+    this.patternRepository = new SupabasePatternRepository(supabase);
 
-// Initialize Kafka event bus (only if Kafka is configured AND enabled)
-const kafkaEnabled = process.env.KAFKA_ENABLED === 'true';
-const eventBus = kafkaConfig && kafkaEnabled
-  ? new KafkaEventBus({
-      brokers: kafkaConfig.brokers,
-      clientId: 'workflow-service',
-      groupId: 'workflow-service-group',
-    })
-  : null;
+    // Initialize workflow engine components
+    const prioritizer = new TaskPrioritizer();
+    const decomposer = new TaskDecomposer();
+    this.taskEngine = new TaskEngine(this.taskRepository as any, prioritizer, decomposer);
 
-// Use centralized JWT authentication middleware from shared/middleware/auth.js
+    const behaviorAnalyzer = new BehaviorAnalyzer();
+    this.patternDetector = new PatternDetector(this.patternRepository as any, behaviorAnalyzer);
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+    // Initialize workflow execution engines
+    this.statePersistence = new SupabaseStatePersistence(supabase);
+    this.dagExecutor = new DAGExecutor();
 
-    res.status(200).json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      components: {
-        database: error ? 'down' : 'up',
-        workflow: 'up',
-        tasks: 'up',
-        patterns: 'up',
+    this.logger.info('Workflow engine initialized with Supabase (State Machine + DAG Executor ready)');
+
+    // Initialize Kafka event bus (only if Kafka is configured AND enabled)
+    const kafkaEnabled = process.env.KAFKA_ENABLED === 'true';
+    if (kafkaConfig && kafkaEnabled) {
+      this.eventBus = new KafkaEventBus({
+        brokers: kafkaConfig.brokers,
+        clientId: 'workflow-service',
+        groupId: 'workflow-service-group',
+      });
+      await this.eventBus.connect();
+      this.logger.info('Kafka connected');
+    } else if (!kafkaEnabled) {
+      this.logger.info('Kafka disabled - event publishing disabled');
+    } else {
+      this.logger.warn('No KAFKA_BROKERS configured - event publishing disabled');
+    }
+
+    // Register cleanup resources
+    this.registerResource({
+      name: 'database',
+      cleanup: async () => {
+        await SupabaseConnectionManager.cleanup();
       },
     });
-  } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      error: 'Health check failed',
+
+    if (this.eventBus) {
+      this.registerResource({
+        name: 'kafka',
+        cleanup: async () => {
+          if (this.eventBus) {
+            await this.eventBus.disconnect();
+          }
+        },
+      });
+    }
+
+    this.logger.info('Workflow service initialized successfully');
+  }
+
+  /**
+   * Setup Express routes
+   */
+  protected setupRoutes(app: express.Application): void {
+    // Middleware
+    app.use(helmet());
+    app.use(cors());
+    app.use(express.json({ limit: '10mb' }));
+    app.use(moderateRateLimit);
+
+    // Request logging
+    app.use((req, res, next) => {
+      this.logger.info({
+        method: req.method,
+        path: req.path,
+        userId: req.user?.userId,
+      }, 'Incoming request');
+      next();
     });
-  }
-});
 
-// ============================================================================
-// Task Endpoints
-// ============================================================================
+    // ============================================================================
+    // Task Endpoints
+    // ============================================================================
 
-// Create task
-app.post('/tasks', authenticateJWT, async (req, res) => {
-  try {
-    const user = (req as any).user;
-    const { title, description, dueDate, tags, priority, project } = req.body;
+    // Create task
+    app.post('/tasks', authenticateJWT, async (req, res) => {
+      try {
+        const user = (req as any).user;
+        const { title, description, dueDate, tags, priority, project } = req.body;
 
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
+        if (!title) {
+          return res.status(400).json({ error: 'Title is required' });
+        }
 
-    const task = await taskEngine.createTask({
-      userId: user.id,
-      title,
-      description,
-      dueDate: dueDate ? new Date(dueDate) : undefined,
-      tags,
-      project,
+        const task = await this.taskEngine.createTask({
+          userId: user.id,
+          title,
+          description,
+          dueDate: dueDate ? new Date(dueDate) : undefined,
+          tags,
+          project,
+        });
+
+        res.status(201).json(task);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to create task');
+        res.status(500).json({ error: 'Failed to create task' });
+      }
     });
 
-    res.status(201).json(task);
-  } catch (error) {
-    logger.error({ error }, 'Failed to create task');
-    res.status(500).json({ error: 'Failed to create task' });
-  }
-});
+    // Get ready tasks
+    app.get('/tasks/ready', authenticateJWT, async (req, res) => {
+      try {
+        const user = (req as any).user;
+        const tasks = await this.taskEngine.getReadyTasks(user.id);
+        res.json(tasks);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to get ready tasks');
+        res.status(500).json({ error: 'Failed to get ready tasks' });
+      }
+    });
 
-// Get ready tasks
-app.get('/tasks/ready', authenticateJWT, async (req, res) => {
-  try {
-    const user = (req as any).user;
-    const tasks = await taskEngine.getReadyTasks(user.id);
-    res.json(tasks);
-  } catch (error) {
-    logger.error({ error }, 'Failed to get ready tasks');
-    res.status(500).json({ error: 'Failed to get ready tasks' });
-  }
-});
+    // Get task by ID
+    app.get('/tasks/:id', authenticateJWT, async (req, res) => {
+      try {
+        const task = await this.taskRepository.getTask(req.params.id);
+        if (!task) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
 
-// Get task by ID
-app.get('/tasks/:id', authenticateJWT, async (req, res) => {
-  try {
-    const task = await taskRepository.getTask(req.params.id);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
+        // Verify ownership
+        const user = (req as any).user;
+        if (task.userId !== user.id) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
 
-    // Verify ownership
-    const user = (req as any).user;
-    if (task.userId !== user.id) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    res.json(task);
-  } catch (error) {
-    logger.error({ error }, 'Failed to get task');
-    res.status(500).json({ error: 'Failed to get task' });
-  }
-});
-
-// Update task
-app.put('/tasks/:id', authenticateJWT, async (req, res) => {
-  try {
-    const task = await taskRepository.getTask(req.params.id);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    // Verify ownership
-    const user = (req as any).user;
-    if (task.userId !== user.id) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+        res.json(task);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to get task');
+        res.status(500).json({ error: 'Failed to get task' });
+      }
+    });
 
     // Update task
-    const updates = { ...task, ...req.body };
-    await taskRepository.updateTask(updates);
+    app.put('/tasks/:id', authenticateJWT, async (req, res) => {
+      try {
+        const task = await this.taskRepository.getTask(req.params.id);
+        if (!task) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
 
-    const updated = await taskRepository.getTask(req.params.id);
-    res.json(updated);
-  } catch (error) {
-    logger.error({ error }, 'Failed to update task');
-    res.status(500).json({ error: 'Failed to update task' });
+        // Verify ownership
+        const user = (req as any).user;
+        if (task.userId !== user.id) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        // Update task
+        const updates = { ...task, ...req.body };
+        await this.taskRepository.updateTask(updates);
+
+        const updated = await this.taskRepository.getTask(req.params.id);
+        res.json(updated);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to update task');
+        res.status(500).json({ error: 'Failed to update task' });
+      }
+    });
+
+    // Delete task
+    app.delete('/tasks/:id', authenticateJWT, async (req, res) => {
+      try {
+        const task = await this.taskRepository.getTask(req.params.id);
+        if (!task) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
+
+        // Verify ownership
+        const user = (req as any).user;
+        if (task.userId !== user.id) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        await this.taskRepository.deleteTask(req.params.id);
+        res.status(204).send();
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to delete task');
+        res.status(500).json({ error: 'Failed to delete task' });
+      }
+    });
+
+    // ============================================================================
+    // Workflow Endpoints
+    // ============================================================================
+
+    // Create workflow
+    app.post('/workflows', authenticateJWT, async (req, res) => {
+      try {
+        const user = (req as any).user;
+        const { name, description, steps } = req.body;
+
+        if (!name || !steps || !Array.isArray(steps)) {
+          return res.status(400).json({ error: 'Name and steps are required' });
+        }
+
+        const workflow = {
+          id: `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name,
+          description,
+          steps,
+          version: 1,
+          createdBy: user.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        await this.workflowRepository.saveWorkflow(workflow);
+        res.status(201).json(workflow);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to create workflow');
+        res.status(500).json({ error: 'Failed to create workflow' });
+      }
+    });
+
+    // Get workflow
+    app.get('/workflows/:id', authenticateJWT, async (req, res) => {
+      try {
+        const workflow = await this.workflowRepository.getWorkflow(req.params.id);
+        if (!workflow) {
+          return res.status(404).json({ error: 'Workflow not found' });
+        }
+
+        // Verify ownership
+        const user = (req as any).user;
+        if (workflow.createdBy !== user.id) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        res.json(workflow);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to get workflow');
+        res.status(500).json({ error: 'Failed to get workflow' });
+      }
+    });
+
+    // Execute workflow - NOW FULLY FUNCTIONAL with State Machine or DAG Executor!
+    app.post('/workflows/:id/execute', authenticateJWT, async (req, res) => {
+      try {
+        const user = (req as any).user;
+        const { strategy = 'state-machine' } = req.body; // 'state-machine' or 'dag'
+
+        const workflow = await this.workflowRepository.getWorkflow(req.params.id);
+
+        if (!workflow) {
+          return res.status(404).json({ error: 'Workflow not found' });
+        }
+
+        if (workflow.createdBy !== user.id) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        if (strategy === 'dag') {
+          // DAG execution for parallel workflows
+          this.logger.info({ workflowId: workflow.id, strategy: 'dag' }, 'Executing workflow with DAG executor');
+
+          const dag = this.dagExecutor.buildDAG(workflow);
+          const plan = this.dagExecutor.createExecutionPlan(dag);
+
+          const initialContext: any = {
+            inputs: req.body.context || {},
+            outputs: {},
+            stepResults: new Map(),
+            variables: { userId: user.id },
+          };
+
+          const results = await this.dagExecutor.execute(plan, initialContext);
+
+          // Store execution results
+          const execution = await this.workflowRepository.createExecution({
+            workflow_id: workflow.id,
+            user_id: user.id,
+            status: 'completed',
+            context: {
+              inputs: initialContext.inputs,
+              outputs: initialContext.outputs,
+              stepResults: Object.fromEntries(results),
+            },
+            completed_at: new Date().toISOString(),
+          });
+
+          return res.json({
+            execution,
+            results: Object.fromEntries(results),
+            strategy: 'dag',
+            message: 'Workflow executed successfully with DAG executor',
+          });
+        } else {
+          // State machine execution (default)
+          this.logger.info({ workflowId: workflow.id, strategy: 'state-machine' }, 'Executing workflow with state machine');
+
+          const stateMachine = new WorkflowStateMachine(workflow, this.statePersistence);
+          const workflowState = await stateMachine.createWorkflow();
+
+          // Set initial context
+          workflowState.context.inputs = req.body.context || {};
+          workflowState.context.variables = { userId: user.id };
+
+          // Start execution (async - runs in background)
+          stateMachine.start(workflowState.id).catch(error => {
+            this.logger.error({ error, executionId: workflowState.id }, 'Workflow execution failed');
+          });
+
+          return res.json({
+            executionId: workflowState.id,
+            workflowId: workflow.id,
+            status: workflowState.status,
+            currentStep: workflowState.currentStep,
+            strategy: 'state-machine',
+            message: 'Workflow execution started (running asynchronously)',
+          });
+        }
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to execute workflow');
+        res.status(500).json({ error: 'Failed to execute workflow' });
+      }
+    });
+
+    // Get execution status
+    app.get('/workflows/:workflowId/executions/:executionId', authenticateJWT, async (req, res) => {
+      try {
+        const state = await this.statePersistence.load(req.params.executionId);
+
+        if (!state) {
+          return res.status(404).json({ error: 'Execution not found' });
+        }
+
+        res.json({
+          id: state.id,
+          workflowId: state.workflowId,
+          status: state.status,
+          currentStep: state.currentStep,
+          history: state.history,
+          context: {
+            inputs: state.context.inputs,
+            outputs: state.context.outputs,
+            variables: state.context.variables,
+          },
+          createdAt: state.createdAt,
+          updatedAt: state.updatedAt,
+        });
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to get execution status');
+        res.status(500).json({ error: 'Failed to get execution status' });
+      }
+    });
+
+    // Pause/Resume/Cancel execution
+    app.post('/workflows/:workflowId/executions/:executionId/:action', authenticateJWT, async (req, res) => {
+      try {
+        const { action } = req.params;
+        const state = await this.statePersistence.load(req.params.executionId);
+
+        if (!state) {
+          return res.status(404).json({ error: 'Execution not found' });
+        }
+
+        const workflow = await this.workflowRepository.getWorkflow(state.workflowId);
+        const stateMachine = new WorkflowStateMachine(workflow, this.statePersistence);
+
+        let updatedState;
+        switch (action) {
+          case 'pause':
+            updatedState = await stateMachine.pause(state.id);
+            break;
+          case 'resume':
+            updatedState = await stateMachine.resume(state.id);
+            break;
+          case 'cancel':
+            updatedState = await stateMachine.cancel(state.id);
+            break;
+          default:
+            return res.status(400).json({ error: 'Invalid action. Use: pause, resume, or cancel' });
+        }
+
+        res.json({
+          id: updatedState.id,
+          status: updatedState.status,
+          currentStep: updatedState.currentStep,
+          message: `Workflow ${action}d successfully`,
+        });
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to control execution');
+        res.status(500).json({ error: 'Failed to control execution' });
+      }
+    });
+
+    // ============================================================================
+    // Pattern Detection Endpoints
+    // ============================================================================
+
+    // Detect patterns
+    app.get('/patterns/detect', authenticateJWT, async (req, res) => {
+      try {
+        const user = (req as any).user;
+        const days = parseInt(req.query.days as string) || 30;
+
+        const patterns = await this.patternDetector.detectPatterns(user.id, days);
+        res.json(patterns);
+      } catch (error) {
+        this.logger.error({ error }, 'Failed to detect patterns');
+        res.status(500).json({ error: 'Failed to detect patterns' });
+      }
+    });
+
+    // 404 handler - must be before error handler
+    app.use(notFoundHandler);
+
+    // Error handler - must be last
+    app.use(errorHandler);
   }
-});
 
-// Delete task
-app.delete('/tasks/:id', authenticateJWT, async (req, res) => {
-  try {
-    const task = await taskRepository.getTask(req.params.id);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
+  /**
+   * Custom health checks
+   */
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const dbStatus = SupabaseConnectionManager.getStatus();
 
-    // Verify ownership
-    const user = (req as any).user;
-    if (task.userId !== user.id) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    await taskRepository.deleteTask(req.params.id);
-    res.status(204).send();
-  } catch (error) {
-    logger.error({ error }, 'Failed to delete task');
-    res.status(500).json({ error: 'Failed to delete task' });
-  }
-});
-
-// ============================================================================
-// Workflow Endpoints
-// ============================================================================
-
-// Create workflow
-app.post('/workflows', authenticateJWT, async (req, res) => {
-  try {
-    const user = (req as any).user;
-    const { name, description, steps } = req.body;
-
-    if (!name || !steps || !Array.isArray(steps)) {
-      return res.status(400).json({ error: 'Name and steps are required' });
-    }
-
-    const workflow = {
-      id: `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name,
-      description,
-      steps,
-      version: 1,
-      createdBy: user.id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    return {
+      checks: {
+        database: {
+          status: dbStatus.serviceRole ? 'up' : 'down',
+          details: dbStatus,
+        },
+        workflow: {
+          status: 'up',
+          details: { dagExecutor: 'ready', stateMachine: 'ready' },
+        },
+        tasks: { status: 'up' },
+        patterns: { status: 'up' },
+        kafka: {
+          status: this.eventBus ? 'up' : 'disabled',
+        },
+      },
     };
-
-    await workflowRepository.saveWorkflow(workflow);
-    res.status(201).json(workflow);
-  } catch (error) {
-    logger.error({ error }, 'Failed to create workflow');
-    res.status(500).json({ error: 'Failed to create workflow' });
-  }
-});
-
-// Get workflow
-app.get('/workflows/:id', authenticateJWT, async (req, res) => {
-  try {
-    const workflow = await workflowRepository.getWorkflow(req.params.id);
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    // Verify ownership
-    const user = (req as any).user;
-    if (workflow.createdBy !== user.id) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    res.json(workflow);
-  } catch (error) {
-    logger.error({ error }, 'Failed to get workflow');
-    res.status(500).json({ error: 'Failed to get workflow' });
-  }
-});
-
-// Execute workflow
-app.post('/workflows/:id/execute', authenticateJWT, async (req, res) => {
-  try {
-    const user = (req as any).user;
-    const workflow = await workflowRepository.getWorkflow(req.params.id);
-
-    if (!workflow) {
-      return res.status(404).json({ error: 'Workflow not found' });
-    }
-
-    if (workflow.createdBy !== user.id) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    // Create execution record
-    const execution = await workflowRepository.createExecution({
-      workflow_id: req.params.id,
-      user_id: user.id,
-      status: 'running',
-      context: req.body.context || {},
-    });
-
-    // In a real implementation, this would execute the workflow steps
-    // For now, mark as completed
-    await workflowRepository.updateExecution(execution.id, {
-      status: 'completed',
-      completed_at: new Date().toISOString(),
-    });
-
-    res.json(execution);
-  } catch (error) {
-    logger.error({ error }, 'Failed to execute workflow');
-    res.status(500).json({ error: 'Failed to execute workflow' });
-  }
-});
-
-// ============================================================================
-// Pattern Detection Endpoints
-// ============================================================================
-
-// Detect patterns
-app.get('/patterns/detect', authenticateJWT, async (req, res) => {
-  try {
-    const user = (req as any).user;
-    const days = parseInt(req.query.days as string) || 30;
-
-    const patterns = await patternDetector.detectPatterns(user.id, days);
-    res.json(patterns);
-  } catch (error) {
-    logger.error({ error }, 'Failed to detect patterns');
-    res.status(500).json({ error: 'Failed to detect patterns' });
-  }
-});
-
-// 404 handler - must be before error handler
-app.use(notFoundHandler);
-
-// Error handler - must be last
-app.use(errorHandler);
-
-// Start server
-const PORT = parseInt(process.env.PORT || '3005', 10);
-
-async function start() {
-  try {
-    // Test Supabase connection
-    try {
-      const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
-      if (error) throw error;
-      logger.info('Supabase connected');
-    } catch (error) {
-      logger.warn({ error }, 'Supabase connection check failed - service not ready (Week 9-12)');
-    }
-
-    // Connect to Kafka (if configured and enabled)
-    if (eventBus) {
-      await eventBus.connect();
-      logger.info('Kafka connected');
-    } else if (!kafkaEnabled) {
-      logger.info('Kafka disabled - event publishing disabled');
-    } else {
-      logger.warn('No KAFKA_BROKERS configured - event publishing disabled');
-    }
-
-    // Start server
-    app.listen(PORT, () => {
-      logger.info({ port: PORT, ready: true }, 'Workflow service started');
-    });
-  } catch (error) {
-    logger.error({ error }, 'Failed to start service');
-    process.exit(1);
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  if (eventBus) await eventBus.disconnect();
-  process.exit(0);
-});
-
 // Start the service
-start();
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = express();
+  const service = new WorkflowService();
 
-export {
-  app,
-  eventBus,
-  taskEngine,
-  patternDetector,
-  workflowRepository,
-  taskRepository,
-  patternRepository,
-};
+  service.start(app).catch((error) => {
+    console.error('Failed to start workflow service:', error);
+    process.exit(1);
+  });
+}
+
+export { WorkflowService };

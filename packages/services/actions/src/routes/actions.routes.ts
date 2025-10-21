@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import { ActionExecutor } from '../executor/action-executor.js';
 import { ActionSuggester } from '../suggestions/action-suggester.js';
 import type { Action, ApprovalRequest, UndoRequest } from '../types/index.js';
 
 const router = Router();
-const db = createSupabase(true);
+const db = SupabaseConnectionManager.getInstance(true);
 const executor = new ActionExecutor();
 const suggester = new ActionSuggester();
 

@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type {
   Decision,
@@ -7,7 +7,8 @@ import type {
   AIRecommendation,
   DecisionOption,
   SimilarDecision,
-  RiskAssessment
+  RiskAssessment,
+  Risk
 } from '../types/index.js';
 
 /**
@@ -15,7 +16,7 @@ import type {
  * Analyzes decisions and provides AI-powered recommendations
  */
 export class DecisionAnalyzer {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
   private aiServiceURL = process.env.AI_SERVICE_URL || 'http://localhost:3001';
 
   /**
@@ -112,7 +113,14 @@ export class DecisionAnalyzer {
         throw new Error('AI service unavailable');
       }
 
-      const aiResult = await response.json();
+      const aiResult = await response.json() as {
+        recommended_option: string;
+        reasoning: string;
+        confidence: number;
+        alternatives: string[];
+        risks: string[];
+        considerations: string[];
+      };
 
       return {
         recommendedOption: aiResult.recommended_option,
@@ -209,7 +217,7 @@ Provide your recommendation in JSON format with:
    * Assess risks for a decision
    */
   async assessRisks(decision: Decision): Promise<RiskAssessment> {
-    const risks = [
+    const risks: Risk[] = [
       ...(decision.context.risks || []).map(r => ({
         type: 'contextual',
         description: r,

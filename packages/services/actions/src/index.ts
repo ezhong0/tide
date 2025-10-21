@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { logger } from '@tide/logger';
+import { env } from '@tide/config';
+import { ServiceBase, type HealthStatus } from '@tide/base';
+import { SupabaseConnectionManager } from '@tide/database';
 import {
   moderateRateLimit,
   errorHandler,
@@ -12,73 +14,79 @@ import actionsRoutes from './routes/actions.routes.js';
 /**
  * Actions Service
  * Manages action suggestions, approvals, and execution
+ * Extends ServiceBase for graceful shutdown and resource management
  */
-class ActionsService {
-  private app: express.Application;
-
+class ActionsService extends ServiceBase {
   constructor() {
-    this.app = express();
-    this.setupMiddleware();
-    this.setupRoutes();
-  }
-
-  private setupMiddleware(): void {
-    this.app.use(helmet());
-    this.app.use(cors());
-    this.app.use(express.json());
-
-    // Rate limiting (100 req/min)
-    this.app.use(moderateRateLimit);
-
-    // Request logging
-    this.app.use((req, res, next) => {
-      logger.info(
-        {
-          method: req.method,
-          path: req.path,
-          ip: req.ip,
-          userId: req.user?.userId,
-        },
-        'Incoming request'
-      );
-      next();
+    super({
+      name: 'actions',
+      version: '0.1.0',
+      port: env.PORT || 3006,
+      shutdownTimeout: 10000,
     });
   }
 
-  private setupRoutes(): void {
-    // Health check
-    this.app.get('/health', (req, res) => {
-      res.json({
-        status: 'healthy',
-        service: 'actions',
-        timestamp: new Date().toISOString(),
-      });
+  protected async initialize(): Promise<void> {
+    // Register database cleanup
+    this.registerResource({
+      name: 'database',
+      cleanup: async () => {
+        await SupabaseConnectionManager.cleanup();
+      },
+    });
+
+    this.logger.info('Actions service initialized successfully');
+  }
+
+  protected setupRoutes(app: express.Application): void {
+    // Middleware
+    app.use(helmet());
+    app.use(cors());
+    app.use(express.json());
+    app.use(moderateRateLimit);
+
+    // Request logging
+    app.use((req, res, next) => {
+      this.logger.info({
+        method: req.method,
+        path: req.path,
+        ip: req.ip,
+        userId: req.user?.userId,
+      }, 'Incoming request');
+      next();
     });
 
     // Actions routes
-    this.app.use('/actions', actionsRoutes);
+    app.use('/actions', actionsRoutes);
 
     // 404 handler - must be before error handler
-    this.app.use(notFoundHandler);
+    app.use(notFoundHandler);
 
     // Error handler - must be last
-    this.app.use(errorHandler);
+    app.use(errorHandler);
   }
 
-  async start(): Promise<void> {
-    const port = process.env.ACTIONS_SERVICE_PORT || 3006;
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const dbStatus = SupabaseConnectionManager.getStatus();
 
-    this.app.listen(port, () => {
-      logger.info({ port, service: 'actions' }, 'Actions service started');
-    });
+    return {
+      checks: {
+        database: {
+          status: dbStatus.serviceRole ? 'up' : 'down',
+          details: dbStatus,
+        },
+      },
+    };
   }
 }
 
 // Start the service
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = express();
   const service = new ActionsService();
-  service.start().catch((error) => {
-    logger.error({ error }, 'Failed to start actions service');
+
+  service.start(app).catch((error) => {
+    console.error('Failed to start actions service:', error);
     process.exit(1);
   });
 }

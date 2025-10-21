@@ -1,29 +1,23 @@
+import express from 'express';
+import { ServiceBase, type HealthStatus } from '@tide/base';
 /**
- * Email service main application
+ * Email Service
+ * Intelligent email management with AI triage, smart composition, and search
+ * Extends ServiceBase for graceful shutdown and resource management
  */
-declare class EmailService {
-    private app;
+declare class EmailService extends ServiceBase {
     private triageEngine;
     private composer;
     private providers;
     private db;
     constructor();
-    /**
-     * Setup Express middleware
-     */
-    private setupMiddleware;
-    /**
-     * Setup API routes
-     */
-    private setupRoutes;
+    protected initialize(): Promise<void>;
+    protected setupRoutes(app: express.Application): void;
+    protected healthCheck(): Promise<Partial<HealthStatus>>;
     /**
      * Get email provider instance
      */
     private getProvider;
-    /**
-     * Start the email service
-     */
-    start(): Promise<void>;
 }
 export { EmailService };
 //# sourceMappingURL=index.d.ts.map

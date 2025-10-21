@@ -2,8 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from '@tide/config';
-import { logger } from '@tide/logger';
-import { createSupabase, getDefaultEmailIntelligence } from '@tide/database';
+import { ServiceBase, type HealthStatus } from '@tide/base';
+import { SupabaseConnectionManager, getDefaultEmailIntelligence } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   authenticateJWT,
@@ -34,52 +34,70 @@ import {
 } from './validation.js';
 
 /**
- * Email service main application
+ * Email Service
+ * Intelligent email management with AI triage, smart composition, and search
+ * Extends ServiceBase for graceful shutdown and resource management
  */
-class EmailService {
-  private app: express.Application;
-  private triageEngine: EmailTriageEngine;
-  private composer: SmartComposer;
-  private providers: Map<string, GmailProvider | ExchangeProvider>;
-  private db: ReturnType<typeof createSupabase>;
+class EmailService extends ServiceBase {
+  private triageEngine!: EmailTriageEngine;
+  private composer!: SmartComposer;
+  private providers!: Map<string, GmailProvider | ExchangeProvider>;
+  private db!: ReturnType<typeof SupabaseConnectionManager.getInstance>;
 
   constructor() {
-    this.app = express();
-    this.triageEngine = new EmailTriageEngine();
-    this.composer = new SmartComposer();
-    this.providers = new Map();
-    this.db = createSupabase(true); // Use service role for backend operations
+    super({
+      name: 'email',
+      version: '0.1.0',
+      port: env.PORT || 3003,
+      shutdownTimeout: 10000,
+    });
+  }
 
+  protected async initialize(): Promise<void> {
     // Initialize authentication
     try {
       initializeAuth();
+      this.logger.info('Authentication initialized');
     } catch (error) {
-      logger.error({ error }, 'Failed to initialize authentication');
+      this.logger.error({ error }, 'Failed to initialize authentication');
       throw new Error('Authentication initialization failed');
     }
 
     // Initialize encryption for OAuth tokens
     try {
       initializeEncryption();
-      logger.info('Encryption initialized for OAuth tokens');
+      this.logger.info('Encryption initialized for OAuth tokens');
     } catch (error) {
-      logger.error({ error }, 'Failed to initialize encryption');
+      this.logger.error({ error }, 'Failed to initialize encryption');
       throw new Error('Encryption initialization failed - cannot proceed without secure token storage');
     }
 
-    this.setupMiddleware();
-    this.setupRoutes();
+    // Initialize database connection
+    this.db = SupabaseConnectionManager.getInstance(true); // Use service role for backend operations
+
+    // Initialize email components
+    this.triageEngine = new EmailTriageEngine();
+    this.composer = new SmartComposer();
+    this.providers = new Map();
+
+    // Register database cleanup
+    this.registerResource({
+      name: 'database',
+      cleanup: async () => {
+        await SupabaseConnectionManager.cleanup();
+      },
+    });
+
+    this.logger.info('Email service initialized successfully');
   }
 
-  /**
-   * Setup Express middleware
-   */
-  private setupMiddleware(): void {
-    this.app.use(helmet());
+  protected setupRoutes(app: express.Application): void {
+    // Middleware
+    app.use(helmet());
 
     // CORS configuration
     const allowedOrigins = env.ALLOWED_ORIGINS?.split(',') || [];
-    this.app.use(cors({
+    app.use(cors({
       origin: (origin, callback) => {
         // Allow requests with no origin (mobile apps, Postman, etc.)
         if (!origin) return callback(null, true);
@@ -95,44 +113,25 @@ class EmailService {
       maxAge: 86400, // 24 hours
     }));
 
-    this.app.use(express.json());
-
-    // Rate limiting (100 req/min)
-    this.app.use(moderateRateLimit);
+    app.use(express.json());
+    app.use(moderateRateLimit);
 
     // Request logging
-    this.app.use((req, res, next) => {
-      logger.info(
-        {
-          method: req.method,
-          path: req.path,
-          ip: req.ip,
-          userId: req.user?.userId,
-        },
-        'Incoming request'
-      );
+    app.use((req, res, next) => {
+      this.logger.info({
+        method: req.method,
+        path: req.path,
+        ip: req.ip,
+        userId: req.user?.userId,
+      }, 'Incoming request');
       next();
-    });
-  }
-
-  /**
-   * Setup API routes
-   */
-  private setupRoutes(): void {
-    // Health check
-    this.app.get('/health', (req, res) => {
-      res.json({
-        status: 'healthy',
-        service: 'email',
-        timestamp: new Date().toISOString(),
-      });
     });
 
     // NOTE: OAuth endpoint removed - using Supabase OAuth instead
     // Tokens are stored in Supabase's oauth_tokens table via Supabase Auth
 
     // Connect email provider (legacy endpoint - keep for backwards compatibility)
-    this.app.post('/connect/:provider',
+    app.post('/connect/:provider',
       authenticateJWT,
       validate(ConnectProviderSchema, 'body'),
       async (req, res) => {
@@ -164,21 +163,21 @@ class EmailService {
           });
 
         if (dbError) {
-          logger.error({ error: dbError }, 'Failed to store OAuth tokens');
+          this.logger.error({ error: dbError }, 'Failed to store OAuth tokens');
           // Continue anyway - don't fail the request
         }
 
-        logger.info({ userId, provider }, 'Email provider connected');
+        this.logger.info({ userId, provider }, 'Email provider connected');
 
         res.json({ success: true, provider });
       } catch (error) {
-        logger.error({ error }, 'Failed to connect email provider');
+        this.logger.error({ error }, 'Failed to connect email provider');
         res.status(500).json({ error: 'Failed to connect email provider' });
       }
     });
 
     // Fetch emails
-    this.app.get('/emails/:userId/:provider',
+    app.get('/emails/:userId/:provider',
       authenticateJWT,
       validate(FetchEmailsParamsSchema, 'params'),
       validate(FetchEmailsQuerySchema, 'query'),
@@ -221,12 +220,12 @@ class EmailService {
             aiSummary: dbEmail.intelligence?.ai_summary || null,
           }));
 
-          logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
+          this.logger.info({ userId, provider, count: emails.length }, 'Returned emails from database');
           return res.json({ emails, count: emails.length });
         }
 
         // No emails in database - try to fetch from provider
-        logger.info({ userId, provider }, 'No emails in database, fetching from provider');
+        this.logger.info({ userId, provider }, 'No emails in database, fetching from provider');
 
         // Try to get provider from cache
         let emailProvider = this.providers.get(`${userId}-${provider}`);
@@ -298,62 +297,48 @@ class EmailService {
             // Generate AI summary
             const aiSummary = `${triageResult.category} - ${triageResult.strategy.reasoning}`;
 
-            // Build email intelligence
-            const intelligence = {
-              ...getDefaultEmailIntelligence(),
-              category,
-              priority,
-              urgency,
-              requires_response: triageResult.urgency === 'immediate',
-              ai_summary: aiSummary,
-            };
-
-            // Store email with intelligence JSONB
-            await this.db
-              .from('emails')
-              .upsert({
-                user_id: userId,
-                provider: provider === 'gmail' ? 'google' : 'microsoft',
-                provider_message_id: email.id,
-                provider_thread_id: email.threadId || email.id,
-                from_email: email.from,
-                from_name: null, // TODO: Extract from email if available
-                to_emails: email.to || [],
-                cc_emails: email.cc || [],
-                bcc_emails: [],
-                subject: email.subject,
-                body_text: email.body,
-                body_html: email.htmlBody || null,
-                snippet: email.body?.substring(0, 200) || null,
-                sent_at: email.timestamp,
-                is_unread: !email.isRead, // Note: inverted logic
-                is_starred: email.isStarred || false,
-                labels: [],
-                attachments: [],
-                intelligence,
-              }, {
-                onConflict: 'user_id,provider,provider_message_id',
-              });
-
-            logger.info({
-              emailId: email.id,
-              category,
-              priority,
-              urgency,
-              importance: triageResult.importance
-            }, 'Email triaged and stored');
+            // Store in database
+            await this.db.from('emails').upsert({
+              provider_message_id: email.messageId,
+              user_id: userId,
+              provider: provider === 'gmail' ? 'google' : 'microsoft',
+              provider_thread_id: email.threadId || null,
+              from_email: email.from,
+              from_name: null, // TODO: Extract from email if available
+              to_emails: email.to,
+              cc_emails: email.cc || [],
+              subject: email.subject,
+              body_text: email.body,
+              body_html: email.htmlBody || null,
+              sent_at: email.timestamp.toISOString(),
+              is_unread: !email.isRead, // Note: inverted logic
+              is_starred: email.isStarred || false,
+              attachments: email.hasAttachments ? [] : null, // Placeholder
+              intelligence: {
+                category,
+                priority,
+                urgency,
+                ai_summary: aiSummary,
+                triage_score: triageResult.importance,
+                suggested_actions: [],
+              },
+            }, {
+              onConflict: 'provider_message_id',
+            });
           })
         );
 
+        this.logger.info({ userId, provider, count: emails.length }, 'Fetched and stored emails');
+
         res.json({ emails, count: emails.length });
       } catch (error) {
-        logger.error({ error }, 'Failed to fetch emails');
+        this.logger.error({ error }, 'Failed to fetch emails');
         res.status(500).json({ error: 'Failed to fetch emails' });
       }
     });
 
     // Triage email
-    this.app.post('/triage',
+    app.post('/triage',
       authenticateJWT,
       validate(TriageEmailSchema, 'body'),
       async (req, res) => {
@@ -364,13 +349,13 @@ class EmailService {
 
         res.json({ triage: triageResult });
       } catch (error) {
-        logger.error({ error }, 'Failed to triage email');
+        this.logger.error({ error }, 'Failed to triage email');
         res.status(500).json({ error: 'Failed to triage email' });
       }
     });
 
     // Compose email drafts
-    this.app.post('/compose',
+    app.post('/compose',
       authenticateJWT,
       validate(ComposeRequestSchema, 'body'),
       async (req, res) => {
@@ -381,13 +366,13 @@ class EmailService {
 
         res.json({ drafts, count: drafts.length });
       } catch (error) {
-        logger.error({ error }, 'Failed to compose email');
+        this.logger.error({ error }, 'Failed to compose email');
         res.status(500).json({ error: 'Failed to compose email' });
       }
     });
 
     // Send email
-    this.app.post('/send/:userId/:provider',
+    app.post('/send/:userId/:provider',
       authenticateJWT,
       validate(SendEmailParamsSchema, 'params'),
       validate(SendEmailBodySchema, 'body'),
@@ -405,13 +390,13 @@ class EmailService {
 
         res.json({ success: true });
       } catch (error) {
-        logger.error({ error }, 'Failed to send email');
+        this.logger.error({ error }, 'Failed to send email');
         res.status(500).json({ error: 'Failed to send email' });
       }
     });
 
     // Search emails
-    this.app.post('/search',
+    app.post('/search',
       authenticateJWT,
       validate(SearchEmailsSchema, 'body'),
       async (req, res) => {
@@ -430,13 +415,13 @@ class EmailService {
 
         res.json(results);
       } catch (error) {
-        logger.error({ error }, 'Email search failed');
+        this.logger.error({ error }, 'Email search failed');
         res.status(500).json({ error: 'Search failed' });
       }
     });
 
     // Get search suggestions
-    this.app.get('/search/suggestions',
+    app.get('/search/suggestions',
       authenticateJWT,
       validate(SearchSuggestionsSchema, 'query'),
       async (req, res) => {
@@ -451,13 +436,13 @@ class EmailService {
 
         res.json({ suggestions });
       } catch (error) {
-        logger.error({ error }, 'Failed to get search suggestions');
+        this.logger.error({ error }, 'Failed to get search suggestions');
         res.status(500).json({ error: 'Failed to get suggestions' });
       }
     });
 
     // Get popular searches
-    this.app.get('/search/popular',
+    app.get('/search/popular',
       authenticateJWT,
       validate(PopularSearchesSchema, 'query'),
       async (req, res) => {
@@ -471,16 +456,35 @@ class EmailService {
 
         res.json({ queries: popular });
       } catch (error) {
-        logger.error({ error }, 'Failed to get popular searches');
+        this.logger.error({ error }, 'Failed to get popular searches');
         res.status(500).json({ error: 'Failed to get popular searches' });
       }
     });
 
     // 404 handler - must be before error handler
-    this.app.use(notFoundHandler);
+    app.use(notFoundHandler);
 
     // Error handler - must be last
-    this.app.use(errorHandler);
+    app.use(errorHandler);
+  }
+
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const dbStatus = SupabaseConnectionManager.getStatus();
+
+    return {
+      checks: {
+        database: {
+          status: dbStatus.serviceRole ? 'up' : 'down',
+          details: dbStatus,
+        },
+        triageEngine: { status: 'up' },
+        composer: { status: 'up' },
+        providers: {
+          status: 'up',
+          details: { count: this.providers.size },
+        },
+      },
+    };
   }
 
   /**
@@ -496,24 +500,15 @@ class EmailService {
         throw new Error(`Unsupported provider: ${provider}`);
     }
   }
-
-  /**
-   * Start the email service
-   */
-  async start(): Promise<void> {
-    const port = env.PORT || 3003;
-
-    this.app.listen(port, () => {
-      logger.info({ port, service: 'email' }, 'Email service started');
-    });
-  }
 }
 
 // Start the service
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = express();
   const service = new EmailService();
-  service.start().catch((error) => {
-    logger.error({ error }, 'Failed to start email service');
+
+  service.start(app).catch((error) => {
+    console.error('Failed to start email service:', error);
     process.exit(1);
   });
 }

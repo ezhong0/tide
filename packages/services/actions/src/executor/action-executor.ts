@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type {
   Action,
@@ -14,7 +14,7 @@ import type {
  * Executes approved actions by calling appropriate service endpoints
  */
 export class ActionExecutor {
-  private db = createSupabase(true); // Service role
+  private db = SupabaseConnectionManager.getInstance(true); // Service role
   private emailServiceURL = process.env.EMAIL_SERVICE_URL || 'http://localhost:3003';
   private calendarServiceURL = process.env.CALENDAR_SERVICE_URL || 'http://localhost:3004';
   private workflowServiceURL = process.env.WORKFLOW_SERVICE_URL || 'http://localhost:3006';
@@ -148,7 +148,7 @@ export class ActionExecutor {
       throw new Error(`Failed to send email: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as Record<string, any>;
 
     return {
       success: true,
@@ -228,7 +228,7 @@ export class ActionExecutor {
       throw new Error(`Failed to create meeting: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as Record<string, any>;
 
     return {
       success: true,
@@ -271,7 +271,7 @@ export class ActionExecutor {
       throw new Error(`Failed to reschedule meeting: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as Record<string, any>;
 
     return {
       success: true,

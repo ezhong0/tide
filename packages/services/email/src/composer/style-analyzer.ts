@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type { WritingStyle } from '../types/index.js';
 
@@ -7,7 +7,7 @@ import type { WritingStyle } from '../types/index.js';
  * Analyzes user's writing style from sent emails
  */
 export class StyleAnalyzer {
-  private supabase = createSupabase();
+  private supabase = SupabaseConnectionManager.getInstance();
 
   /**
    * Analyze user's writing style from their sent emails

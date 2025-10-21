@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type {
   DailySnapshot,
@@ -15,7 +15,7 @@ import type {
  * Aggregates data from all services to create a daily intelligence snapshot
  */
 export class DailySnapshotAggregator {
-  private db = createSupabase(true); // Use service role
+  private db = SupabaseConnectionManager.getInstance(true); // Use service role
 
   /**
    * Generate a daily snapshot for a user

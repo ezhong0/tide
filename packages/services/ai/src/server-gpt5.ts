@@ -3,13 +3,11 @@
  * Production server using GPT-5 function calling orchestrator
  */
 
-import * as http from 'http';
-import { createLogger } from '@tide/logger';
+import express, { type Request, type Response } from 'express';
+import { ServiceBase, type HealthStatus } from '@tide/base';
 import { GPT5Orchestrator } from './orchestration/gpt5-orchestrator.js';
 import { initializeTools, type ToolContext } from './tools/index.js';
 import type { AIRequest, AIResponse } from '@tide/contracts';
-
-const logger = createLogger({ component: 'TideAIService' });
 
 export interface ServerConfig {
   port: number;
@@ -24,217 +22,167 @@ export interface ServerConfig {
 /**
  * Tide AI Service Server
  */
-export class TideAIServer {
-  private server: http.Server;
-  private orchestrator: GPT5Orchestrator;
-  private config: ServerConfig;
+export class TideAIServer extends ServiceBase {
+  private orchestrator!: GPT5Orchestrator;
+  private aiConfig: ServerConfig;
 
-  constructor(config: Partial<ServerConfig> = {}) {
-    logger.debug('TideAIServer constructor starting', {
-      configReceived: config,
-      portEnv: process.env.PORT,
-      hasApiKey: !!process.env.OPENAI_API_KEY,
-    });
-
-    this.config = {
-      port: config.port || parseInt(process.env.PORT || '3001', 10),
-      openaiApiKey: config.openaiApiKey || process.env.OPENAI_API_KEY || '',
-      model: config.model || process.env.GPT5_MODEL || 'gpt-5-mini',
-      reasoningEffort: config.reasoningEffort || 'medium',
-      verbosity: config.verbosity || 'medium',
+  constructor(serverConfig: Partial<ServerConfig> = {}) {
+    // Prepare config before calling super
+    const aiConfig: ServerConfig = {
+      port: serverConfig.port || parseInt(process.env.PORT || '3001', 10),
+      openaiApiKey: serverConfig.openaiApiKey || process.env.OPENAI_API_KEY || '',
+      model: serverConfig.model || process.env.GPT5_MODEL || 'gpt-5-mini',
+      reasoningEffort: serverConfig.reasoningEffort || 'medium',
+      verbosity: serverConfig.verbosity || 'medium',
       // Disable intelligence tools by default to avoid complex agent dependencies
-      includeIntelligenceTools: config.includeIntelligenceTools ?? (process.env.ENABLE_INTELLIGENCE_TOOLS === 'true'),
-      includeCustomTools: config.includeCustomTools ?? false,
+      includeIntelligenceTools: serverConfig.includeIntelligenceTools ?? (process.env.ENABLE_INTELLIGENCE_TOOLS === 'true'),
+      includeCustomTools: serverConfig.includeCustomTools ?? false,
     };
 
-    logger.debug('Final configuration resolved', { config: this.config });
+    super({
+      name: 'tide-ai-gpt5',
+      version: '2.0.2',
+      port: aiConfig.port,
+      shutdownTimeout: 10000,
+    });
+
+    this.aiConfig = aiConfig;
+  }
+
+  /**
+   * Initialize orchestrator and tools
+   */
+  protected async initialize(): Promise<void> {
+    this.logger.debug('TideAIServer initialization starting', {
+      config: this.aiConfig,
+      hasApiKey: !!this.aiConfig.openaiApiKey,
+    });
 
     // Validate API key
-    if (!this.config.openaiApiKey) {
-      logger.warn('OPENAI_API_KEY not configured - service will be limited');
+    if (!this.aiConfig.openaiApiKey) {
+      this.logger.warn('OPENAI_API_KEY not configured - service will be limited');
       // Don't throw error, allow service to start for health checks
       // Actual AI requests will fail gracefully
     }
 
     // Initialize tools
-    logger.debug('Initializing tools');
+    this.logger.debug('Initializing tools');
     try {
       initializeTools({
-        includeIntelligenceTools: this.config.includeIntelligenceTools,
-        includeCustomTools: this.config.includeCustomTools,
+        includeIntelligenceTools: this.aiConfig.includeIntelligenceTools,
+        includeCustomTools: this.aiConfig.includeCustomTools,
       });
-      logger.info('Tools initialized successfully');
+      this.logger.info('Tools initialized successfully');
     } catch (error) {
-      logger.fatal({ error }, 'FATAL: Tool initialization failed');
+      this.logger.fatal({ error }, 'FATAL: Tool initialization failed');
       throw error;
     }
 
     // Initialize GPT-5 orchestrator (use dummy key if not configured)
-    logger.debug('Initializing GPT-5 orchestrator');
+    this.logger.debug('Initializing GPT-5 orchestrator');
     try {
       this.orchestrator = new GPT5Orchestrator({
-        apiKey: this.config.openaiApiKey || 'sk-dummy-key-for-startup',
-        model: this.config.model,
-        reasoningEffort: this.config.reasoningEffort,
-        verbosity: this.config.verbosity,
+        apiKey: this.aiConfig.openaiApiKey || 'sk-dummy-key-for-startup',
+        model: this.aiConfig.model,
+        reasoningEffort: this.aiConfig.reasoningEffort,
+        verbosity: this.aiConfig.verbosity,
       });
-      logger.info('Orchestrator initialized successfully');
+      this.logger.info('Orchestrator initialized successfully');
     } catch (error) {
-      logger.fatal({ error }, 'FATAL: Orchestrator initialization failed');
+      this.logger.fatal({ error }, 'FATAL: Orchestrator initialization failed');
       throw error;
     }
 
-    // Create HTTP server
-    this.server = http.createServer(this.handleRequest.bind(this));
-
-    logger.info('Tide AI Service initialized', {
-      model: this.config.model,
+    this.logger.info('Tide AI Service initialized', {
+      model: this.aiConfig.model,
       toolsEnabled: {
-        intelligence: this.config.includeIntelligenceTools,
-        custom: this.config.includeCustomTools,
+        intelligence: this.aiConfig.includeIntelligenceTools,
+        custom: this.aiConfig.includeCustomTools,
       },
     });
   }
 
   /**
-   * Start the server
+   * Setup routes
    */
-  async start(): Promise<void> {
-    return new Promise((resolve) => {
-      this.server.listen(this.config.port, '0.0.0.0', () => {
-        const logData = {
-          port: this.config.port,
-          host: '0.0.0.0',
-          endpoint: `http://0.0.0.0:${this.config.port}`,
-          env: process.env.NODE_ENV || 'production',
-          buildTimestamp: new Date().toISOString(),
-          version: '2.0.2-redeploy',
-        };
-        logger.info('🚀 AI SERVICE NOW LISTENING', logData);
-        resolve();
-      });
+  protected setupRoutes(app: express.Application): void {
+    // JSON parsing middleware
+    app.use(express.json({ limit: '10mb' }));
+
+    // CORS middleware
+    app.use((req, res, next) => {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      if (req.method === 'OPTIONS') {
+        res.sendStatus(204);
+        return;
+      }
+
+      next();
     });
+
+    // Main chat endpoint
+    app.post('/api/chat', this.handleChat.bind(this));
+
+    this.logger.info('Routes configured');
   }
 
   /**
-   * Stop the server
+   * Health check
    */
-  async stop(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.server.close((err) => {
-        if (err) {
-          logger.error('Error stopping server', { error: err });
-          reject(err);
-        } else {
-          logger.info('Tide AI Service stopped');
-          resolve();
-        }
-      });
-    });
-  }
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const { toolRegistry } = await import('./tools/registry.js');
+    const toolCount = toolRegistry.getToolNames().length;
 
-  /**
-   * Handle HTTP requests
-   */
-  private async handleRequest(
-    req: http.IncomingMessage,
-    res: http.ServerResponse
-  ): Promise<void> {
-    const { method, url } = req;
-
-    logger.debug('Request received', { method, url, timestamp: new Date().toISOString() });
-
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-    if (method === 'OPTIONS') {
-      logger.debug('OPTIONS request, sending 204');
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    // Routes
-    if (url === '/health' && method === 'GET') {
-      logger.debug('Routing to health check handler');
-      await this.handleHealth(res);
-      return;
-    }
-
-    if (url === '/api/chat' && method === 'POST') {
-      await this.handleChat(req, res);
-      return;
-    }
-
-    // Legacy endpoint for backward compatibility
-    if (url === '/process' && method === 'POST') {
-      await this.handleChat(req, res);
-      return;
-    }
-
-    // 404
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
-  }
-
-  /**
-   * Health check endpoint
-   */
-  private async handleHealth(res: http.ServerResponse): Promise<void> {
-    logger.info('Health check endpoint called');
-
-    const health = {
-      status: 'healthy',
-      service: 'tide-ai',
-      version: '2.0.0',
-      orchestrator: 'gpt-5',
-      model: this.config.model,
-      timestamp: new Date().toISOString(),
-      tools: {
-        registered: (await import('./tools/registry.js')).toolRegistry.getToolNames().length,
-        intelligence: this.config.includeIntelligenceTools,
-        custom: this.config.includeCustomTools,
+    return {
+      checks: {
+        orchestrator: {
+          status: 'up',
+          details: {
+            type: 'gpt-5',
+            model: this.aiConfig.model,
+            hasApiKey: !!this.aiConfig.openaiApiKey,
+          },
+        },
+        tools: {
+          status: 'up',
+          details: {
+            registered: toolCount,
+            intelligence: this.aiConfig.includeIntelligenceTools,
+            custom: this.aiConfig.includeCustomTools,
+          },
+        },
       },
     };
-
-    logger.debug('Health check response', health);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(health, null, 2));
   }
 
   /**
    * Chat endpoint - Main AI interaction
    */
-  private async handleChat(
-    req: http.IncomingMessage,
-    res: http.ServerResponse
-  ): Promise<void> {
+  private async handleChat(req: Request, res: Response): Promise<void> {
     try {
-      // Parse request
-      const body = await this.parseBody(req);
-      const request: AIRequest = JSON.parse(body);
+      const request: AIRequest = req.body;
 
       // Validate request
       if (!request.userId || !request.content) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
+        res.status(400).json({
           error: 'Bad request',
           message: 'userId and content are required',
-        }));
+        });
         return;
       }
 
-      logger.info('Processing chat request', {
+      this.logger.info('Processing chat request', {
         userId: request.userId,
         contentLength: request.content.length,
       });
 
       // Extract JWT token from Authorization header for service-to-service auth
       const authHeader = req.headers.authorization;
-      const jwtToken = authHeader?.startsWith('Bearer ') 
-        ? authHeader.substring(7) 
+      const jwtToken = authHeader?.startsWith('Bearer ')
+        ? authHeader.substring(7)
         : undefined;
 
       // Build tool context
@@ -250,7 +198,7 @@ export class TideAIServer {
       const response: AIResponse = await this.orchestrator.process(request, context);
 
       // Log success
-      logger.info('Chat request completed', {
+      this.logger.info('Chat request completed', {
         requestId: response.requestId,
         tokensUsed: response.tokensUsed,
         executionTime: response.executionTime,
@@ -258,64 +206,14 @@ export class TideAIServer {
       });
 
       // Send response
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(response, null, 2));
+      res.json(response);
     } catch (error) {
-      logger.error('Chat request failed', { error });
+      this.logger.error('Chat request failed', { error });
 
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          error: 'Internal server error',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        })
-      );
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   }
-
-  /**
-   * Parse request body
-   */
-  private parseBody(req: http.IncomingMessage): Promise<string> {
-    return new Promise((resolve, reject) => {
-      let body = '';
-
-      req.on('data', (chunk) => {
-        body += chunk.toString();
-      });
-
-      req.on('end', () => {
-        resolve(body);
-      });
-
-      req.on('error', (error) => {
-        reject(error);
-      });
-    });
-  }
-}
-
-/**
- * Start server if run directly
- */
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new TideAIServer();
-
-  server.start().catch((error) => {
-    logger.error('Failed to start server', { error });
-    process.exit(1);
-  });
-
-  // Graceful shutdown
-  process.on('SIGTERM', async () => {
-    logger.info('SIGTERM received, shutting down gracefully');
-    await server.stop();
-    process.exit(0);
-  });
-
-  process.on('SIGINT', async () => {
-    logger.info('SIGINT received, shutting down gracefully');
-    await server.stop();
-    process.exit(0);
-  });
 }

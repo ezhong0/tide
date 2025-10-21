@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase, getDefaultEventIntelligence } from '@tide/database';
+import { SupabaseConnectionManager, getDefaultEventIntelligence } from '@tide/database';
 import { serviceUrls } from '@tide/config';
 import type { UserId, Event as DBEvent, EventIntelligence, ContactIntelligence } from '@tide/types';
 
@@ -92,7 +92,7 @@ export interface TimeAllocation {
  * Auto-generates comprehensive pre-meeting briefs with context and preparation guidance
  */
 export class MeetingBriefGenerator {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
   private aiServiceURL = serviceUrls.ai;
   private emailServiceURL = serviceUrls.email;
   private workflowServiceURL = serviceUrls.workflow;

@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from '@tide/config';
-import { logger } from '@tide/logger';
+import { ServiceBase, type HealthStatus } from '@tide/base';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   authenticateJWT,
@@ -15,63 +16,63 @@ import { SmartScheduler } from './scheduler/smart-scheduler.js';
 import type { CalendarProvider, OAuthTokens, MeetingRequest } from './types/index.js';
 
 /**
- * Calendar service main application
+ * Calendar service - Intelligent calendar management
+ * Extends ServiceBase for graceful shutdown and resource management
  */
-class CalendarService {
-  private app: express.Application;
-  private scheduler: SmartScheduler;
+class CalendarService extends ServiceBase {
+  private scheduler!: SmartScheduler;
   private providers: Map<string, GoogleCalendarProvider>;
 
   constructor() {
-    this.app = express();
-    this.scheduler = new SmartScheduler();
-    this.providers = new Map();
+    super({
+      name: 'calendar',
+      version: '0.1.0',
+      port: env.PORT || 3004,
+      shutdownTimeout: 10000, // 10 seconds for graceful shutdown
+    });
 
-    this.setupMiddleware();
-    this.setupRoutes();
+    this.providers = new Map();
   }
 
   /**
-   * Setup Express middleware
+   * Initialize service resources
    */
-  private setupMiddleware(): void {
-    this.app.use(helmet());
-    this.app.use(cors());
-    this.app.use(express.json());
+  protected async initialize(): Promise<void> {
+    this.scheduler = new SmartScheduler();
 
-    // Rate limiting (100 req/min)
-    this.app.use(moderateRateLimit);
+    // Register database connection manager for cleanup
+    this.registerResource({
+      name: 'database',
+      cleanup: async () => {
+        await SupabaseConnectionManager.cleanup();
+      },
+    });
+
+    this.logger.info('Calendar service initialized successfully');
+  }
+
+  /**
+   * Setup Express routes
+   */
+  protected setupRoutes(app: express.Application): void {
+    // Middleware
+    app.use(helmet());
+    app.use(cors());
+    app.use(express.json());
+    app.use(moderateRateLimit);
 
     // Request logging
-    this.app.use((req, res, next) => {
-      logger.info(
-        {
-          method: req.method,
-          path: req.path,
-          ip: req.ip,
-          userId: req.user?.userId,
-        },
-        'Incoming request'
-      );
+    app.use((req, res, next) => {
+      this.logger.info({
+        method: req.method,
+        path: req.path,
+        userId: req.user?.userId,
+      }, 'Incoming request');
       next();
-    });
-  }
-
-  /**
-   * Setup API routes
-   */
-  private setupRoutes(): void {
-    // Health check
-    this.app.get('/health', (req, res) => {
-      res.json({
-        status: 'healthy',
-        service: 'calendar',
-        timestamp: new Date().toISOString(),
-      });
     });
 
     // Connect calendar provider
-    this.app.post('/connect/:provider', authenticateJWT, async (req, res) => {
+    app.post('/connect/:provider', authenticateJWT, async (req, res) => {
       try {
         const { provider } = req.params;
         const { userId, tokens } = req.body;
@@ -85,17 +86,17 @@ class CalendarService {
 
         this.providers.set(`${userId}-${provider}`, calendarProvider);
 
-        logger.info({ userId, provider }, 'Calendar provider connected');
+        this.logger.info({ userId, provider }, 'Calendar provider connected');
 
         res.json({ success: true, provider });
       } catch (error) {
-        logger.error({ error }, 'Failed to connect calendar provider');
+        this.logger.error({ error }, 'Failed to connect calendar provider');
         res.status(500).json({ error: 'Failed to connect calendar provider' });
       }
     });
 
     // Fetch events
-    this.app.get('/events/:userId/:provider', authenticateJWT, async (req, res) => {
+    app.get('/events/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { start, end } = req.query;
@@ -116,13 +117,13 @@ class CalendarService {
 
         res.json({ events, count: events.length });
       } catch (error) {
-        logger.error({ error }, 'Failed to fetch events');
+        this.logger.error({ error }, 'Failed to fetch events');
         res.status(500).json({ error: 'Failed to fetch events' });
       }
     });
 
     // Get availability
-    this.app.get('/availability/:userId/:provider', authenticateJWT, async (req, res) => {
+    app.get('/availability/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { start, end } = req.query;
@@ -143,13 +144,13 @@ class CalendarService {
 
         res.json({ availability });
       } catch (error) {
-        logger.error({ error }, 'Failed to get availability');
+        this.logger.error({ error }, 'Failed to get availability');
         res.status(500).json({ error: 'Failed to get availability' });
       }
     });
 
     // Schedule meeting
-    this.app.post('/schedule', authenticateJWT, async (req, res) => {
+    app.post('/schedule', authenticateJWT, async (req, res) => {
       try {
         const request = req.body as MeetingRequest;
 
@@ -165,13 +166,13 @@ class CalendarService {
 
         res.json({ result });
       } catch (error) {
-        logger.error({ error }, 'Failed to schedule meeting');
+        this.logger.error({ error }, 'Failed to schedule meeting');
         res.status(500).json({ error: 'Failed to schedule meeting' });
       }
     });
 
     // Create event
-    this.app.post('/events/:userId/:provider', authenticateJWT, async (req, res) => {
+    app.post('/events/:userId/:provider', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider } = req.params;
         const { event } = req.body;
@@ -189,13 +190,13 @@ class CalendarService {
 
         res.json({ event: created });
       } catch (error) {
-        logger.error({ error }, 'Failed to create event');
+        this.logger.error({ error }, 'Failed to create event');
         res.status(500).json({ error: 'Failed to create event' });
       }
     });
 
     // Update event
-    this.app.patch('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
+    app.patch('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider, eventId } = req.params;
         const { updates } = req.body;
@@ -213,13 +214,13 @@ class CalendarService {
 
         res.json({ event: updated });
       } catch (error) {
-        logger.error({ error }, 'Failed to update event');
+        this.logger.error({ error }, 'Failed to update event');
         res.status(500).json({ error: 'Failed to update event' });
       }
     });
 
     // Delete event
-    this.app.delete('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
+    app.delete('/events/:userId/:provider/:eventId', authenticateJWT, async (req, res) => {
       try {
         const { userId, provider, eventId } = req.params;
 
@@ -232,16 +233,37 @@ class CalendarService {
 
         res.json({ success: true });
       } catch (error) {
-        logger.error({ error }, 'Failed to delete event');
+        this.logger.error({ error }, 'Failed to delete event');
         res.status(500).json({ error: 'Failed to delete event' });
       }
     });
 
     // 404 handler - must be before error handler
-    this.app.use(notFoundHandler);
+    app.use(notFoundHandler);
 
     // Error handler - must be last
-    this.app.use(errorHandler);
+    app.use(errorHandler);
+  }
+
+  /**
+   * Custom health checks
+   */
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const dbStatus = SupabaseConnectionManager.getStatus();
+
+    return {
+      checks: {
+        scheduler: { status: 'up' },
+        database: {
+          status: dbStatus.serviceRole ? 'up' : 'down',
+          details: dbStatus,
+        },
+        providers: {
+          status: 'up',
+          details: { count: this.providers.size },
+        },
+      },
+    };
   }
 
   /**
@@ -257,24 +279,15 @@ class CalendarService {
         throw new Error(`Unsupported provider: ${provider}`);
     }
   }
-
-  /**
-   * Start the calendar service
-   */
-  async start(): Promise<void> {
-    const port = env.PORT || 3004;
-
-    this.app.listen(port, () => {
-      logger.info({ port, service: 'calendar' }, 'Calendar service started');
-    });
-  }
 }
 
 // Start the service
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = express();
   const service = new CalendarService();
-  service.start().catch((error) => {
-    logger.error({ error }, 'Failed to start calendar service');
+
+  service.start(app).catch((error) => {
+    console.error('Failed to start calendar service:', error);
     process.exit(1);
   });
 }

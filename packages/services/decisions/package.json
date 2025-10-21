@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tide/base": "workspace:*",
     "@tide/config": "workspace:*",
     "@tide/logger": "workspace:*",
     "@tide/types": "workspace:*",

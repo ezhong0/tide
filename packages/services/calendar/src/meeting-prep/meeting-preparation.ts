@@ -1,9 +1,9 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type { CalendarEvent, Attendee } from '../types/index.js';
 
-const supabase = createSupabase();
+const supabase = SupabaseConnectionManager.getInstance();
 
 export interface ParticipantInfo {
   attendee: Attendee;

@@ -9,14 +9,15 @@ import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
 import { createLogger } from '@tide/logger';
 import { kafkaConfig } from '@tide/config';
 import type { AIRequest } from '@tide/contracts';
-import { AIOrchestrator } from '../orchestration/ai-orchestrator.js';
+import { GPT5Orchestrator } from '../orchestration/gpt5-orchestrator.js';
+import type { ToolContext } from '../tools/types.js';
 
 const logger = createLogger({ component: 'KafkaConsumer' });
 
 export class AIKafkaConsumer {
   private kafka: Kafka | null = null;
   private consumer: Consumer | null = null;
-  private orchestrator: AIOrchestrator;
+  private orchestrator: GPT5Orchestrator;
   private isRunning = false;
 
   constructor() {
@@ -31,10 +32,14 @@ export class AIKafkaConsumer {
         groupId: 'ai-service-group',
       });
     } else {
-      logger.warn('Kafka not configured - event processing disabled (Week 4-5)');
+      logger.warn('Kafka not configured - event processing disabled');
     }
 
-    this.orchestrator = new AIOrchestrator();
+    // Initialize GPT-5 orchestrator
+    this.orchestrator = new GPT5Orchestrator({
+      apiKey: process.env.OPENAI_API_KEY || '',
+      model: process.env.GPT5_MODEL || 'gpt-5-mini',
+    });
   }
 
   /**
@@ -110,8 +115,16 @@ export class AIKafkaConsumer {
       // Convert event to AI request
       const aiRequest = this.eventToAIRequest(event);
 
-      // Process with AI orchestrator
-      const response = await this.orchestrator.process(aiRequest);
+      // Build tool context
+      const context: ToolContext = {
+        userId: aiRequest.userId,
+        requestId: `kafka-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        userEmail: aiRequest.context?.userEmail,
+        timestamp: Date.now(),
+      };
+
+      // Process with GPT-5 orchestrator
+      const response = await this.orchestrator.process(aiRequest, context);
 
       // Publish AI response
       await this.publishResponse(response);

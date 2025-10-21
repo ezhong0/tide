@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase, getDefaultContactIntelligence, updateContactIntelligence } from '@tide/database';
+import { SupabaseConnectionManager, getDefaultContactIntelligence, updateContactIntelligence } from '@tide/database';
 import type { UserId, ContactIntelligence } from '@tide/types';
 import { vipDetector, type VIPScore } from './vip-detector.js';
 
@@ -37,7 +37,7 @@ export interface EmailInteraction {
  * Tracks email interactions and builds relationship intelligence
  */
 export class RelationshipTracker {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
   private aiServiceURL = process.env.AI_SERVICE_URL || 'http://localhost:3001';
 
   /**

@@ -50,7 +50,7 @@ export class CapabilityMatrix {
     this.addRule('send_email', {
       condition: (ctx, prefs) => {
         const email = ctx.payload as any;
-        return prefs?.vipContacts?.includes(email.to);
+        return prefs?.vipContacts?.includes(email.to) ?? false;
       },
       canExecuteAlone: false,
       requiresApproval: true,
@@ -81,7 +81,7 @@ export class CapabilityMatrix {
     this.addRule('decline_meeting', {
       condition: (ctx, prefs) => {
         const meeting = ctx.payload as any;
-        return prefs?.vipContacts?.some(vip => meeting.attendees?.includes(vip));
+        return prefs?.vipContacts?.some(vip => meeting.attendees?.includes(vip)) ?? false;
       },
       canExecuteAlone: false,
       requiresApproval: true,

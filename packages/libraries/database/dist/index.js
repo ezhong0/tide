@@ -14,9 +14,11 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createLock = exports.RedisLock = exports.closeRedis = exports.getRedis = exports.initRedis = exports.createSupabase = void 0;
+exports.createLock = exports.RedisLock = exports.closeRedis = exports.getRedis = exports.initRedis = exports.SupabaseConnectionManager = exports.createSupabase = void 0;
 var client_1 = require("./client");
 Object.defineProperty(exports, "createSupabase", { enumerable: true, get: function () { return client_1.createSupabase; } });
+var connection_manager_js_1 = require("./connection-manager.js");
+Object.defineProperty(exports, "SupabaseConnectionManager", { enumerable: true, get: function () { return connection_manager_js_1.SupabaseConnectionManager; } });
 var redis_1 = require("./redis");
 Object.defineProperty(exports, "initRedis", { enumerable: true, get: function () { return redis_1.initRedis; } });
 Object.defineProperty(exports, "getRedis", { enumerable: true, get: function () { return redis_1.getRedis; } });

@@ -3,8 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import { env, serviceUrls } from '@tide/config';
-import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { ServiceBase, type HealthStatus } from '@tide/base';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import {
   authenticateJWT,
@@ -18,26 +18,43 @@ import {
  *
  * Provides screen-based endpoints that aggregate multiple backend services
  * Optimized for mobile clients to reduce round-trips and payload sizes
+ * Extends ServiceBase for graceful shutdown and resource management
  */
-class MobileBFF {
-  private app: express.Application;
-  private db: ReturnType<typeof createSupabase>;
+class MobileBFF extends ServiceBase {
+  private db!: ReturnType<typeof SupabaseConnectionManager.getInstance>;
 
   constructor() {
-    this.app = express();
-    this.db = createSupabase(true);
-
-    this.setupMiddleware();
-    this.setupRoutes();
+    super({
+      name: 'mobile-bff',
+      version: '0.1.0',
+      port: env.PORT || 3009,
+      shutdownTimeout: 10000,
+    });
   }
 
-  private setupMiddleware(): void {
-    this.app.use(helmet());
-    this.app.use(cors());
-    this.app.use(express.json({ limit: '1mb' })); // Limit request body size
+  protected async initialize(): Promise<void> {
+    // Initialize database connection
+    this.db = SupabaseConnectionManager.getInstance(true);
+
+    // Register database cleanup
+    this.registerResource({
+      name: 'database',
+      cleanup: async () => {
+        await SupabaseConnectionManager.cleanup();
+      },
+    });
+
+    this.logger.info('Mobile BFF initialized successfully');
+  }
+
+  protected setupRoutes(app: express.Application): void {
+    // Middleware
+    app.use(helmet());
+    app.use(cors());
+    app.use(express.json({ limit: '1mb' })); // Limit request body size
 
     // Response compression - reduces payload size by ~70%
-    this.app.use(compression({
+    app.use(compression({
       filter: (req, res) => {
         if (req.headers['x-no-compression']) {
           return false;
@@ -48,32 +65,20 @@ class MobileBFF {
       level: 6, // Balance between speed and compression ratio
     }));
 
-    // Rate limiting (100 req/min)
-    this.app.use(moderateRateLimit);
+    app.use(moderateRateLimit);
 
     // Request logging
-    this.app.use((req, res, next) => {
-      logger.info({
+    app.use((req, res, next) => {
+      this.logger.info({
         method: req.method,
         path: req.path,
         userId: req.user?.userId || req.body?.userId || req.query?.userId,
       }, 'BFF request');
       next();
     });
-  }
-
-  private setupRoutes(): void {
-    // Health check
-    this.app.get('/health', (req, res) => {
-      res.json({
-        status: 'healthy',
-        service: 'mobile-bff',
-        timestamp: new Date().toISOString(),
-      });
-    });
 
     // Dashboard screen - aggregates all dashboard data
-    this.app.get('/v1/screen/dashboard', async (req, res) => {
+    app.get('/v1/screen/dashboard', async (req, res) => {
       try {
         const { userId } = req.query;
 
@@ -119,13 +124,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Dashboard screen failed');
+        this.logger.error({ error }, 'Dashboard screen failed');
         res.status(500).json({ error: 'Failed to load dashboard' });
       }
     });
 
     // Inbox screen - email list with triage data
-    this.app.get('/v1/screen/inbox', async (req, res) => {
+    app.get('/v1/screen/inbox', async (req, res) => {
       try {
         const { userId, filter = 'all', limit = 20, offset = 0 } = req.query;
 
@@ -207,13 +212,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Inbox screen failed');
+        this.logger.error({ error }, 'Inbox screen failed');
         res.status(500).json({ error: 'Failed to load inbox' });
       }
     });
 
     // Email detail screen - single email with full context
-    this.app.get('/v1/screen/email/:emailId', async (req, res) => {
+    app.get('/v1/screen/email/:emailId', async (req, res) => {
       try {
         const { emailId } = req.params;
         const { userId } = req.query;
@@ -271,13 +276,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Email detail screen failed');
+        this.logger.error({ error }, 'Email detail screen failed');
         res.status(500).json({ error: 'Failed to load email' });
       }
     });
 
     // Calendar screen - events with conflicts and suggestions
-    this.app.get('/v1/screen/calendar', async (req, res) => {
+    app.get('/v1/screen/calendar', async (req, res) => {
       try {
         const { userId, startDate, endDate } = req.query;
 
@@ -342,13 +347,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Calendar screen failed');
+        this.logger.error({ error }, 'Calendar screen failed');
         res.status(500).json({ error: 'Failed to load calendar' });
       }
     });
 
     // Meeting detail screen - full meeting context
-    this.app.get('/v1/screen/meeting/:eventId', async (req, res) => {
+    app.get('/v1/screen/meeting/:eventId', async (req, res) => {
       try {
         const { eventId } = req.params;
         const { userId } = req.query;
@@ -401,13 +406,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Meeting detail screen failed');
+        this.logger.error({ error }, 'Meeting detail screen failed');
         res.status(500).json({ error: 'Failed to load meeting' });
       }
     });
 
     // Chat/AI screen - conversation with context
-    this.app.get('/v1/screen/chat', async (req, res) => {
+    app.get('/v1/screen/chat', async (req, res) => {
       try {
         const { userId, limit = 20 } = req.query;
 
@@ -454,13 +459,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Chat screen failed');
+        this.logger.error({ error }, 'Chat screen failed');
         res.status(500).json({ error: 'Failed to load chat' });
       }
     });
 
     // Profile/settings screen
-    this.app.get('/v1/screen/profile', async (req, res) => {
+    app.get('/v1/screen/profile', async (req, res) => {
       try {
         const { userId } = req.query;
 
@@ -489,13 +494,13 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Profile screen failed');
+        this.logger.error({ error }, 'Profile screen failed');
         res.status(500).json({ error: 'Failed to load profile' });
       }
     });
 
     // Batch endpoint - fetch multiple resources in one call
-    this.app.post('/v1/batch', async (req, res) => {
+    app.post('/v1/batch', async (req, res) => {
       try {
         const { userId, requests } = req.body;
 
@@ -525,16 +530,30 @@ class MobileBFF {
           },
         });
       } catch (error) {
-        logger.error({ error }, 'Batch request failed');
+        this.logger.error({ error }, 'Batch request failed');
         res.status(500).json({ error: 'Batch request failed' });
       }
     });
 
     // 404 handler - must be before error handler
-    this.app.use(notFoundHandler);
+    app.use(notFoundHandler);
 
     // Error handler - must be last
-    this.app.use(errorHandler);
+    app.use(errorHandler);
+  }
+
+  protected async healthCheck(): Promise<Partial<HealthStatus>> {
+    const dbStatus = SupabaseConnectionManager.getStatus();
+
+    return {
+      checks: {
+        database: {
+          status: dbStatus.serviceRole ? 'up' : 'down',
+          details: dbStatus,
+        },
+        aggregation: { status: 'up' },
+      },
+    };
   }
 
   // Helper methods
@@ -622,23 +641,25 @@ class MobileBFF {
   private async getDailySummary(userId: UserId) {
     // Call AI service for daily summary
     try {
-      const response = await fetch(`${serviceUrls.ai}/process`, {
+      const response = await fetch(`${serviceUrls.ai}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          type: 'daily_summary',
-          input: {},
+          content: 'Generate a brief daily summary for the user based on their schedule and tasks for today.',
+          context: {
+            userEmail: userId,
+          },
         }),
         signal: AbortSignal.timeout(5000),
       });
 
       if (response.ok) {
-        const result = (await response.json()) as { summary?: string };
-        return result.summary || 'Your day looks manageable!';
+        const result = (await response.json()) as { content?: string };
+        return result.content || 'Your day looks manageable!';
       }
     } catch (error) {
-      logger.warn({ error }, 'Failed to get daily summary');
+      this.logger.warn({ error }, 'Failed to get daily summary');
     }
 
     return 'Ready to tackle your day!';
@@ -770,21 +791,15 @@ class MobileBFF {
         throw new Error(`Unknown batch request type: ${request.type}`);
     }
   }
-
-  async start(): Promise<void> {
-    const port = env.PORT || 3009;
-
-    this.app.listen(port, () => {
-      logger.info({ port, service: 'mobile-bff' }, 'Mobile BFF started');
-    });
-  }
 }
 
 // Start the service
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = express();
   const service = new MobileBFF();
-  service.start().catch((error) => {
-    logger.error({ error }, 'Failed to start mobile BFF');
+
+  service.start(app).catch((error) => {
+    console.error('Failed to start mobile BFF:', error);
     process.exit(1);
   });
 }

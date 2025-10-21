@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import type { UserId } from '@tide/types';
 import type { ActionSuggestion, ActionContext, UserPreferences } from '../types/index.js';
 import { CapabilityMatrix } from '../executor/capability-matrix.js';
@@ -9,7 +9,7 @@ import { CapabilityMatrix } from '../executor/capability-matrix.js';
  * Analyzes user data and suggests intelligent actions
  */
 export class ActionSuggester {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
   private capabilityMatrix = new CapabilityMatrix();
 
   /**

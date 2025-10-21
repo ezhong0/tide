@@ -1,5 +1,5 @@
 import { logger } from '@tide/logger';
-import { createSupabase } from '@tide/database';
+import { SupabaseConnectionManager } from '@tide/database';
 import { serviceUrls } from '@tide/config';
 import type { UserId } from '@tide/types';
 import { EmailCapabilityMatrix, type Email, type UserContext, type RelationshipInfo, type CapabilityDecision } from './email-capability-matrix.js';
@@ -35,7 +35,7 @@ export interface EmailAnalysis {
  * Processes emails and executes safe actions automatically, queues sensitive ones for approval
  */
 export class AutonomousEmailHandler {
-  private db = createSupabase(true);
+  private db = SupabaseConnectionManager.getInstance(true);
   private capabilityMatrix = new EmailCapabilityMatrix();
   private aiServiceURL = serviceUrls.ai;
 

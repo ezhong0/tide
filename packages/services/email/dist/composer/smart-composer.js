@@ -263,16 +263,15 @@ Body: [complete email body with greeting and closing]`;
     async generateWithAI(prompt, request) {
         try {
             logger.debug({ userId: request.userId }, 'Calling AI service for email composition');
-            const response = await fetch(`${serviceUrls.ai}/process`, {
+            const response = await fetch(`${serviceUrls.ai}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: request.userId,
-                    type: 'email_compose',
-                    input: {
-                        prompt,
-                        maxTokens: 800,
-                        temperature: 0.7,
+                    content: prompt,
+                    context: {
+                        userEmail: request.userId,
+                        type: 'email_compose',
                     },
                 }),
                 signal: AbortSignal.timeout(30000), // 30 second timeout
@@ -281,11 +280,10 @@ Body: [complete email body with greeting and closing]`;
                 throw new Error(`AI service returned ${response.status}`);
             }
             const result = (await response.json());
-            // Extract content from response
-            const content = result.content || result.output?.content;
-            if (!content) {
+            if (!result.content) {
                 throw new Error('AI service returned empty content');
             }
+            const content = result.content;
             logger.debug({ userId: request.userId, contentLength: content.length }, 'AI draft generated');
             return content;
         }
