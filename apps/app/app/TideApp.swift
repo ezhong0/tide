@@ -15,10 +15,8 @@ struct TideApp: App {
             RootView()
                 .environmentObject(authManager)
                 .environmentObject(tideCore)
-                .onOpenURL { url in
-                    // Handle OAuth callback URLs
-                    handleOAuthCallback(url)
-                }
+                // Note: OAuth callbacks are handled automatically by ASWebAuthenticationSession
+                // No need to handle them here to avoid duplicate processing
         }
     }
 
@@ -29,22 +27,6 @@ struct TideApp: App {
         #else
         print("🌊 Tide App Launching (Release)")
         #endif
-    }
-
-    private func handleOAuthCallback(_ url: URL) {
-        print("🔐 Received OAuth callback: \(url)")
-
-        // Handle Supabase OAuth callbacks
-        if url.scheme == "com.tide.app" {
-            _Concurrency.Task {
-                do {
-                    try await authManager.handleOAuthCallback(url: url)
-                    print("✅ OAuth callback handled successfully")
-                } catch {
-                    print("❌ OAuth callback error: \(error.localizedDescription)")
-                }
-            }
-        }
     }
 }
 

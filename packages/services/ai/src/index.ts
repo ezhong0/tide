@@ -28,11 +28,11 @@ async function main(): Promise<void> {
   try {
     const app = express();
 
-    // Initialize GPT-5 server
+    // Initialize AI server using Claude Haiku 4.5
     const server = new TideAIServer({
       port: parseInt(process.env.PORT || process.env.AI_SERVICE_PORT || '3001', 10),
-      openaiApiKey: process.env.OPENAI_API_KEY,
-      model: process.env.GPT5_MODEL,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+      model: process.env.ANTHROPIC_MODEL, // Falls back to claude-haiku-4-5 if not set
       includeIntelligenceTools: process.env.DISABLE_INTELLIGENCE_TOOLS !== 'true',
       includeCustomTools: process.env.ENABLE_CUSTOM_TOOLS === 'true',
     });

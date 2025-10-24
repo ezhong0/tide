@@ -34,6 +34,9 @@ file_size_limit = "50MiB"
 [auth]
 enabled = true
 site_url = "https://ozrocykjomgcuphicqpg.supabase.co"
+# IMPORTANT: These redirect URLs must also be configured in Supabase Dashboard
+# Go to: Authentication > URL Configuration > Redirect URLs
+# Add each of these URLs exactly as listed below:
 additional_redirect_urls = ["exp://localhost:19000", "com.tide.app://", "tideapp://", "http://localhost:3000"]
 jwt_expiry = 900
 enable_signup = true

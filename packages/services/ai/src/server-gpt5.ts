@@ -11,8 +11,8 @@ import type { AIRequest, AIResponse } from '@tide/contracts';
 
 export interface ServerConfig {
   port: number;
-  openaiApiKey: string;
-  model?: string; // gpt-5, gpt-5-mini, gpt-5-nano
+  anthropicApiKey: string;
+  model?: string; // claude-haiku-4-5 (default), claude-sonnet-4-5
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
   verbosity?: 'low' | 'medium' | 'high';
   includeIntelligenceTools?: boolean;
@@ -30,8 +30,9 @@ export class TideAIServer extends ServiceBase {
     // Prepare config before calling super
     const aiConfig: ServerConfig = {
       port: serverConfig.port || parseInt(process.env.PORT || '3001', 10),
-      openaiApiKey: serverConfig.openaiApiKey || process.env.OPENAI_API_KEY || '',
-      model: serverConfig.model || process.env.GPT5_MODEL || 'gpt-5-mini',
+      anthropicApiKey: serverConfig.anthropicApiKey || process.env.ANTHROPIC_API_KEY || '',
+      // Use Claude Haiku 4.5 as default (fast, cost-effective, great coding performance)
+      model: serverConfig.model || process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
       reasoningEffort: serverConfig.reasoningEffort || 'medium',
       verbosity: serverConfig.verbosity || 'medium',
       // Disable intelligence tools by default to avoid complex agent dependencies
@@ -55,12 +56,12 @@ export class TideAIServer extends ServiceBase {
   protected async initialize(): Promise<void> {
     this.logger.debug('TideAIServer initialization starting', {
       config: this.aiConfig,
-      hasApiKey: !!this.aiConfig.openaiApiKey,
+      hasApiKey: !!this.aiConfig.anthropicApiKey,
     });
 
     // Validate API key
-    if (!this.aiConfig.openaiApiKey) {
-      this.logger.warn('OPENAI_API_KEY not configured - service will be limited');
+    if (!this.aiConfig.anthropicApiKey) {
+      this.logger.warn('ANTHROPIC_API_KEY not configured - service will be limited');
       // Don't throw error, allow service to start for health checks
       // Actual AI requests will fail gracefully
     }
@@ -78,11 +79,11 @@ export class TideAIServer extends ServiceBase {
       throw error;
     }
 
-    // Initialize GPT-5 orchestrator (use dummy key if not configured)
-    this.logger.debug('Initializing GPT-5 orchestrator');
+    // Initialize Claude orchestrator (use dummy key if not configured)
+    this.logger.debug('Initializing Claude orchestrator');
     try {
       this.orchestrator = new GPT5Orchestrator({
-        apiKey: this.aiConfig.openaiApiKey || 'sk-dummy-key-for-startup',
+        apiKey: this.aiConfig.anthropicApiKey || 'sk-dummy-key-for-startup',
         model: this.aiConfig.model,
         reasoningEffort: this.aiConfig.reasoningEffort,
         verbosity: this.aiConfig.verbosity,
@@ -141,9 +142,9 @@ export class TideAIServer extends ServiceBase {
         orchestrator: {
           status: 'up',
           details: {
-            type: 'gpt-5',
+            type: 'claude-haiku-4-5',
             model: this.aiConfig.model,
-            hasApiKey: !!this.aiConfig.openaiApiKey,
+            hasApiKey: !!this.aiConfig.anthropicApiKey,
           },
         },
         tools: {

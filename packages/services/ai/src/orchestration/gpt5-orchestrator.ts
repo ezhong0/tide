@@ -1,9 +1,9 @@
 /**
- * GPT-5 Orchestrator
- * Main orchestration engine using GPT-5 function calling
+ * AI Orchestrator
+ * Main orchestration engine using Claude or OpenAI function calling
  */
 
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 import { createLogger } from '@tide/logger';
 import { thresholds, timeouts } from '@tide/config';
 import { withTimeout } from '../utils/helpers.js';
@@ -14,15 +14,15 @@ const logger = createLogger({ component: 'GPT5Orchestrator' });
 
 export interface GPT5OrchestratorConfig {
   apiKey: string;
-  model?: string; // Default: 'gpt-5-mini'
+  model?: string; // Default: 'claude-haiku-4-5'
   maxIterations?: number;
   temperature?: number;
-  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'; // GPT-5 reasoning depth
-  verbosity?: 'low' | 'medium' | 'high'; // GPT-5 answer length control
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high';
+  verbosity?: 'low' | 'medium' | 'high';
 }
 
 export class GPT5Orchestrator {
-  private client: OpenAI;
+  private client: Anthropic;
   private model: string;
   private maxIterations: number;
   private temperature: number;
@@ -30,96 +30,94 @@ export class GPT5Orchestrator {
   private verbosity: 'low' | 'medium' | 'high';
 
   constructor(config: GPT5OrchestratorConfig) {
-    this.client = new OpenAI({ apiKey: config.apiKey });
-    this.model = config.model || 'gpt-5-mini'; // gpt-5, gpt-5-mini, gpt-5-nano
+    this.client = new Anthropic({ apiKey: config.apiKey });
+    this.model = config.model || 'claude-haiku-4-5';
     this.maxIterations = config.maxIterations !== undefined ? config.maxIterations : thresholds.ai.maxIterations;
     this.temperature = config.temperature !== undefined ? config.temperature : thresholds.ai.temperature;
     this.reasoningEffort = config.reasoningEffort || thresholds.ai.reasoningEffort;
     this.verbosity = config.verbosity || thresholds.ai.verbosity;
 
-    logger.info('GPT5Orchestrator initialized', {
+    logger.info('AI Orchestrator initialized', {
       model: this.model,
       maxIterations: this.maxIterations,
-      reasoningEffort: this.reasoningEffort,
-      verbosity: this.verbosity,
+      provider: 'anthropic',
     });
   }
 
   /**
-   * Process a request using GPT-5 function calling
+   * Process a request using Claude function calling
    */
   async process(request: AIRequest, context: ToolContext): Promise<AIResponse> {
     const startTime = Date.now();
     const executionLog: ToolExecutionLog[] = [];
 
     try {
-      // Build conversation messages
-      const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-        {
-          role: 'system',
-          content: this.buildSystemPrompt(context),
-        },
+      // Build conversation messages (Anthropic format)
+      const messages: Anthropic.Messages.MessageParam[] = [
         {
           role: 'user',
           content: request.content,
         },
       ];
 
-      // Convert tools to OpenAI format
-      const tools = this.convertToolsToOpenAIFormat();
+      // Convert tools to Anthropic format
+      const tools = this.convertToolsToAnthropicFormat();
+      const systemPrompt = this.buildSystemPrompt(context);
 
-      logger.info('Starting GPT-5 orchestration', {
+      logger.info('Starting Claude orchestration', {
         requestId: context.requestId,
         userId: context.userId,
         toolsAvailable: tools.length,
       });
 
-      let response = await this.client.chat.completions.create({
+      let response = await this.client.messages.create({
         model: this.model,
+        max_tokens: 4096,
+        system: systemPrompt,
         messages,
         tools,
-        tool_choice: 'auto',
         temperature: this.temperature,
-        // Note: reasoning_effort and verbosity are not yet supported in OpenAI SDK
-        // Will be enabled when SDK is updated
       });
 
       let iterations = 0;
-      let toolCalls = response.choices[0].message.tool_calls || [];
+      let toolUseBlocks = response.content.filter(block => block.type === 'tool_use') as Anthropic.Messages.ToolUseBlock[];
 
       // Execute tools iteratively
-      while (toolCalls.length > 0 && iterations < this.maxIterations) {
+      while (toolUseBlocks.length > 0 && iterations < this.maxIterations) {
         iterations++;
 
-        logger.debug('GPT-5 iteration', {
+        logger.debug('Claude iteration', {
           iteration: iterations,
-          toolCalls: toolCalls.length,
+          toolCalls: toolUseBlocks.length,
         });
 
-        // Add assistant's message (with tool calls) to conversation
-        messages.push(response.choices[0].message);
+        // Add assistant's message to conversation
+        messages.push({
+          role: 'assistant',
+          content: response.content,
+        });
 
-        // Execute all tool calls (GPT-5 decides parallel vs sequential)
-        const toolResults = await Promise.all(
-          toolCalls.map(async (call) => {
+        // Execute all tool calls
+        const toolResults: Anthropic.Messages.ToolResultBlockParam[] = await Promise.all(
+          toolUseBlocks.map(async (toolUse) => {
             const toolStartTime = Date.now();
-            const args = JSON.parse(call.function.arguments);
+            const args = toolUse.input;
 
             try {
               logger.info('Executing tool', {
-                tool: call.function.name,
+                tool: toolUse.name,
                 args,
               });
 
               // Execute tool with timeout protection
               const result = await withTimeout(
-                toolRegistry.execute(call.function.name, args, context),
+                toolRegistry.execute(toolUse.name, args, context),
                 timeouts.toolExecution,
-                `Tool: ${call.function.name}`
+                `Tool: ${toolUse.name}`
               );
 
               const log: ToolExecutionLog = {
-                tool: call.function.name,
+                tool: toolUse.name,
                 args,
                 result: result.result,
                 success: result.success,
@@ -131,20 +129,20 @@ export class GPT5Orchestrator {
               executionLog.push(log);
 
               return {
-                tool_call_id: call.id,
-                role: 'tool' as const,
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
                 content: JSON.stringify(result.result || { error: result.error }),
               };
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
               logger.error('Tool execution failed', {
-                tool: call.function.name,
+                tool: toolUse.name,
                 error: errorMessage,
               });
 
               const log: ToolExecutionLog = {
-                tool: call.function.name,
+                tool: toolUse.name,
                 args,
                 error: errorMessage,
                 success: false,
@@ -155,34 +153,40 @@ export class GPT5Orchestrator {
               executionLog.push(log);
 
               return {
-                tool_call_id: call.id,
-                role: 'tool' as const,
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
                 content: JSON.stringify({ error: errorMessage }),
+                is_error: true,
               };
             }
           })
         );
 
         // Add tool results to conversation
-        messages.push(...toolResults);
+        messages.push({
+          role: 'user',
+          content: toolResults,
+        });
 
-        // Get next response from GPT-5
-        response = await this.client.chat.completions.create({
+        // Get next response from Claude
+        response = await this.client.messages.create({
           model: this.model,
+          max_tokens: 4096,
+          system: systemPrompt,
           messages,
           tools,
-          tool_choice: 'auto',
           temperature: this.temperature,
         });
 
-        toolCalls = response.choices[0].message.tool_calls || [];
+        toolUseBlocks = response.content.filter(block => block.type === 'tool_use') as Anthropic.Messages.ToolUseBlock[];
       }
 
-      // Final response
-      const content = response.choices[0].message.content || '';
+      // Final response - extract text content
+      const textBlocks = response.content.filter(block => block.type === 'text') as Anthropic.Messages.TextBlock[];
+      const content = textBlocks.map(block => block.text).join('\n');
       const executionTime = Date.now() - startTime;
 
-      logger.info('GPT-5 orchestration complete', {
+      logger.info('Claude orchestration complete', {
         requestId: context.requestId,
         iterations,
         toolsExecuted: executionLog.length,
@@ -196,12 +200,12 @@ export class GPT5Orchestrator {
         suggestedActions: [],
         confidence: this.calculateConfidence(executionLog),
         model: {
-          primary: 'gpt-5' as any,
+          primary: 'claude-haiku' as any,
           aggregation: 'single' as any,
           reasoning: `Used GPT-5 with ${executionLog.length} tool calls across ${iterations} iterations`,
         },
-        tokensUsed: response.usage?.total_tokens || 0,
-        cost: this.calculateCost(response.usage?.total_tokens || 0),
+        tokensUsed: response.usage ? (response.usage.input_tokens + response.usage.output_tokens) : 0,
+        cost: this.calculateCost(response.usage ? (response.usage.input_tokens + response.usage.output_tokens) : 0),
         executionTime,
         timestamp: Date.now(),
         metadata: {
@@ -250,41 +254,35 @@ You can call tools multiple times and combine results intelligently. Always prio
   }
 
   /**
-   * Convert tools to OpenAI function calling format
+   * Convert tools to Anthropic tool format
    */
-  private convertToolsToOpenAIFormat(): OpenAI.Chat.ChatCompletionTool[] {
+  private convertToolsToAnthropicFormat(): Anthropic.Messages.Tool[] {
     const tools = toolRegistry.getAll();
 
     return tools.map(tool => {
       if (tool.type === 'custom') {
         // Custom tools accept free-form text input
         return {
-          type: 'function',
-          function: {
-            name: tool.name,
-            description: tool.description,
-            parameters: {
-              type: 'object',
-              properties: {
-                input: {
-                  type: 'string',
-                  description: 'Free-form input for the custom tool',
-                },
+          name: tool.name,
+          description: tool.description,
+          input_schema: {
+            type: 'object',
+            properties: {
+              input: {
+                type: 'string',
+                description: 'Free-form input for the custom tool',
               },
-              required: ['input'],
             },
+            required: ['input'],
           },
         };
       }
 
       // Standard function tools
       return {
-        type: 'function',
-        function: {
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters!,
-        },
+        name: tool.name,
+        description: tool.description,
+        input_schema: tool.parameters!,
       };
     });
   }

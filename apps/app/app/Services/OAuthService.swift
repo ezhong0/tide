@@ -36,7 +36,8 @@ final class OAuthService: NSObject, ObservableObject {
             _Concurrency.Task { @MainActor in
                 do {
                     // Get the OAuth URL from Supabase
-                    guard let redirectURL = URL(string: "com.tide.app://oauth-callback") else {
+                    // Use simple redirect URL without path to match Supabase config
+                    guard let redirectURL = URL(string: "com.tide.app://") else {
                         continuation.resume(throwing: OAuthError.invalidRedirectURL)
                         return
                     }
@@ -110,7 +111,8 @@ final class OAuthService: NSObject, ObservableObject {
                     }
 
                     session.presentationContextProvider = self
-                    session.prefersEphemeralWebBrowserSession = false
+                    // Use ephemeral session to prevent stale PKCE verifiers
+                    session.prefersEphemeralWebBrowserSession = true
 
                     if !session.start() {
                         continuation.resume(throwing: OAuthError.failedToStart)
@@ -134,7 +136,8 @@ final class OAuthService: NSObject, ObservableObject {
         let session = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Session, Error>) in
             _Concurrency.Task { @MainActor in
                 do {
-                    guard let redirectURL = URL(string: "com.tide.app://oauth-callback") else {
+                    // Use simple redirect URL without path to match Supabase config
+                    guard let redirectURL = URL(string: "com.tide.app://") else {
                         continuation.resume(throwing: OAuthError.invalidRedirectURL)
                         return
                     }
@@ -202,7 +205,8 @@ final class OAuthService: NSObject, ObservableObject {
                     }
 
                     session.presentationContextProvider = self
-                    session.prefersEphemeralWebBrowserSession = false
+                    // Use ephemeral session to prevent stale PKCE verifiers
+                    session.prefersEphemeralWebBrowserSession = true
 
                     if !session.start() {
                         continuation.resume(throwing: OAuthError.failedToStart)
