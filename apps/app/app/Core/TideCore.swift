@@ -32,6 +32,14 @@ class TideCore: ObservableObject {
 
     /// Load conversations from local storage/API
     private func loadConversations() {
+        // Load mock data in preview mode
+        if PREVIEW_MODE {
+            let mockConv = MockData.mockConversation()
+            conversations = [mockConv]
+            currentConversation = mockConv
+            return
+        }
+
         // Load from CoreData
         // let savedConversations = dataManager.fetchConversations()  // Excluded from build
 

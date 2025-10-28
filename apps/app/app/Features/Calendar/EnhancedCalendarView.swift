@@ -20,7 +20,7 @@ struct EnhancedCalendarView: View {
             Group {
                 if isLoading && calendarData == nil {
                     ProgressView("Loading calendar...")
-                } else if let data = calendarData {
+                } else if let data = (PREVIEW_MODE ? MockData.mockCalendarResponse() : calendarData) {
                     ScrollView {
                         VStack(spacing: 16) {
                             // Stats Cards
@@ -90,7 +90,7 @@ struct EnhancedCalendarView: View {
                 }
             }
             .onAppear {
-                if calendarData == nil {
+                if !PREVIEW_MODE && calendarData == nil {
                     _Concurrency.Task {
                         await loadCalendar()
                     }
@@ -107,14 +107,14 @@ struct EnhancedCalendarView: View {
                 title: "Events",
                 value: "\(stats.totalEvents)",
                 icon: "calendar",
-                color: .blue
+                gradient: TideTheme.Gradients.primary
             )
 
             StatCard(
                 title: "Today",
                 value: "\(stats.meetingsToday)",
                 icon: "clock",
-                color: .green
+                gradient: TideTheme.Gradients.secondary
             )
 
             if stats.conflicts > 0 {
@@ -122,7 +122,7 @@ struct EnhancedCalendarView: View {
                     title: "Conflicts",
                     value: "\(stats.conflicts)",
                     icon: "exclamationmark.triangle",
-                    color: .red
+                    gradient: TideTheme.Gradients.sunset
                 )
             }
         }

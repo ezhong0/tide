@@ -1,5 +1,9 @@
 import SwiftUI
 
+// MARK: - Preview Mode for Screenshots
+/// Set this to true to bypass authentication and show mock data for screenshots
+let PREVIEW_MODE = true
+
 @main
 struct TideApp: App {
     @StateObject private var authManager = AuthManager.shared
@@ -24,6 +28,9 @@ struct TideApp: App {
         // Performance monitoring
         #if DEBUG
         print("🌊 Tide App Launching (Debug)")
+        if PREVIEW_MODE {
+            print("📸 PREVIEW MODE ENABLED - Bypassing auth for screenshots")
+        }
         #else
         print("🌊 Tide App Launching (Release)")
         #endif
@@ -36,13 +43,13 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if authManager.isAuthenticated {
+            if PREVIEW_MODE || authManager.isAuthenticated {
                 MainTabView()
             } else {
                 AuthenticationView()
             }
         }
-        .preferredColorScheme(.light) // Will be dynamic later
+        .preferredColorScheme(.dark) // Beautiful dark mode enabled
     }
 }
 

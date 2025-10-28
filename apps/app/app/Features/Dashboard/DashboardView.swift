@@ -7,132 +7,150 @@ struct DashboardView: View {
 
     var body: some View {
         NavigationView {
-            ScrollView {
-                if isLoading && dashboardData == nil {
-                    // Loading state
-                    ProgressView("Loading your day...")
+            ZStack {
+                // Subtle gradient background
+                TideTheme.Gradients.subtle
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    if isLoading && dashboardData == nil {
+                        // Loading state with skeleton
+                        VStack(spacing: TideTheme.Spacing.lg) {
+                            SkeletonHeader()
+                            SkeletonAICard()
+                            SkeletonStatsRow()
+                        }
                         .padding()
-                } else if let data = dashboardData {
-                    // Content
-                    VStack(spacing: 20) {
-                        // Welcome header
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(greetingText)
-                                .font(TideTheme.Typography.largeTitle)
-                                .fontWeight(.bold)
+                    } else if let data = (PREVIEW_MODE ? MockData.mockDashboardResponse() : dashboardData) {
+                        // Content
+                        VStack(spacing: TideTheme.Spacing.lg) {
+                            // Welcome header with animation
+                            VStack(alignment: .leading, spacing: TideTheme.Spacing.sm) {
+                                Text(greetingText)
+                                    .font(TideTheme.Typography.largeTitle)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(TideTheme.textPrimary)
 
-                            if let user = data.user, let name = user.name {
-                                Text(name)
-                                    .font(TideTheme.Typography.title2)
-                                    .foregroundColor(TideTheme.primary)
+                                if let user = data.user, let name = user.name {
+                                    Text(name)
+                                        .font(TideTheme.Typography.title2)
+                                        .foregroundStyle(TideTheme.Gradients.ocean)
+                                }
                             }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, TideTheme.Spacing.md)
+                            .padding(.top, TideTheme.Spacing.sm)
 
-                        // AI Summary Card
-                        AICardView(summary: data.aiSummary)
-                            .padding(.horizontal)
+                            // AI Summary Card - Premium Design
+                            AICardView(summary: data.aiSummary)
+                                .padding(.horizontal, TideTheme.Spacing.md)
 
-                        // Stats cards
-                        HStack(spacing: 12) {
-                            StatCard(
-                                title: "Unread",
-                                value: "\(data.stats.unreadEmails)",
-                                icon: "envelope.fill",
-                                color: TideTheme.primary
-                            )
+                            // Stats cards with gradients
+                            HStack(spacing: TideTheme.Spacing.md) {
+                                StatCard(
+                                    title: "Unread",
+                                    value: "\(data.stats.unreadEmails)",
+                                    icon: "envelope.fill",
+                                    gradient: TideTheme.Gradients.primary
+                                )
 
-                            StatCard(
-                                title: "Events",
-                                value: "\(data.stats.upcomingEvents)",
-                                icon: "calendar",
-                                color: .green
-                            )
+                                StatCard(
+                                    title: "Events",
+                                    value: "\(data.stats.upcomingEvents)",
+                                    icon: "calendar",
+                                    gradient: TideTheme.Gradients.secondary
+                                )
 
-                            StatCard(
-                                title: "Tasks",
-                                value: "\(data.stats.todayTasks)",
-                                icon: "checkmark.circle.fill",
-                                color: .orange
-                            )
-                        }
-                        .padding(.horizontal)
+                                StatCard(
+                                    title: "Tasks",
+                                    value: "\(data.stats.todayTasks)",
+                                    icon: "checkmark.circle.fill",
+                                    gradient: TideTheme.Gradients.sunset
+                                )
+                            }
+                            .padding(.horizontal, TideTheme.Spacing.md)
 
-                        // Priority Emails
-                        if !data.priorityEmails.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Priority Emails")
-                                    .font(TideTheme.Typography.headline)
-                                    .fontWeight(.semibold)
-                                    .padding(.horizontal)
+                            // Priority Emails
+                            if !data.priorityEmails.isEmpty {
+                                VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                    Text("Priority Emails")
+                                        .tideSectionHeader()
+                                        .padding(.horizontal, TideTheme.Spacing.md)
 
-                                ForEach(data.priorityEmails, id: \.id) { email in
-                                    PriorityEmailRow(email: email)
-                                        .padding(.horizontal)
+                                    VStack(spacing: TideTheme.Spacing.sm) {
+                                        ForEach(data.priorityEmails, id: \.id) { email in
+                                            PriorityEmailRow(email: email)
+                                        }
+                                    }
+                                    .padding(.horizontal, TideTheme.Spacing.md)
+                                }
+                            }
+
+                            // Upcoming Events
+                            if !data.upcomingEvents.isEmpty {
+                                VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                    Text("Upcoming Events")
+                                        .tideSectionHeader()
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+
+                                    VStack(spacing: TideTheme.Spacing.sm) {
+                                        ForEach(data.upcomingEvents, id: \.id) { event in
+                                            UpcomingEventRow(event: event)
+                                        }
+                                    }
+                                    .padding(.horizontal, TideTheme.Spacing.md)
+                                }
+                            }
+
+                            // Today's Tasks
+                            if !data.todayTasks.isEmpty {
+                                VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                    Text("Today's Tasks")
+                                        .tideSectionHeader()
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+
+                                    VStack(spacing: TideTheme.Spacing.sm) {
+                                        ForEach(data.todayTasks, id: \.id) { task in
+                                            TodayTaskRow(task: task)
+                                        }
+                                    }
+                                    .padding(.horizontal, TideTheme.Spacing.md)
                                 }
                             }
                         }
+                        .padding(.vertical, TideTheme.Spacing.md)
+                    } else if let error = errorMessage {
+                        // Error state
+                        VStack(spacing: TideTheme.Spacing.lg) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 48))
+                                .foregroundStyle(TideTheme.Gradients.sunset)
 
-                        // Upcoming Events
-                        if !data.upcomingEvents.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Upcoming Events")
-                                    .font(TideTheme.Typography.headline)
-                                    .fontWeight(.semibold)
-                                    .padding(.horizontal)
+                            Text(error)
+                                .font(TideTheme.Typography.body)
+                                .foregroundColor(TideTheme.textSecondary)
+                                .multilineTextAlignment(.center)
 
-                                ForEach(data.upcomingEvents, id: \.id) { event in
-                                    UpcomingEventRow(event: event)
-                                        .padding(.horizontal)
+                            Text("Retry")
+                                .tidePrimaryButton()
+                                .onTapGesture {
+                                    _Concurrency.Task {
+                                        await loadDashboard()
+                                    }
                                 }
-                            }
+                                .padding(.horizontal, TideTheme.Spacing.xxl)
                         }
-
-                        // Today's Tasks
-                        if !data.todayTasks.isEmpty {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Today's Tasks")
-                                    .font(TideTheme.Typography.headline)
-                                    .fontWeight(.semibold)
-                                    .padding(.horizontal)
-
-                                ForEach(data.todayTasks, id: \.id) { task in
-                                    TodayTaskRow(task: task)
-                                        .padding(.horizontal)
-                                }
-                            }
-                        }
+                        .padding()
                     }
-                    .padding(.vertical)
-                } else if let error = errorMessage {
-                    // Error state
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 48))
-                            .foregroundColor(.orange)
-
-                        Text(error)
-                            .font(TideTheme.Typography.body)
-                            .foregroundColor(TideTheme.textSecondary)
-                            .multilineTextAlignment(.center)
-
-                        Button("Retry") {
-                            _Concurrency.Task {
-                                await loadDashboard()
-                            }
-                        }
-                        .buttonStyle(.borderedProminent)
-                    }
-                    .padding()
+                }
+                .refreshable {
+                    await loadDashboard()
                 }
             }
-            .refreshable {
-                await loadDashboard()
-            }
             .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                if dashboardData == nil {
+                if !PREVIEW_MODE && dashboardData == nil {
                     _Concurrency.Task {
                         await loadDashboard()
                     }
@@ -173,22 +191,46 @@ struct DashboardView: View {
 // MARK: - AI Card View
 struct AICardView: View {
     let summary: String
+    @State private var isAnimating = false
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "brain.head.profile")
-                .font(.system(size: 24))
-                .foregroundColor(TideTheme.primary)
+        HStack(spacing: TideTheme.Spacing.md) {
+            // Animated AI brain icon
+            ZStack {
+                Circle()
+                    .fill(TideTheme.Gradients.primary)
+                    .frame(width: 48, height: 48)
+                    .scaleEffect(isAnimating ? 1.1 : 1.0)
+                    .opacity(0.2)
 
-            Text(summary)
-                .font(TideTheme.Typography.body)
-                .foregroundColor(TideTheme.textPrimary)
+                Image(systemName: "brain.head.profile")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+
+            VStack(alignment: .leading, spacing: TideTheme.Spacing.xs) {
+                Text("AI Summary")
+                    .font(TideTheme.Typography.caption1Emphasized)
+                    .foregroundColor(.white.opacity(0.9))
+
+                Text(summary)
+                    .font(TideTheme.Typography.subheadline)
+                    .foregroundColor(.white)
+                    .lineLimit(3)
+            }
 
             Spacer()
         }
-        .padding()
-        .background(TideTheme.primary.opacity(0.1))
-        .cornerRadius(12)
+        .padding(TideTheme.Spacing.md)
+        .tideCardGradient(gradient: TideTheme.Gradients.ocean)
+        .onAppear {
+            withAnimation(
+                .easeInOut(duration: 2.0)
+                .repeatForever(autoreverses: true)
+            ) {
+                isAnimating = true
+            }
+        }
     }
 }
 
@@ -197,27 +239,34 @@ struct StatCard: View {
     let title: String
     let value: String
     let icon: String
-    let color: Color
+    let gradient: LinearGradient
 
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 24))
-                .foregroundColor(color)
+        VStack(spacing: TideTheme.Spacing.sm) {
+            // Icon with gradient background
+            ZStack {
+                Circle()
+                    .fill(gradient)
+                    .frame(width: 44, height: 44)
+                    .opacity(0.15)
+
+                Image(systemName: icon)
+                    .font(.system(size: TideTheme.Size.iconMedium))
+                    .foregroundStyle(gradient)
+            }
 
             Text(value)
                 .font(TideTheme.Typography.title2)
                 .fontWeight(.bold)
+                .foregroundColor(TideTheme.textPrimary)
 
             Text(title)
                 .font(TideTheme.Typography.caption1)
                 .foregroundColor(TideTheme.textSecondary)
         }
         .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color(uiColor: .systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(.vertical, TideTheme.Spacing.md)
+        .tideCardPremium()
     }
 }
 
@@ -226,37 +275,49 @@ struct PriorityEmailRow: View {
     let email: MobileBFFService.PriorityEmail
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(email.from)
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.semibold)
+        HStack(spacing: TideTheme.Spacing.md) {
+            // Avatar placeholder with gradient
+            ZStack {
+                Circle()
+                    .fill(TideTheme.Gradients.purple)
+                    .frame(width: TideTheme.Size.avatarMedium, height: TideTheme.Size.avatarMedium)
 
-                Spacer()
-
-                Text(email.receivedAt.relative)
-                    .font(TideTheme.Typography.caption1)
-                    .foregroundColor(TideTheme.textSecondary)
+                Text(email.from.prefix(1).uppercased())
+                    .font(TideTheme.Typography.headline)
+                    .foregroundColor(.white)
             }
 
-            Text(email.subject)
-                .font(TideTheme.Typography.body)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: TideTheme.Spacing.xs) {
+                HStack {
+                    Text(email.from)
+                        .font(TideTheme.Typography.subheadlineEmphasized)
+                        .foregroundColor(TideTheme.textPrimary)
 
-            if let summary = email.summary {
-                HStack(spacing: 4) {
-                    Image(systemName: "brain.head.profile")
-                        .font(TideTheme.Typography.caption2)
-                    Text(summary)
+                    Spacer()
+
+                    Text(email.receivedAt.relative)
                         .font(TideTheme.Typography.caption1)
+                        .foregroundColor(TideTheme.textTertiary)
                 }
-                .foregroundColor(TideTheme.primary)
+
+                Text(email.subject)
+                    .font(TideTheme.Typography.body)
+                    .foregroundColor(TideTheme.textPrimary)
+                    .lineLimit(1)
+
+                if let summary = email.summary {
+                    HStack(spacing: TideTheme.Spacing.xs) {
+                        Image(systemName: "sparkles")
+                            .font(TideTheme.Typography.caption2)
+                        Text(summary)
+                            .font(TideTheme.Typography.caption1)
+                    }
+                    .foregroundStyle(TideTheme.Gradients.primary)
+                }
             }
         }
-        .padding()
-        .background(Color(uiColor: .systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(TideTheme.Spacing.md)
+        .tideCard()
     }
 }
 
@@ -265,46 +326,42 @@ struct UpcomingEventRow: View {
     let event: MobileBFFService.UpcomingEvent
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack {
+        HStack(spacing: TideTheme.Spacing.md) {
+            // Time indicator with accent
+            VStack(spacing: TideTheme.Spacing.xxs) {
                 Text(event.start.formatted(date: .omitted, time: .shortened))
-                    .font(TideTheme.Typography.caption1)
-                    .fontWeight(.semibold)
+                    .font(TideTheme.Typography.footnoteEmphasized)
+                    .foregroundStyle(TideTheme.Gradients.secondary)
+
+                Rectangle()
+                    .fill(TideTheme.Gradients.secondary)
+                    .frame(width: 2, height: 24)
             }
             .frame(width: 60)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: TideTheme.Spacing.xs) {
                 Text(event.title)
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.medium)
+                    .font(TideTheme.Typography.subheadlineEmphasized)
+                    .foregroundColor(TideTheme.textPrimary)
+                    .lineLimit(2)
 
                 if let location = event.location {
-                    HStack(spacing: 4) {
-                        Image(systemName: "location.fill")
-                            .font(TideTheme.Typography.caption2)
-                        Text(location)
-                            .font(TideTheme.Typography.caption1)
-                    }
-                    .foregroundColor(TideTheme.textSecondary)
+                    Label(location, systemImage: "location.fill")
+                        .font(TideTheme.Typography.caption1)
+                        .foregroundColor(TideTheme.textSecondary)
                 }
 
                 if event.attendeeCount > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "person.2.fill")
-                            .font(TideTheme.Typography.caption2)
-                        Text("\(event.attendeeCount) attendees")
-                            .font(TideTheme.Typography.caption1)
-                    }
-                    .foregroundColor(TideTheme.textSecondary)
+                    Label("\(event.attendeeCount) attendees", systemImage: "person.2.fill")
+                        .font(TideTheme.Typography.caption1)
+                        .foregroundColor(TideTheme.textSecondary)
                 }
             }
 
             Spacer()
         }
-        .padding()
-        .background(Color(uiColor: .systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(TideTheme.Spacing.md)
+        .tideCard()
     }
 }
 
@@ -313,21 +370,33 @@ struct TodayTaskRow: View {
     let task: MobileBFFService.TodayTask
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: task.status == "completed" ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 20))
-                .foregroundColor(task.status == "completed" ? .green : TideTheme.primary)
+        HStack(spacing: TideTheme.Spacing.md) {
+            // Completion indicator
+            ZStack {
+                Circle()
+                    .stroke(task.status == "completed" ? TideTheme.success : TideTheme.primary, lineWidth: 2)
+                    .frame(width: 24, height: 24)
 
-            VStack(alignment: .leading, spacing: 4) {
+                if task.status == "completed" {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(TideTheme.success)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: TideTheme.Spacing.xs) {
                 Text(task.title)
-                    .font(TideTheme.Typography.subheadline)
-                    .fontWeight(.medium)
+                    .font(TideTheme.Typography.subheadlineEmphasized)
+                    .foregroundColor(TideTheme.textPrimary)
                     .strikethrough(task.status == "completed")
 
                 if let dueAt = task.dueAt {
-                    Text("Due: \(dueAt.formatted(date: .omitted, time: .shortened))")
-                        .font(TideTheme.Typography.caption1)
-                        .foregroundColor(TideTheme.textSecondary)
+                    Label(
+                        "Due: \(dueAt.formatted(date: .omitted, time: .shortened))",
+                        systemImage: "clock"
+                    )
+                    .font(TideTheme.Typography.caption1)
+                    .foregroundColor(TideTheme.textSecondary)
                 }
             }
 
@@ -336,19 +405,54 @@ struct TodayTaskRow: View {
             // Priority badge
             if task.priority == "high" {
                 Text("High")
-                    .font(TideTheme.Typography.caption2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(TideTheme.error.opacity(0.1))
-                    .foregroundColor(TideTheme.error)
-                    .cornerRadius(8)
+                    .tideBadge(color: TideTheme.error)
             }
         }
-        .padding()
-        .background(Color(uiColor: .systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+        .padding(TideTheme.Spacing.md)
+        .tideCard()
+    }
+}
+
+// MARK: - Skeleton Loaders
+struct SkeletonHeader: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: TideTheme.Spacing.sm) {
+            Rectangle()
+                .fill(TideTheme.border)
+                .frame(width: 200, height: 34)
+                .cornerRadius(TideTheme.CornerRadius.small)
+
+            Rectangle()
+                .fill(TideTheme.border)
+                .frame(width: 150, height: 28)
+                .cornerRadius(TideTheme.CornerRadius.small)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .shimmering()
+    }
+}
+
+struct SkeletonAICard: View {
+    var body: some View {
+        Rectangle()
+            .fill(TideTheme.border)
+            .frame(height: 100)
+            .cornerRadius(TideTheme.CornerRadius.large)
+            .shimmering()
+    }
+}
+
+struct SkeletonStatsRow: View {
+    var body: some View {
+        HStack(spacing: TideTheme.Spacing.md) {
+            ForEach(0..<3) { _ in
+                Rectangle()
+                    .fill(TideTheme.border)
+                    .frame(height: 120)
+                    .cornerRadius(TideTheme.CornerRadius.medium)
+            }
+        }
+        .shimmering()
     }
 }
 

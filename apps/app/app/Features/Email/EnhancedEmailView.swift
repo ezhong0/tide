@@ -25,97 +25,153 @@ struct EnhancedEmailView: View {
 
     var body: some View {
         NavigationView {
-            Group {
-                if isLoading && inboxData == nil {
-                    ProgressView("Loading inbox...")
-                } else if let data = inboxData {
-                    List {
-                        // Priority section
-                        let priorityEmails = filteredEmails.filter { $0.priority >= 7 && !$0.isRead }
-                        if !priorityEmails.isEmpty {
-                            Section("Needs Your Attention") {
-                                ForEach(priorityEmails, id: \.id) { email in
-                                    EnhancedEmailRow(email: email)
-                                }
-                            }
-                        }
+            ZStack {
+                // Subtle gradient background
+                TideTheme.Gradients.subtle
+                    .ignoresSafeArea()
 
-                        // VIP section
-                        let vipEmails = filteredEmails.filter { $0.isVIP && !$0.isRead }
-                        if !vipEmails.isEmpty {
-                            Section("From VIPs") {
-                                ForEach(vipEmails, id: \.id) { email in
-                                    EnhancedEmailRow(email: email)
-                                }
-                            }
-                        }
-
-                        // Regular inbox
-                        let regularEmails = filteredEmails.filter { $0.priority < 7 && !$0.isVIP }
-                        if !regularEmails.isEmpty {
-                            Section("Inbox") {
-                                ForEach(regularEmails, id: \.id) { email in
-                                    EnhancedEmailRow(email: email)
-                                }
-                            }
-                        }
-
-                        // Empty state when no emails at all
-                        if filteredEmails.isEmpty {
-                            Section {
-                                VStack(spacing: 16) {
-                                    Image(systemName: "envelope.badge.shield.half.filled")
-                                        .font(.system(size: 48))
-                                        .foregroundColor(TideTheme.primary)
-
-                                    Text("No Emails Yet")
-                                        .font(TideTheme.Typography.headline)
-                                        .fontWeight(.semibold)
-
-                                    Text("When you signed in, we requested Gmail access. It may take a moment to sync, or you may need to grant permissions during sign in.")
-                                        .font(TideTheme.Typography.caption1)
-                                        .foregroundColor(TideTheme.textSecondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 40)
-                            }
-                        }
-
-                        // Pagination
-                        if data.pagination.hasMore {
-                            Button("Load More") {
-                                _Concurrency.Task {
-                                    await loadMore()
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                        }
-                    }
-                    .listStyle(.insetGrouped)
-                } else {
-                    // Error state
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 48))
-                            .foregroundColor(.orange)
-
-                        if let error = errorMessage {
-                            Text(error)
-                                .font(TideTheme.Typography.body)
+                Group {
+                    if isLoading && inboxData == nil {
+                        VStack(spacing: TideTheme.Spacing.md) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                            Text("Loading inbox...")
+                                .font(TideTheme.Typography.subheadline)
                                 .foregroundColor(TideTheme.textSecondary)
-                                .multilineTextAlignment(.center)
                         }
+                    } else if let data = (PREVIEW_MODE ? MockData.mockInboxResponse() : inboxData) {
+                        ScrollView {
+                            VStack(spacing: TideTheme.Spacing.lg) {
+                                // Priority section
+                                let priorityEmails = filteredEmails.filter { $0.priority >= 7 && !$0.isRead }
+                                if !priorityEmails.isEmpty {
+                                    VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                        HStack {
+                                            Image(systemName: "exclamationmark.circle.fill")
+                                                .foregroundColor(TideTheme.error)
+                                            Text("Needs Your Attention")
+                                        }
+                                        .tideSectionHeader()
+                                        .padding(.horizontal, TideTheme.Spacing.md)
 
-                        Button("Retry") {
-                            _Concurrency.Task {
-                                await loadInbox()
+                                        VStack(spacing: TideTheme.Spacing.sm) {
+                                            ForEach(priorityEmails, id: \.id) { email in
+                                                EnhancedEmailRow(email: email)
+                                            }
+                                        }
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+                                    }
+                                }
+
+                                // VIP section
+                                let vipEmails = filteredEmails.filter { $0.isVIP && !$0.isRead }
+                                if !vipEmails.isEmpty {
+                                    VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                        HStack {
+                                            Image(systemName: "star.fill")
+                                                .foregroundColor(.yellow)
+                                            Text("From VIPs")
+                                        }
+                                        .tideSectionHeader()
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+
+                                        VStack(spacing: TideTheme.Spacing.sm) {
+                                            ForEach(vipEmails, id: \.id) { email in
+                                                EnhancedEmailRow(email: email)
+                                            }
+                                        }
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+                                    }
+                                }
+
+                                // Regular inbox
+                                let regularEmails = filteredEmails.filter { $0.priority < 7 && !$0.isVIP }
+                                if !regularEmails.isEmpty {
+                                    VStack(alignment: .leading, spacing: TideTheme.Spacing.md) {
+                                        Text("Inbox")
+                                            .tideSectionHeader()
+                                            .padding(.horizontal, TideTheme.Spacing.md)
+
+                                        VStack(spacing: TideTheme.Spacing.sm) {
+                                            ForEach(regularEmails, id: \.id) { email in
+                                                EnhancedEmailRow(email: email)
+                                            }
+                                        }
+                                        .padding(.horizontal, TideTheme.Spacing.md)
+                                    }
+                                }
+
+                                // Empty state when no emails at all
+                                if filteredEmails.isEmpty {
+                                    VStack(spacing: TideTheme.Spacing.lg) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(TideTheme.Gradients.primary)
+                                                .frame(width: 100, height: 100)
+                                                .opacity(0.15)
+
+                                            Image(systemName: "envelope.badge.shield.half.filled")
+                                                .font(.system(size: 48))
+                                                .foregroundStyle(TideTheme.Gradients.primary)
+                                        }
+
+                                        VStack(spacing: TideTheme.Spacing.sm) {
+                                            Text("No Emails Yet")
+                                                .font(TideTheme.Typography.title3)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(TideTheme.textPrimary)
+
+                                            Text("When you signed in, we requested Gmail access. It may take a moment to sync.")
+                                                .font(TideTheme.Typography.body)
+                                                .foregroundColor(TideTheme.textSecondary)
+                                                .multilineTextAlignment(.center)
+                                                .padding(.horizontal, TideTheme.Spacing.xl)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.top, 80)
+                                }
+
+                                // Pagination
+                                if data.pagination.hasMore {
+                                    Text("Load More")
+                                        .tideCompactButton()
+                                        .onTapGesture {
+                                            _Concurrency.Task {
+                                                await loadMore()
+                                            }
+                                        }
+                                        .padding(.top, TideTheme.Spacing.md)
+                                }
                             }
+                            .padding(.vertical, TideTheme.Spacing.md)
                         }
-                        .buttonStyle(.borderedProminent)
+                    } else {
+                        // Error state
+                        VStack(spacing: TideTheme.Spacing.lg) {
+                            Image(systemName: "exclamationmark.triangle")
+                                .font(.system(size: 48))
+                                .foregroundStyle(TideTheme.Gradients.sunset)
+
+                            if let error = errorMessage {
+                                Text(error)
+                                    .font(TideTheme.Typography.body)
+                                    .foregroundColor(TideTheme.textSecondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, TideTheme.Spacing.xl)
+                            }
+
+                            Text("Retry")
+                                .tidePrimaryButton()
+                                .onTapGesture {
+                                    _Concurrency.Task {
+                                        await loadInbox()
+                                    }
+                                }
+                                .padding(.horizontal, TideTheme.Spacing.xxl)
+                        }
+                        .padding()
                     }
-                    .padding()
                 }
             }
             .refreshable {
@@ -123,21 +179,33 @@ struct EnhancedEmailView: View {
             }
             .searchable(text: $searchText, prompt: "Search emails")
             .navigationTitle("Email")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button("All") { filter = "all"; _Concurrency.Task { await loadInbox() } }
-                        Button("Unread") { filter = "unread"; _Concurrency.Task { await loadInbox() } }
-                        Button("Flagged") { filter = "flagged"; _Concurrency.Task { await loadInbox() } }
-                        Button("Priority") { filter = "priority"; _Concurrency.Task { await loadInbox() } }
-                        Button("Today") { filter = "today"; _Concurrency.Task { await loadInbox() } }
+                        Button(action: { filter = "all"; _Concurrency.Task { await loadInbox() } }) {
+                            Label("All", systemImage: filter == "all" ? "checkmark" : "")
+                        }
+                        Button(action: { filter = "unread"; _Concurrency.Task { await loadInbox() } }) {
+                            Label("Unread", systemImage: filter == "unread" ? "checkmark" : "")
+                        }
+                        Button(action: { filter = "flagged"; _Concurrency.Task { await loadInbox() } }) {
+                            Label("Flagged", systemImage: filter == "flagged" ? "checkmark" : "")
+                        }
+                        Button(action: { filter = "priority"; _Concurrency.Task { await loadInbox() } }) {
+                            Label("Priority", systemImage: filter == "priority" ? "checkmark" : "")
+                        }
+                        Button(action: { filter = "today"; _Concurrency.Task { await loadInbox() } }) {
+                            Label("Today", systemImage: filter == "today" ? "checkmark" : "")
+                        }
                     } label: {
-                        Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                        Image(systemName: "line.3.horizontal.decrease.circle")
+                            .font(TideTheme.Typography.body)
                     }
                 }
             }
             .onAppear {
-                if inboxData == nil {
+                if !PREVIEW_MODE && inboxData == nil {
                     _Concurrency.Task {
                         await loadInbox()
                     }
@@ -194,92 +262,123 @@ struct EnhancedEmailRow: View {
     let email: MobileBFFService.InboxEmail
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                // VIP badge
+        HStack(spacing: TideTheme.Spacing.md) {
+            // Avatar with gradient and initial
+            ZStack {
+                Circle()
+                    .fill(avatarGradient)
+                    .frame(width: TideTheme.Size.avatarMedium, height: TideTheme.Size.avatarMedium)
+
+                Text(email.from.prefix(1).uppercased())
+                    .font(TideTheme.Typography.headline)
+                    .foregroundColor(.white)
+
+                // VIP star overlay
                 if email.isVIP {
                     Image(systemName: "star.fill")
-                        .font(TideTheme.Typography.caption2)
+                        .font(.system(size: 12))
                         .foregroundColor(.yellow)
-                }
-
-                // Sender
-                Text(email.from)
-                    .font(TideTheme.Typography.headline)
-                    .fontWeight(email.isRead ? .regular : .semibold)
-
-                Spacer()
-
-                // Timestamp
-                Text(email.receivedAt.relative)
-                    .font(TideTheme.Typography.caption1)
-                    .foregroundColor(TideTheme.textSecondary)
-
-                // Priority indicator
-                if email.priority >= 7 {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundColor(TideTheme.error)
-                }
-
-                // Flagged
-                if email.isFlagged {
-                    Image(systemName: "flag.fill")
-                        .foregroundColor(.orange)
-                }
-
-                // Attachment
-                if email.hasAttachment {
-                    Image(systemName: "paperclip")
-                        .foregroundColor(TideTheme.textSecondary)
+                        .offset(x: 12, y: -12)
+                        .shadow(color: .black.opacity(0.3), radius: 2)
                 }
             }
 
-            // Subject
-            Text(email.subject)
-                .font(TideTheme.Typography.subheadline)
-                .fontWeight(email.isRead ? .regular : .semibold)
-                .lineLimit(1)
+            // Email content
+            VStack(alignment: .leading, spacing: TideTheme.Spacing.xs) {
+                HStack {
+                    // Sender
+                    Text(email.from)
+                        .font(email.isRead ? TideTheme.Typography.subheadline : TideTheme.Typography.subheadlineEmphasized)
+                        .foregroundColor(TideTheme.textPrimary)
+                        .lineLimit(1)
 
-            // Snippet/Preview
-            if !email.snippet.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "brain.head.profile")
-                        .font(TideTheme.Typography.caption2)
-                    Text(email.snippet)
-                        .font(TideTheme.Typography.caption1)
+                    Spacer()
+
+                    // Indicators row
+                    HStack(spacing: TideTheme.Spacing.xs) {
+                        // Timestamp
+                        Text(email.receivedAt.relative)
+                            .font(TideTheme.Typography.caption1)
+                            .foregroundColor(TideTheme.textTertiary)
+
+                        // Priority indicator
+                        if email.priority >= 7 {
+                            Circle()
+                                .fill(TideTheme.error)
+                                .frame(width: 6, height: 6)
+                        }
+
+                        // Flagged
+                        if email.isFlagged {
+                            Image(systemName: "flag.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                        }
+
+                        // Attachment
+                        if email.hasAttachment {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 12))
+                                .foregroundColor(TideTheme.textSecondary)
+                        }
+                    }
                 }
-                .foregroundColor(TideTheme.primary)
-                .lineLimit(2)
-            }
 
-            // Category
-            if let category = email.category {
-                Text(category.capitalized)
-                    .font(TideTheme.Typography.caption2)
-                    .fontWeight(.medium)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(categoryColor(category).opacity(0.2))
-                    .foregroundColor(categoryColor(category))
-                    .cornerRadius(4)
+                // Subject
+                Text(email.subject)
+                    .font(email.isRead ? TideTheme.Typography.body : TideTheme.Typography.bodyEmphasized)
+                    .foregroundColor(TideTheme.textPrimary)
+                    .lineLimit(1)
+
+                // AI Snippet/Preview
+                if !email.snippet.isEmpty {
+                    HStack(spacing: TideTheme.Spacing.xs) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 10))
+                        Text(email.snippet)
+                            .font(TideTheme.Typography.caption1)
+                    }
+                    .foregroundStyle(TideTheme.Gradients.primary)
+                    .lineLimit(2)
+                }
+
+                // Category badge
+                if let category = email.category {
+                    Text(category.capitalized)
+                        .tideBadge(color: categoryColor(category))
+                }
             }
         }
-        .padding(.vertical, 4)
-        .opacity(email.isRead ? 0.7 : 1.0)
+        .padding(TideTheme.Spacing.md)
+        .tideCard()
+        .opacity(email.isRead ? 0.75 : 1.0)
+    }
+
+    private var avatarGradient: LinearGradient {
+        // Generate consistent gradient based on sender name
+        let hash = email.from.hash
+        let gradients = [
+            TideTheme.Gradients.primary,
+            TideTheme.Gradients.secondary,
+            TideTheme.Gradients.purple,
+            TideTheme.Gradients.sunset,
+            TideTheme.Gradients.ocean
+        ]
+        return gradients[abs(hash) % gradients.count]
     }
 
     private func categoryColor(_ category: String) -> Color {
         switch category.lowercased() {
         case "urgent", "important":
-            return .red
+            return TideTheme.error
         case "work":
-            return .blue
+            return TideTheme.primary
         case "personal":
-            return .green
+            return TideTheme.secondary
         case "finance":
-            return .orange
+            return TideTheme.warning
         default:
-            return .gray
+            return TideTheme.textSecondary
         }
     }
 }
