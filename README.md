@@ -5,8 +5,8 @@
 > An AI-powered executive assistant that eliminates the chaos of managing email, calendar, and tasks across multiple apps. Built for mobile-first professionals who need intelligence, not just organization.
 
 <p align="center">
-  <img src="docs/img/dashboard-dark.png" alt="Tide Dashboard" width="300"/>
-  <img src="docs/img/chat-action-preview.png" alt="AI Actions" width="300"/>
+  <img src="docs/img/dashboard-dark.png" alt="Tide Dashboard" width="280"/>
+  <img src="docs/img/chat-action-preview.png" alt="AI Actions" width="280"/>
 </p>
 
 ---
@@ -83,35 +83,35 @@ Enterprise-grade architecture that scales from 1 to 10,000 users:
 ## 🚀 See It In Action
 
 ### Dashboard — Everything You Need, Nothing You Don't
-<img src="docs/img/dashboard-dark.png" alt="Dashboard" width="300"/>
+<img src="docs/img/dashboard-dark.png" alt="Dashboard" width="320"/>
 
 **No more app hopping.** One screen shows: AI-generated daily brief, priority emails with smart summaries, upcoming meetings, and today's tasks. All the context you need to make decisions in seconds, not minutes.
 
 ---
 
 ### Chat — Natural Language, Immediate Action
-<img src="docs/img/chat-conflict.png" alt="Chat with Conflict Detection" width="300"/>
+<img src="docs/img/chat-conflict.png" alt="Chat with Conflict Detection" width="320"/>
 
 **Just ask, don't hunt.** "What are my priorities?" The AI understands your email, calendar, and tasks—detecting the **2pm scheduling conflict** you didn't even know about yet.
 
 ---
 
 ### Action Previews — AI You Can Trust
-<img src="docs/img/chat-action-preview.png" alt="Action Preview" width="300"/>
+<img src="docs/img/chat-action-preview.png" alt="Action Preview" width="320"/>
 
 **Transparency before action.** Before Tide reschedules meetings or sends emails on your behalf, it shows exactly what will happen. Trust through clarity, not blind automation.
 
 ---
 
 ### Suggestion Chips — Common Tasks, Zero Friction
-<img src="docs/img/chat-suggestions.png" alt="Suggestions" width="300"/>
+<img src="docs/img/chat-suggestions.png" alt="Suggestions" width="320"/>
 
 **Eliminate typing on mobile.** Context-aware chips like "Draft response to Marcus" and "Reschedule Product Strategy Meeting" appear exactly when you need them. One tap, done.
 
 ---
 
 ### Calendar — Conflicts Caught, Briefs Prepared
-<img src="docs/img/calendar-conflicts.png" alt="Calendar" width="300"/>
+<img src="docs/img/calendar-conflicts.png" alt="Calendar" width="320"/>
 
 **Red alerts for double-bookings.** Expandable meeting briefs with AI-generated agendas, participant context, and talking points. Walk into every meeting prepared—no laptop required.
 
